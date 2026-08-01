@@ -230,7 +230,7 @@ function Invoke-LifecycleScript {
     param(
         [Parameter(Mandatory = $true)][string]$Path,
         [Parameter(Mandatory = $true)][string]$TestHome,
-        [string[]]$Arguments = @(),
+        [hashtable]$Parameters = @{},
         [string]$Failpoint = ""
     )
     $oldHome = Get-Item Env:ORCHESTRATE_HOME -ErrorAction SilentlyContinue
@@ -243,7 +243,7 @@ function Invoke-LifecycleScript {
         else {
             $env:ORCHESTRATE_FAILPOINT = $Failpoint
         }
-        & $Path @Arguments | Out-Null
+        & $Path @Parameters | Out-Null
     }
     finally {
         if ($null -eq $oldHome) {
@@ -265,14 +265,14 @@ function Assert-LifecycleFails {
     param(
         [Parameter(Mandatory = $true)][string]$Path,
         [Parameter(Mandatory = $true)][string]$TestHome,
-        [string[]]$Arguments = @(),
+        [hashtable]$Parameters = @{},
         [string]$Failpoint = "",
         [string]$ExpectedError = "",
         [Parameter(Mandatory = $true)][string]$Message
     )
     $failed = $false
     try {
-        Invoke-LifecycleScript -Path $Path -TestHome $TestHome -Arguments $Arguments -Failpoint $Failpoint
+        Invoke-LifecycleScript -Path $Path -TestHome $TestHome -Parameters $Parameters -Failpoint $Failpoint
     }
     catch {
         $failed = $true
@@ -299,7 +299,7 @@ function Invoke-Uninstall {
         [switch]$RestoreLatest
     )
     if ($RestoreLatest) {
-        Invoke-LifecycleScript -Path $Uninstall -TestHome $TestHome -Arguments @("-RestoreLatest")
+        Invoke-LifecycleScript -Path $Uninstall -TestHome $TestHome -Parameters @{ RestoreLatest = $true }
     }
     else {
         Invoke-LifecycleScript -Path $Uninstall -TestHome $TestHome
