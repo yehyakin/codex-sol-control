@@ -48,17 +48,17 @@ function Assert-Equal {
 
 function Assert-PathExists {
     param([Parameter(Mandatory = $true)][string]$Path)
-    Assert-True (Test-Path -LiteralPath $Path -Force) "expected path to exist: $Path"
+    Assert-True (Test-Path -LiteralPath $Path) "expected path to exist: $Path"
 }
 
 function Assert-PathAbsent {
     param([Parameter(Mandatory = $true)][string]$Path)
-    Assert-True (-not (Test-Path -LiteralPath $Path -Force)) "expected path to be absent: $Path"
+    Assert-True (-not (Test-Path -LiteralPath $Path)) "expected path to be absent: $Path"
 }
 
 function Ensure-Directory {
     param([Parameter(Mandatory = $true)][string]$Path)
-    if (-not (Test-Path -LiteralPath $Path -Force)) {
+    if (-not (Test-Path -LiteralPath $Path)) {
         [System.IO.Directory]::CreateDirectory($Path) | Out-Null
     }
 }
@@ -107,7 +107,7 @@ function Get-TreeDigest {
 
 function Get-PathFingerprint {
     param([Parameter(Mandatory = $true)][string]$Path)
-    if (-not (Test-Path -LiteralPath $Path -Force)) {
+    if (-not (Test-Path -LiteralPath $Path)) {
         return "ABSENT"
     }
     $item = Get-Item -LiteralPath $Path -Force
@@ -362,7 +362,7 @@ function Try-CreateTestJunction {
         $command = 'mklink /J "{0}" "{1}"' -f $Link, $Target
         & cmd.exe /c $command 2>&1 | Out-Null
         $exitCode = $LASTEXITCODE
-        if ($exitCode -ne 0 -or -not (Test-Path -LiteralPath $Link -Force)) {
+        if ($exitCode -ne 0 -or -not (Test-Path -LiteralPath $Link)) {
             return $false
         }
         $item = Get-Item -LiteralPath $Link -Force
@@ -375,7 +375,7 @@ function Try-CreateTestJunction {
 
 function Remove-TestJunction {
     param([Parameter(Mandatory = $true)][string]$Path)
-    if (Test-Path -LiteralPath $Path -Force) {
+    if (Test-Path -LiteralPath $Path) {
         & cmd.exe /c ('rmdir /s /q "{0}"' -f $Path) 2>&1 | Out-Null
     }
 }
@@ -524,7 +524,7 @@ try {
     Write-Output "Windows lifecycle contract: PASS"
 }
 finally {
-    if (Test-Path -LiteralPath $TestRoot -Force) {
+    if (Test-Path -LiteralPath $TestRoot) {
         Remove-Item -LiteralPath $TestRoot -Recurse -Force -ErrorAction SilentlyContinue
     }
 }
