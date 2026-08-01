@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1900 720" role="img" aria-labelledby="architecture-title architecture-desc" font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif">
+  <title id="architecture-title">Sol Luna orchestration architecture</title>
+  <desc id="architecture-desc">A left-to-right flow shows a user goal entering Sol, moving to parallel non-overlapping Luna Max workers, returning as evidence to Sol for review, and reaching Main Codex delivery.</desc>
+
+  <rect width="1900" height="720" rx="28" fill="#0b1220"/>
+  <path d="M0 604 C340 532 550 650 890 568 S1480 520 1900 604 V720 H0Z" fill="#101b2e"/>
+  <circle cx="1800" cy="102" r="160" fill="#17243b" opacity="0.7"/>
+
+  <text x="76" y="78" fill="#8fa5c7" font-size="18" font-weight="700" letter-spacing="3">THE SMALL LOOP</text>
+  <text x="76" y="128" fill="#f7f9fc" font-size="42" font-weight="750" letter-spacing="-0.5">Plan once. Execute in bounds. Review the evidence.</text>
+  <text x="1824" y="82" fill="#8fa5c7" font-size="16" text-anchor="end" letter-spacing="1.5">SOL → LUNA → SOL</text>
+
+  <rect x="76" y="272" width="238" height="172" rx="20" fill="#111d31" stroke="#354c70" stroke-width="2"/>
+  <circle cx="116" cy="316" r="14" fill="#f2b772"/>
+  <text x="150" y="322" fill="#f2c996" font-size="15" font-weight="700" letter-spacing="2">INPUT</text>
+  <text x="104" y="372" fill="#f7f9fc" font-size="28" font-weight="700">User goal</text>
+  <text x="104" y="407" fill="#9fb2cf" font-size="16">intent + constraints</text>
+
+  <line x1="314" y1="358" x2="366" y2="358" stroke="#f2b772" stroke-width="4" stroke-linecap="round"/>
+  <polygon points="366,358 345,345 345,371" fill="#f2b772"/>
+
+  <rect x="386" y="236" width="342" height="244" rx="22" fill="#171d3a" stroke="#7568ff" stroke-width="2"/>
+  <rect x="414" y="270" width="12" height="142" rx="6" fill="#7568ff"/>
+  <text x="458" y="286" fill="#a69eff" font-size="15" font-weight="700" letter-spacing="2">CONTROLLER</text>
+  <text x="458" y="332" fill="#f7f9fc" font-size="38" font-weight="750">Sol</text>
+  <text x="458" y="370" fill="#c5c9ff" font-size="18">plan · route · review</text>
+  <text x="458" y="414" fill="#9fb2cf" font-size="16">one owner per file</text>
+  <text x="458" y="440" fill="#9fb2cf" font-size="16">fail closed if identity is unproved</text>
+
+  <line x1="728" y1="358" x2="774" y2="358" stroke="#7568ff" stroke-width="4" stroke-linecap="round"/>
+  <polygon points="774,358 753,345 753,371" fill="#7568ff"/>
+
+  <rect x="794" y="184" width="540" height="390" rx="24" fill="#101b2e" stroke="#2c4264" stroke-width="2"/>
+  <text x="838" y="226" fill="#8fa5c7" font-size="15" font-weight="700" letter-spacing="2">PARALLEL EXECUTION</text>
+  <text x="838" y="258" fill="#f7f9fc" font-size="24" font-weight="650">Luna Max workers</text>
+  <text x="1290" y="258" fill="#8fa5c7" font-size="14" text-anchor="end">disjoint scopes · live capacity</text>
+
+  <rect x="838" y="286" width="452" height="68" rx="14" fill="#192943"/>
+  <circle cx="874" cy="320" r="13" fill="#27d6c7"/>
+  <text x="906" y="316" fill="#f7f9fc" font-size="18" font-weight="650">bounded task A</text>
+  <text x="906" y="340" fill="#86e9df" font-size="14">write scope + verification</text>
+  <text x="1250" y="326" fill="#7fe9df" font-size="14" text-anchor="end">01</text>
+
+  <rect x="838" y="370" width="452" height="68" rx="14" fill="#192943"/>
+  <circle cx="874" cy="404" r="13" fill="#f2b772"/>
+  <text x="906" y="400" fill="#f7f9fc" font-size="18" font-weight="650">bounded task B</text>
+  <text x="906" y="424" fill="#f2c996" font-size="14">write scope + verification</text>
+  <text x="1250" y="410" fill="#f2c996" font-size="14" text-anchor="end">02</text>
+
+  <rect x="838" y="454" width="452" height="68" rx="14" fill="#192943"/>
+  <circle cx="874" cy="488" r="13" fill="#7568ff"/>
+  <text x="906" y="484" fill="#f7f9fc" font-size="18" font-weight="650">bounded task C</text>
+  <text x="906" y="508" fill="#b3adff" font-size="14">write scope + verification</text>
+  <text x="1250" y="494" fill="#a69eff" font-size="14" text-anchor="end">03</text>
+
+  <line x1="1334" y1="358" x2="1376" y2="358" stroke="#27d6c7" stroke-width="4" stroke-linecap="round"/>
+  <polygon points="1376,358 1355,345 1355,371" fill="#27d6c7"/>
+
+  <rect x="1396" y="272" width="274" height="172" rx="20" fill="#112a2e" stroke="#27d6c7" stroke-width="2"/>
+  <circle cx="1436" cy="316" r="14" fill="#27d6c7"/>
+  <text x="1470" y="322" fill="#7fe9df" font-size="15" font-weight="700" letter-spacing="2">REVIEW</text>
+  <text x="1424" y="372" fill="#f7f9fc" font-size="28" font-weight="700">Sol checks</text>
+  <text x="1424" y="407" fill="#a7deda" font-size="16">files · diff · tests</text>
+  <text x="1424" y="431" fill="#a7deda" font-size="16">evidence · correction</text>
+
+  <line x1="1670" y1="358" x2="1710" y2="358" stroke="#f2b772" stroke-width="4" stroke-linecap="round"/>
+  <polygon points="1710,358 1689,345 1689,371" fill="#f2b772"/>
+
+  <rect x="1730" y="272" width="112" height="172" rx="20" fill="#241e2c" stroke="#f2b772" stroke-width="2"/>
+  <circle cx="1786" cy="316" r="14" fill="#f2b772"/>
+  <text x="1786" y="372" fill="#f7f9fc" font-size="22" font-weight="700" text-anchor="middle">Main</text>
+  <text x="1786" y="400" fill="#f2c996" font-size="18" text-anchor="middle">Codex</text>
+  <text x="1786" y="427" fill="#f2c996" font-size="14" text-anchor="middle">delivery</text>
+
+  <line x1="76" y1="636" x2="1842" y2="636" stroke="#2b4263" stroke-width="2"/>
+  <circle cx="76" cy="636" r="5" fill="#7568ff"/>
+  <text x="98" y="643" fill="#9fb2cf" font-size="16">Sol is the only controller</text>
+  <text x="1842" y="643" fill="#9fb2cf" font-size="16" text-anchor="end">Luna executes bounded packets and never creates subagents</text>
+</svg>
