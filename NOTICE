@@ -1,0 +1,28 @@
+NOTICE
+
+This repository is distributed under the Apache License, Version 2.0; see LICENSE.
+
+The following projects were reviewed as inspirations or prior art for routing,
+bounded delegation, dispatch, and orchestration:
+
+- joeke80215/orchestrate-sol-luna, commit eba163a9d48f023aeb3638b6809f0f8fb343f472:
+  Apache-2.0
+  https://github.com/joeke80215/orchestrate-sol-luna/tree/eba163a9d48f023aeb3638b6809f0f8fb343f472
+- manhua-man/codex-parallel-subagent-planner, commit ea3d8db9081e2f4159a6c40100fc1ca8d229e7dc:
+  no license file detected in the reviewed snapshot; ideas only, with no copied
+  text or code
+  https://github.com/manhua-man/codex-parallel-subagent-planner/tree/ea3d8db9081e2f4159a6c40100fc1ca8d229e7dc
+- yinguangyao/codex-dispatch-skill, commit 00630de4c8ad01cb51bae3a89044d55cc6433158:
+  no license file detected in the reviewed snapshot; ideas only, with no copied
+  text or code
+  https://github.com/yinguangyao/codex-dispatch-skill/tree/00630de4c8ad01cb51bae3a89044d55cc6433158
+- douglasmonsky/codex-orchestrate, commit f2954a066e2607deef3963465562193a220dee70:
+  MIT
+  https://github.com/douglasmonsky/codex-orchestrate/tree/f2954a066e2607deef3963465562193a220dee70
+- Glaicer/subagent-orchestrator-skill, commit 96eaeb16f19b789fd004b588858fb846cc674147:
+  MIT
+  https://github.com/Glaicer/subagent-orchestrator-skill/tree/96eaeb16f19b789fd004b588858fb846cc674147
+
+The implementation wording and code in this repository are original unless later
+identified otherwise. This statement does not claim that the underlying
+concepts are original.

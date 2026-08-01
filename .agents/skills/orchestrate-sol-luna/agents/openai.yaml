@@ -1,0 +1,4 @@
+interface:
+  display_name: "Orchestrate Sol Luna"
+  short_description: "Route bounded work through direct, Sol-assisted, or Sol-to-Luna execution."
+  default_prompt: "Use $orchestrate-sol-luna to route this task with explicit scopes, evidence, and bounded review."
