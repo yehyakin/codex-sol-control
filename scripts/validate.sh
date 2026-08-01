@@ -4,11 +4,10 @@ IFS=$'\n\t'
 
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)
 ROOT_DIR=$(CDPATH= cd -- "$SCRIPT_DIR/.." && pwd -P)
-SKILL_DIR="$ROOT_DIR/.agents/skills/orchestrate-sol-luna"
-SKILL_FILE="$SKILL_DIR/SKILL.md"
-OPENAI_FILE="$SKILL_DIR/agents/openai.yaml"
-PROTOCOL_FILE="$SKILL_DIR/references/routing-protocol.md"
-SOL_FILE="$ROOT_DIR/.codex/agents/sol-planner.toml"
+SKILL_ROOT="$ROOT_DIR/.agents/skills/sol-luna"
+SKILL_FILE="$SKILL_ROOT/SKILL.md"
+OPENAI_FILE="$SKILL_ROOT/agents/openai.yaml"
+SOL_FILE="$ROOT_DIR/.codex/agents/sol-controller.toml"
 LUNA_FILE="$ROOT_DIR/.codex/agents/luna-max-worker.toml"
 PS_FILE="$SCRIPT_DIR/install.ps1"
 
@@ -19,10 +18,9 @@ fail() {
 }
 
 required_files=(
-  ".agents/skills/orchestrate-sol-luna/SKILL.md"
-  ".agents/skills/orchestrate-sol-luna/agents/openai.yaml"
-  ".agents/skills/orchestrate-sol-luna/references/routing-protocol.md"
-  ".codex/agents/sol-planner.toml"
+  ".agents/skills/sol-luna/SKILL.md"
+  ".agents/skills/sol-luna/agents/openai.yaml"
+  ".codex/agents/sol-controller.toml"
   ".codex/agents/luna-max-worker.toml"
   "scripts/install.sh"
   "scripts/validate.sh"
@@ -35,17 +33,26 @@ required_files=(
 for relative in "${required_files[@]}"; do
   [[ -f "$ROOT_DIR/$relative" ]] || fail "missing required file: $relative"
 done
-[[ -d "$SKILL_DIR" ]] || fail 'missing skill directory'
+[[ -d "$SKILL_ROOT" ]] || fail 'missing v0.2 skill directory'
+
+RUNTIME_FILE=
+if [[ -f "$SKILL_ROOT/runtime-notes.md" ]]; then
+  RUNTIME_FILE="$SKILL_ROOT/runtime-notes.md"
+elif [[ -f "$SKILL_ROOT/references/runtime-notes.md" ]]; then
+  RUNTIME_FILE="$SKILL_ROOT/references/runtime-notes.md"
+else
+  fail 'missing runtime-notes.md in the v0.2 skill'
+fi
 
 for command_name in bash git find; do
   command -v "$command_name" >/dev/null 2>&1 || fail "required command is unavailable: $command_name"
 done
 
 if [[ -f "$SKILL_FILE" ]]; then
-  if ! head -n 1 "$SKILL_FILE" | grep -Fxq -- '---'; then
+  if ! head -n 1 "$SKILL_FILE" | tr -d '\r' | grep -Fxq -- '---'; then
     fail 'SKILL.md has no YAML frontmatter opener'
   fi
-  if ! grep -Eq '^name:[[:space:]]*orchestrate-sol-luna[[:space:]]*$' "$SKILL_FILE"; then
+  if ! grep -Eq '^name:[[:space:]]*sol-luna[[:space:]]*$' "$SKILL_FILE"; then
     fail 'SKILL.md has the wrong name'
   fi
   if ! grep -Eq '^description:[[:space:]]*Use when([[:space:]]|$)' "$SKILL_FILE"; then
@@ -53,20 +60,13 @@ if [[ -f "$SKILL_FILE" ]]; then
   fi
 fi
 
-if [[ -f "$PROTOCOL_FILE" ]]; then
-  for phrase in \
-    'Level 0' 'Level 1' 'Level 2' 'Level 3' \
-    'Native Nested' 'Compatibility' 'Fail Closed' \
-    'complexity_level:' 'execution_mode:' 'reasoning:' 'acceptance_criteria:' \
-    'task_graph:' 'objective:' 'agent:' 'mode:' 'dependencies:' 'inputs:' \
-    'read_scope:' 'write_scope:' 'forbidden_scope:' 'deliverable:' \
-    'minimum_verification:' 'command_or_procedure:' 'passing_condition:' 'required_evidence:' \
-    'can_launch:' 'held_reason:' 'stop_conditions:' \
-    'write_ownership:' 'conflict_risks:' 'integration_owner:' 'final_review_required:' \
-    'Luna Task Packet' 'Status: PASS | BLOCKED' 'Exact verification result:' \
-    'Correction Packet' 'verdict: PASS | PASS_WITH_LIMITATIONS | FAIL' \
-    'required_fixes:' 'optional_improvements:' 'evidence_quality:' 'remaining_risks:'; do
-    grep -Fq -- "$phrase" "$PROTOCOL_FILE" || fail "protocol is missing required structure: $phrase"
+if [[ -f "$OPENAI_FILE" ]]; then
+  for marker in \
+    '^interface:[[:space:]]*$' \
+    '^[[:space:]]+display_name:[[:space:]]*[^[:space:]].*$' \
+    '^[[:space:]]+short_description:[[:space:]]*[^[:space:]].*$' \
+    '^[[:space:]]+default_prompt:[[:space:]]*[^[:space:]].*$'; do
+    grep -Eq "$marker" "$OPENAI_FILE" || fail "openai.yaml is missing: $marker"
   done
 fi
 
@@ -89,7 +89,7 @@ done
 if [[ -z "$PYTHON_BIN" ]]; then
   fail 'Python 3.11 or newer is required for TOML validation'
 else
-  if ! "$PYTHON_BIN" - "$ROOT_DIR" "$SKILL_FILE" "$OPENAI_FILE" "$PROTOCOL_FILE" "$SOL_FILE" "$LUNA_FILE" "$PS_FILE" <<'PY' >/dev/null 2>&1
+  if ! "$PYTHON_BIN" - "$ROOT_DIR" "$SKILL_FILE" "$OPENAI_FILE" "$RUNTIME_FILE" "$SOL_FILE" "$LUNA_FILE" "$PS_FILE" <<'PY' >/dev/null 2>&1
 from __future__ import annotations
 
 import re
@@ -101,13 +101,15 @@ from urllib.parse import unquote
 root = Path(sys.argv[1]).resolve()
 skill_file = Path(sys.argv[2])
 openai_file = Path(sys.argv[3])
-protocol_file = Path(sys.argv[4])
+runtime_file = Path(sys.argv[4]) if sys.argv[4] else None
 sol_file = Path(sys.argv[5])
 luna_file = Path(sys.argv[6])
 ps_file = Path(sys.argv[7])
 
+
 def fail() -> "NoReturn":
     raise SystemExit(1)
+
 
 def read_text(path: Path) -> str:
     try:
@@ -115,90 +117,112 @@ def read_text(path: Path) -> str:
     except (OSError, UnicodeDecodeError):
         fail()
 
+
 skill_text = read_text(skill_file)
-if not skill_text.startswith("---\n"):
+lines = skill_text.splitlines()
+if not lines or lines[0] != "---":
     fail()
-frontmatter_end = skill_text.find("\n---", 4)
-if frontmatter_end < 0:
+try:
+    closing = lines[1:].index("---") + 1
+except ValueError:
     fail()
-frontmatter = skill_text[4:frontmatter_end]
-if not re.search(r"(?m)^name:\s*orchestrate-sol-luna\s*$", frontmatter):
+frontmatter = "\n".join(lines[1:closing])
+if not re.search(r"(?m)^name:\s*sol-luna\s*$", frontmatter):
     fail()
 if not re.search(r"(?m)^description:\s*Use when\b", frontmatter):
     fail()
 
-openai_text = read_text(openai_file)
-for key in ("interface:", "display_name:", "short_description:", "default_prompt:"):
-    if key not in openai_text:
+if runtime_file is None or not runtime_file.is_file():
+    fail()
+contract_text = skill_text + "\n" + read_text(runtime_file)
+contract_patterns = (
+    r"(?is)ordinary\s+simple\s+(?:work|tasks?).{0,120}\bdirect\b",
+    r"(?is)planning[- ]only.{0,120}zero\s+Luna",
+    r"(?m)^\s*goal:\s*",
+    r"(?m)^\s*done_when:\s*",
+    r"(?m)^\s*tasks:\s*",
+    r"(?m)^\s*stages:\s*",
+    r"(?m)^\s*Task ID:\s*",
+    r"(?m)^\s*Task:\s*",
+    r"(?m)^\s*Write scope:\s*",
+    r"(?m)^\s*Do not touch:\s*",
+    r"(?m)^\s*Expected result:\s*",
+    r"(?m)^\s*Verification:\s*",
+    r"(?i)Context:\s*.*optional",
+    r"(?m)^\s*Status:\s*PASS\s*\|\s*BLOCKED\s*$",
+    r"(?m)^\s*Summary:\s*",
+    r"(?m)^\s*Changed:\s*",
+    r"(?m)^\s*Evidence:\s*",
+    r"(?m)^\s*Blocker:\s*",
+    r"(?i)PASS\s*\|\s*FIX\s*\|\s*BLOCKED",
+    r"(?i)at\s+most\s+one[^\n]*(?:focused\s+)?fix",
+)
+for pattern in contract_patterns:
+    if not re.search(pattern, contract_text):
         fail()
 
-protocol_text = read_text(protocol_file)
 for phrase in (
-    "complexity_level:",
-    "execution_mode:",
-    "reasoning:",
-    "acceptance_criteria:",
-    "task_graph:",
-    "objective:",
-    "agent:",
-    "mode:",
-    "dependencies:",
-    "inputs:",
-    "read_scope:",
-    "write_scope:",
-    "forbidden_scope:",
-    "deliverable:",
-    "minimum_verification:",
-    "command_or_procedure:",
-    "passing_condition:",
-    "required_evidence:",
-    "can_launch:",
-    "held_reason:",
-    "stop_conditions:",
-    "write_ownership:",
-    "conflict_risks:",
-    "integration_owner:",
-    "final_review_required:",
-    "Luna Task Packet",
-    "Exact verification result:",
-    "Correction Packet",
-    "required_fixes:",
-    "optional_improvements:",
-    "evidence_quality:",
-    "remaining_risks:",
+    "one file",
+    "one owner",
+    "shared integration",
+    "live capacity",
+    "batch",
+    "exact model",
+    "reasoning effort",
+    "Fail Closed",
 ):
-    if phrase not in protocol_text:
+    if phrase.lower() not in contract_text.lower():
         fail()
 
-expected = {
-    sol_file: {
-        "name": "sol-planner",
-        "model": "gpt-5.6-sol",
-        "model_reasoning_effort": "high",
-        "sandbox_mode": "read-only",
-    },
-    luna_file: {
-        "name": "luna-max-worker",
-        "model": "gpt-5.6-luna",
-        "model_reasoning_effort": "max",
-        "sandbox_mode": "workspace-write",
-    },
-}
-for path, values in expected.items():
+for path, expected in (
+    (
+        sol_file,
+        {
+            "name": "sol-controller",
+            "model": "gpt-5.6-sol",
+            "model_reasoning_effort": "high",
+            "sandbox_mode": "read-only",
+        },
+    ),
+    (
+        luna_file,
+        {
+            "name": "luna-max-worker",
+            "model": "gpt-5.6-luna",
+            "model_reasoning_effort": "max",
+            "sandbox_mode": "workspace-write",
+        },
+    ),
+):
     try:
         with path.open("rb") as handle:
             data = tomllib.load(handle)
     except (OSError, tomllib.TOMLDecodeError):
         fail()
-    for key, value in values.items():
+    for key, value in expected.items():
         if data.get(key) != value:
             fail()
     if not isinstance(data.get("developer_instructions"), str) or not data["developer_instructions"].strip():
         fail()
 
-luna_instructions = expected[luna_file] and tomllib.load(luna_file.open("rb"))["developer_instructions"]
+try:
+    luna_instructions = tomllib.load(luna_file.open("rb"))["developer_instructions"]
+except (OSError, KeyError, tomllib.TOMLDecodeError):
+    fail()
 if not re.search(r"\bdo not (?:spawn|create).*subagent", luna_instructions, re.IGNORECASE | re.DOTALL):
     fail()
+
+if not openai_file.is_file():
+    fail()
+openai_text = read_text(openai_file)
+for marker in (
+    "interface:",
+    "display_name:",
+    "short_description:",
+    "default_prompt:",
+):
+    if marker not in openai_text:
+        fail()
 
 for markdown in root.rglob("*.md"):
     if ".git" in markdown.parts or markdown.is_symlink():
@@ -234,6 +258,16 @@ for path in root.rglob("*"):
     if text and not text.endswith("\n"):
         fail()
 
+credential_patterns = (
+    re.compile("AKIA" + r"[0-9A-Z]{16}"),
+    re.compile("-" * 5 + r"BEGIN [A-Z0-9 ]+ PRIVATE KEY" + "-" * 5),
+    re.compile(r"gh[pousr]_" + r"[A-Za-z0-9_]{20,}"),
+    re.compile(r"sk-" + r"[A-Za-z0-9]{20,}"),
+    re.compile(r"xox[baprs]-" + r"[A-Za-z0-9-]{20,}"),
+    re.compile(
+        r"""(?i)(?:api[_-]?key|secret[_-]?key|access[_-]?token|auth[_-]?token|password)\s*[:=]\s*['\"][A-Za-z0-9_./+=-]{16,}['\"]"""
+    ),
+)
 for path in root.rglob("*"):
     if not path.is_file() or path.is_symlink() or ".git" in path.parts or "__pycache__" in path.parts:
         continue
@@ -241,29 +275,14 @@ for path in root.rglob("*"):
         text = path.read_text(encoding="utf-8")
     except (OSError, UnicodeDecodeError):
         continue
-    credential_patterns = (
-        ("aws-access-key", re.compile("AKIA" + r"[0-9A-Z]{16}")),
-        ("private-key", re.compile("-" * 5 + r"BEGIN [A-Z0-9 ]+ PRIVATE KEY" + "-" * 5)),
-        ("github-token", re.compile(r"gh[pousr]_" + r"[A-Za-z0-9_]{20,}")),
-        ("openai-token", re.compile(r"sk-" + r"[A-Za-z0-9]{20,}")),
-        ("slack-token", re.compile(r"xox[baprs]-" + r"[A-Za-z0-9-]{20,}")),
-        (
-            "generic-secret",
-            re.compile(
-                r"""(?i)(?:api[_-]?key|secret[_-]?key|access[_-]?token|auth[_-]?token|password)\s*[:=]\s*['"][A-Za-z0-9_./+=-]{16,}['"]"""
-            ),
-        ),
-    )
-    for _, pattern in credential_patterns:
-        if pattern.search(text):
-            fail()
-            break
+    if any(pattern.search(text) for pattern in credential_patterns):
+        fail()
 
 for forbidden in ("IPZOR", "Buzz", "DeepSeek", "OpenPencil", "gpt-5.6-terra"):
     for path in skill_file.parent.rglob("*"):
         if path.is_file() and not path.is_symlink():
             try:
-                if re.search(re.escape(forbidden), path.read_text(encoding="utf-8"), re.IGNORECASE):
+                if re.search(re.escape(forbidden), read_text(path), re.IGNORECASE):
                     fail()
             except (OSError, UnicodeDecodeError):
                 fail()
@@ -273,13 +292,17 @@ for marker in (
     "ORCHESTRATE_HOME",
     "validate.sh",
     "config.toml",
+    ".agents/skills/sol-luna",
+    "sol-controller.toml",
+    "orchestrate-sol-luna",
     "sol-planner.toml",
     "luna-max-worker.toml",
-    "Backup path:",
     "Move-Item",
+    "transaction",
     "rollback",
+    "SHA256",
 ):
-    if marker not in ps_text:
+    if marker.lower() not in ps_text.lower():
         fail()
 PY
   then
@@ -302,7 +325,7 @@ closing = skill_lines[1..].index { |line| line.chomp == "---" }
 raise if closing.nil?
 skill = load_yaml(skill_lines[1, closing].join)
 raise unless skill.is_a?(Hash)
-raise unless skill["name"] == "orchestrate-sol-luna"
+raise unless skill["name"] == "sol-luna"
 raise unless skill["description"].is_a?(String) && skill["description"].start_with?("Use when")
 
 openai = load_yaml(File.read(openai_path, encoding: "UTF-8"))
