@@ -102,29 +102,38 @@ for path, fields in expected.items():
         raise SystemExit(1)
 '@
 
-    $candidates = @("python", "python3", "py")
-    foreach ($candidateName in $candidates) {
-        $command = Get-Command $candidateName -CommandType Application -ErrorAction SilentlyContinue
-        if ($null -eq $command) {
-            continue
-        }
-        $arguments = @()
-        if ($candidateName -eq "py") {
-            $arguments += "-3"
-        }
-        $arguments += @("-c", $pythonCode, $SolPath, $LunaPath)
-        try {
-            & $command.Source @arguments *> $null
-            if ($LASTEXITCODE -eq 0) {
-                return
+    $tempPath = Join-Path ([System.IO.Path]::GetTempPath()) ("toml-agents-" + [System.Guid]::NewGuid().ToString("N") + ".py")
+    try {
+        $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+        [System.IO.File]::WriteAllText($tempPath, $pythonCode, $utf8NoBom)
+
+        $candidates = @("python", "python3", "py")
+        foreach ($candidateName in $candidates) {
+            $command = Get-Command $candidateName -CommandType Application -ErrorAction SilentlyContinue
+            if ($null -eq $command) {
+                continue
+            }
+            $arguments = @()
+            if ($candidateName -eq "py") {
+                $arguments += "-3"
+            }
+            $arguments += @($tempPath, $SolPath, $LunaPath)
+            try {
+                & $command.Source @arguments *> $null
+                if ($LASTEXITCODE -eq 0) {
+                    return
+                }
+            }
+            catch {
+                # Try the next available Python command. The final error is explicit.
             }
         }
-        catch {
-            # Try the next available Python command. The final error is explicit.
-        }
-    }
 
-    throw "Validation: Python 3.11+ with tomllib is required for TOML validation"
+        throw "Validation: Python 3.11+ with tomllib is required for TOML validation"
+    }
+    finally {
+        Remove-Item -LiteralPath $tempPath -Force -ErrorAction SilentlyContinue
+    }
 }
 
 function Assert-MarkdownLinks {
