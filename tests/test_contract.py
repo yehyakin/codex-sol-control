@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Repository contract tests for the orchestrate-sol-luna skill pack."""
+"""Contract tests for the v0.2.0 ``sol-luna`` skill package."""
 
 from __future__ import annotations
 
@@ -10,191 +10,170 @@ from pathlib import Path
 
 try:
     import tomllib
-except ModuleNotFoundError as exc:  # pragma: no cover - exercised on old runners
+except ModuleNotFoundError as exc:  # pragma: no cover - old runner guard
     raise SystemExit("tests require Python 3.11+ for tomllib") from exc
 
 
 ROOT = Path(__file__).resolve().parents[1]
-SKILL_ROOT = ROOT / ".agents" / "skills" / "orchestrate-sol-luna"
+SKILL_ROOT = ROOT / ".agents" / "skills" / "sol-luna"
+SOL_AGENT = ROOT / ".codex" / "agents" / "sol-controller.toml"
+LUNA_AGENT = ROOT / ".codex" / "agents" / "luna-max-worker.toml"
+RUNTIME_NOTE_CANDIDATES = (
+    SKILL_ROOT / "runtime-notes.md",
+    SKILL_ROOT / "references" / "runtime-notes.md",
+)
+
+
+def read_if_present(path: Path) -> str:
+    """Return empty text for a not-yet-created v0.2 target."""
+
+    return path.read_text(encoding="utf-8") if path.is_file() else ""
 
 
 class RepositoryContractTests(unittest.TestCase):
-    @staticmethod
-    def fenced_block(text: str, heading: str, language: str) -> str:
-        section = text.split(heading, 1)[1]
-        return section.split(f"```{language}\n", 1)[1].split("```", 1)[0]
+    def runtime_note_path(self) -> Path | None:
+        return next((path for path in RUNTIME_NOTE_CANDIDATES if path.is_file()), None)
 
-    def test_required_files_exist(self) -> None:
+    def contract_text(self) -> str:
+        runtime_path = self.runtime_note_path()
+        return "\n".join(
+            [
+                read_if_present(SKILL_ROOT / "SKILL.md"),
+                read_if_present(runtime_path) if runtime_path else "",
+            ]
+        )
+
+    def test_required_v020_files_exist(self) -> None:
         required = [
             SKILL_ROOT / "SKILL.md",
             SKILL_ROOT / "agents" / "openai.yaml",
-            SKILL_ROOT / "references" / "routing-protocol.md",
-            ROOT / ".codex" / "agents" / "sol-planner.toml",
-            ROOT / ".codex" / "agents" / "luna-max-worker.toml",
-            ROOT / "scripts" / "install.sh",
-            ROOT / "scripts" / "validate.sh",
-            ROOT / "scripts" / "uninstall.sh",
-            ROOT / "scripts" / "install.ps1",
-            ROOT / "README.md",
-            ROOT / "NOTICE",
-            ROOT / "LICENSE",
+            SOL_AGENT,
+            LUNA_AGENT,
         ]
-        self.assertEqual([], [str(path.relative_to(ROOT)) for path in required if not path.is_file()])
+        self.assertTrue(
+            any(path.is_file() for path in RUNTIME_NOTE_CANDIDATES),
+            "v0.2 must keep runtime mechanics in runtime-notes.md",
+        )
+        self.assertEqual(
+            [],
+            [str(path.relative_to(ROOT)) for path in required if not path.is_file()],
+        )
 
-    def test_skill_frontmatter_and_protocol_contract(self) -> None:
-        text = (SKILL_ROOT / "SKILL.md").read_text(encoding="utf-8")
-        self.assertTrue(text.startswith("---\n"))
-        frontmatter = text.split("---", 2)[1]
-        self.assertRegex(frontmatter, r"(?m)^name:\s*orchestrate-sol-luna\s*$")
+    def test_public_skill_is_named_and_explicitly_invoked(self) -> None:
+        text = read_if_present(SKILL_ROOT / "SKILL.md")
+        self.assertTrue(text.startswith("---\n"), "SKILL.md must have frontmatter")
+        frontmatter = text.split("---", 2)[1] if "---" in text else ""
+        self.assertRegex(frontmatter, r"(?m)^name:\s*sol-luna\s*$")
         self.assertRegex(frontmatter, r"(?m)^description:\s*Use when\b")
+        self.assertIn("$sol-luna", text)
+        self.assertRegex(text, r"(?i)ordinary\s+simple\s+(work|tasks?).{0,120}\bdirect\b")
+        self.assertRegex(text, r"(?i)planning[- ]only.{0,120}zero\s+Luna")
+
+    def test_sol_plan_has_only_the_v020_canonical_fields(self) -> None:
+        text = self.contract_text()
+        for field in ["goal", "done_when", "tasks", "stages"]:
+            self.assertRegex(text, rf"(?m)^\s*{field}:\s*", field)
+
+    def test_luna_task_packet_uses_the_simplified_fields(self) -> None:
+        text = self.contract_text()
+        for field in [
+            "Task ID",
+            "Task",
+            "Write scope",
+            "Do not touch",
+            "Expected result",
+            "Verification",
+        ]:
+            self.assertRegex(text, rf"(?m)^\s*{re.escape(field)}:\s*", field)
+        self.assertRegex(text, r"(?i)Context:\s*.*optional")
+
+    def test_luna_result_and_sol_review_contracts_are_falsifiable(self) -> None:
+        text = self.contract_text()
+        for field in ["Task ID", "Status", "Summary", "Changed", "Verification", "Evidence", "Blocker"]:
+            self.assertRegex(text, rf"(?m)^\s*{re.escape(field)}:\s*", field)
+        self.assertRegex(text, r"(?m)^\s*Status:\s*PASS\s*\|\s*BLOCKED\s*$")
+        self.assertRegex(text, r"(?i)PASS\s*\|\s*FIX\s*\|\s*BLOCKED")
+        self.assertRegex(text, r"(?i)at\s+most\s+one[^\n]*(focused\s+)?fix")
+
+    def test_routing_safety_keeps_runtime_mechanics_internal(self) -> None:
+        skill_text = read_if_present(SKILL_ROOT / "SKILL.md")
+        runtime_path = self.runtime_note_path()
+        runtime_text = read_if_present(runtime_path) if runtime_path else ""
+        self.assertTrue(runtime_text, "runtime-notes.md must contain the internal runtime rules")
+
+        combined = f"{skill_text}\n{runtime_text}"
         for phrase in [
-            "Level 0",
-            "Level 1",
-            "Level 2",
-            "Level 3",
-            "Native Nested",
-            "Compatibility",
-            "sol-planner",
-            "luna-max-worker",
+            "one file",
+            "one owner",
+            "shared integration",
+            "live capacity",
+            "batch",
+            "exact model",
+            "reasoning effort",
             "Fail Closed",
         ]:
-            self.assertIn(phrase, text)
+            self.assertRegex(combined, rf"(?i){re.escape(phrase)}", phrase)
 
-        protocol = (SKILL_ROOT / "references" / "routing-protocol.md").read_text(encoding="utf-8")
-        for field in [
-            "complexity_level:",
-            "execution_mode:",
-            "reasoning:",
-            "acceptance_criteria:",
-            "task_graph:",
-            "id:",
-            "objective:",
-            "agent:",
-            "mode:",
-            "dependencies:",
-            "inputs:",
-            "read_scope:",
-            "write_scope:",
-            "forbidden_scope:",
-            "deliverable:",
-            "minimum_verification:",
-            "can_launch:",
-            "held_reason:",
-            "stop_conditions:",
-            "write_ownership:",
-            "conflict_risks:",
-            "integration_owner:",
-            "final_review_required:",
-            "Task ID:",
-            "Why it matters:",
-            "Inputs and evidence:",
-            "Read scope:",
-            "Write scope:",
-            "Forbidden scope:",
-            "Required deliverable:",
-            "Minimum verification:",
-            "Passing condition:",
-            "Required evidence:",
-            "Return format:",
-            "Status: PASS | BLOCKED",
-            "Exact verification result:",
-            "Assumptions:",
-            "Risks:",
-            "verdict: PASS | PASS_WITH_LIMITATIONS | FAIL",
-            "required_fixes:",
-            "optional_improvements:",
-            "evidence_quality:",
-            "remaining_risks:",
-            "Correction Packet",
-        ]:
-            self.assertIn(field, protocol)
-
-    def test_agent_models_effort_and_scope(self) -> None:
+    def test_agent_models_effort_permissions_and_no_subagents(self) -> None:
         expected = {
-            "sol-planner.toml": ("sol-planner", "gpt-5.6-sol", "high", "read-only"),
-            "luna-max-worker.toml": ("luna-max-worker", "gpt-5.6-luna", "max", "workspace-write"),
+            SOL_AGENT: ("sol-controller", "gpt-5.6-sol", "high", "read-only"),
+            LUNA_AGENT: ("luna-max-worker", "gpt-5.6-luna", "max", "workspace-write"),
         }
-        for filename, values in expected.items():
-            path = ROOT / ".codex" / "agents" / filename
+        for path, values in expected.items():
+            self.assertTrue(path.is_file(), path)
             with path.open("rb") as handle:
                 data = tomllib.load(handle)
             name, model, effort, sandbox = values
             self.assertEqual(name, data["name"])
             self.assertEqual(model, data["model"])
             self.assertEqual(effort, data["model_reasoning_effort"])
-            if sandbox is not None:
-                self.assertEqual(sandbox, data["sandbox_mode"])
+            self.assertEqual(sandbox, data["sandbox_mode"])
             self.assertIn("developer_instructions", data)
-        luna_text = (ROOT / ".codex" / "agents" / "luna-max-worker.toml").read_text(encoding="utf-8")
+
+        luna_text = read_if_present(LUNA_AGENT)
         self.assertRegex(luna_text, r"(?i)do not (spawn|create).*subagent")
         self.assertRegex(luna_text, r"(?i)parent permission boundary")
+        self.assertRegex(self.contract_text(), r"(?i)Fail Closed")
 
-    def test_sol_execution_graph_uses_canonical_field_placement(self) -> None:
-        protocol = (SKILL_ROOT / "references" / "routing-protocol.md").read_text(encoding="utf-8")
-        graph = self.fenced_block(protocol, "## Sol execution graph", "yaml")
-        root_fields = [
-            "complexity_level", "execution_mode", "reasoning", "acceptance_criteria",
-            "task_graph", "write_ownership", "conflict_risks", "integration_owner",
-            "final_review_required",
-        ]
-        for field in root_fields:
-            self.assertRegex(graph, rf"(?m)^{field}:", field)
-        task_fields = [
-            "id", "objective", "agent", "mode", "dependencies", "inputs", "read_scope",
-            "write_scope", "forbidden_scope", "deliverable", "minimum_verification",
-            "can_launch", "held_reason", "stop_conditions",
-        ]
-        for field in task_fields:
-            self.assertRegex(graph, rf"(?m)^    {field}:", field)
-        for field in ["command_or_procedure", "passing_condition", "required_evidence"]:
-            self.assertRegex(graph, rf"(?m)^      {field}:", field)
-
-    def test_luna_packet_and_return_use_canonical_fields(self) -> None:
-        protocol = (SKILL_ROOT / "references" / "routing-protocol.md").read_text(encoding="utf-8")
-        packet = self.fenced_block(protocol, "## Luna task packet", "text")
-        for field in [
-            "Task ID", "Objective", "Why it matters", "Inputs and evidence", "Read scope",
-            "Write scope", "Forbidden scope", "Dependencies", "Constraints",
-            "Required deliverable", "Acceptance criteria", "Minimum verification",
-            "  Command or procedure", "  Passing condition", "  Required evidence",
-            "Stop conditions", "Return format",
-        ]:
-            self.assertRegex(packet, rf"(?m)^{re.escape(field)}:", field)
-
-        result = self.fenced_block(protocol, "## Luna return contract", "text")
-        for field in [
-            "Status", "Summary", "Files inspected", "Files changed", "Verification performed",
-            "Exact verification result", "Evidence", "Assumptions", "Risks", "Blockers",
-        ]:
-            self.assertRegex(result, rf"(?m)^{re.escape(field)}:", field)
-
-    def test_sol_final_review_uses_canonical_fields(self) -> None:
-        protocol = (SKILL_ROOT / "references" / "routing-protocol.md").read_text(encoding="utf-8")
-        review = self.fenced_block(protocol, "## Sol final review", "yaml")
-        for field in [
-            "verdict", "requirements_coverage", "findings", "required_fixes",
-            "optional_improvements", "evidence_quality", "remaining_risks",
-        ]:
-            self.assertRegex(review, rf"(?m)^{field}:", field)
-
-    def test_forward_fixture_has_required_cases(self) -> None:
+    def test_forward_fixture_covers_only_v020_routes(self) -> None:
         path = ROOT / "tests" / "fixtures" / "forward-cases.json"
         cases = json.loads(path.read_text(encoding="utf-8"))
-        self.assertEqual(13, len(cases))
-        self.assertEqual(13, len({case["id"] for case in cases}))
+        expected_ids = {
+            "ordinary-simple-direct",
+            "explicit-sol-luna",
+            "planning-only-sol",
+            "single-file-execution",
+            "live-capacity-batching",
+            "shared-integration-owner",
+            "incomplete-luna-packet",
+            "exact-selection-unavailable",
+            "focused-sol-fix",
+            "dirty-worktree-preserved",
+        }
+        self.assertEqual(expected_ids, {case["id"] for case in cases})
+        self.assertEqual(len(expected_ids), len(cases))
+
+        allowed_routes = {"direct", "sol", "sol_then_luna", "blocked"}
+        allowed_presence = {"none", "optional", "required", "blocked"}
+        allowed_reviews = {"not_applicable", "PASS", "FIX", "BLOCKED"}
+        allowed_capacity = {"not_applicable", "live"}
+
         for case in cases:
             self.assertTrue(case["prompt"])
-            self.assertTrue(case["expected_level"])
-            self.assertTrue(case["expected_mode"])
-            self.assertIsInstance(case["expected_delegation"], int)
+            expected = case["expected"]
+            self.assertIn(expected["route"], allowed_routes)
+            self.assertIn(expected["sol"], allowed_presence)
+            self.assertIn(expected["luna"], allowed_presence)
+            self.assertIn(expected["review"], allowed_reviews)
+            self.assertIn(expected["capacity"], allowed_capacity)
             self.assertGreaterEqual(len(case["required_assertions"]), 3)
 
-    def test_skill_has_no_forbidden_project_or_model_terms(self) -> None:
+    def test_public_skill_has_no_unrelated_brand_or_model_contamination(self) -> None:
         combined = "\n".join(
             path.read_text(encoding="utf-8")
             for path in SKILL_ROOT.rglob("*")
             if path.is_file()
-        )
+        ) if SKILL_ROOT.is_dir() else ""
         forbidden = ["IPZOR", "Buzz", "DeepSeek", "OpenPencil", "gpt-5.6-terra"]
         hits = [term for term in forbidden if re.search(re.escape(term), combined, re.IGNORECASE)]
         self.assertEqual([], hits)

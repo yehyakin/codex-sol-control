@@ -1,106 +1,162 @@
 [
   {
-    "id": "direct-button-copy",
-    "prompt": "Change one known button label from Save to Continue.",
-    "expected_level": "Level 0",
-    "expected_mode": "Direct",
-    "expected_delegation": 0,
-    "required_assertions": ["no Sol", "no Luna", "main Codex verifies the narrow diff"]
+    "id": "ordinary-simple-direct",
+    "prompt": "Change one known button label without invoking $sol-luna.",
+    "expected": {
+      "route": "direct",
+      "sol": "none",
+      "luna": "none",
+      "review": "not_applicable",
+      "capacity": "not_applicable"
+    },
+    "required_assertions": [
+      "ordinary simple work remains direct",
+      "no Sol is created",
+      "Main verifies the narrow diff"
+    ]
   },
   {
-    "id": "sol-assist-architecture",
-    "prompt": "Compare two architectures for one tightly coupled subsystem; do not implement.",
-    "expected_level": "Level 1",
-    "expected_mode": "Sol Assist",
-    "expected_delegation": 1,
-    "required_assertions": ["one Sol", "no forced Luna", "acceptance criteria returned"]
+    "id": "explicit-sol-luna",
+    "prompt": "$sol-luna: implement one bounded change in the named file.",
+    "expected": {
+      "route": "sol_then_luna",
+      "sol": "required",
+      "luna": "required",
+      "review": "PASS",
+      "capacity": "live"
+    },
+    "required_assertions": [
+      "explicit invocation selects Sol",
+      "Sol returns goal, done_when, tasks, and stages",
+      "Luna receives a complete task packet before writing"
+    ]
   },
   {
-    "id": "parallel-module-audit",
-    "prompt": "Audit three independent modules and return evidence for each.",
-    "expected_level": "Level 2",
-    "expected_mode": "Sol to Luna",
-    "expected_delegation": 3,
-    "required_assertions": ["task graph", "parallel frontier", "disjoint scopes"]
+    "id": "planning-only-sol",
+    "prompt": "$sol-luna: produce an execution plan and stop before implementation.",
+    "expected": {
+      "route": "sol",
+      "sol": "required",
+      "luna": "optional",
+      "review": "not_applicable",
+      "capacity": "not_applicable"
+    },
+    "required_assertions": [
+      "Sol is invoked",
+      "planning-only work may use zero Luna",
+      "the plan remains actionable without a write"
+    ]
   },
   {
-    "id": "same-file-conflict",
-    "prompt": "Have several agents propose changes to the same shared file.",
-    "expected_level": "Level 2",
-    "expected_mode": "Sol to Luna",
-    "expected_delegation": 2,
-    "required_assertions": ["parallel read-only analysis allowed", "one write owner", "no concurrent writers"]
+    "id": "single-file-execution",
+    "prompt": "$sol-luna: update exactly one owned source file and run its focused verification.",
+    "expected": {
+      "route": "sol_then_luna",
+      "sol": "required",
+      "luna": "required",
+      "review": "PASS",
+      "capacity": "live"
+    },
+    "required_assertions": [
+      "one file has one owner",
+      "Write scope names the exact file",
+      "Verification evidence names the command and result"
+    ]
   },
   {
-    "id": "database-api-frontend-waves",
-    "prompt": "Implement a database change, dependent API change, then dependent frontend change.",
-    "expected_level": "Level 3",
-    "expected_mode": "High-Risk",
-    "expected_delegation": 3,
-    "required_assertions": ["dependency graph", "wave ordering", "recovery checkpoint"]
+    "id": "live-capacity-batching",
+    "prompt": "$sol-luna: execute four independent file tasks while live worker capacity changes during the run.",
+    "expected": {
+      "route": "sol_then_luna",
+      "sol": "required",
+      "luna": "required",
+      "review": "PASS",
+      "capacity": "live"
+    },
+    "required_assertions": [
+      "batch size follows live capacity",
+      "independent files may occupy separate owners",
+      "the implementation never assumes a fixed worker count"
+    ]
   },
   {
-    "id": "missing-luna-evidence",
-    "prompt": "A Luna returns PASS without a command, result, or evidence.",
-    "expected_level": "Level 2",
-    "expected_mode": "Correction",
-    "expected_delegation": 1,
-    "required_assertions": ["reject PASS", "Correction Packet", "same narrow issue"]
+    "id": "shared-integration-owner",
+    "prompt": "$sol-luna: update several modules and one shared integration file.",
+    "expected": {
+      "route": "sol_then_luna",
+      "sol": "required",
+      "luna": "required",
+      "review": "PASS",
+      "capacity": "live"
+    },
+    "required_assertions": [
+      "shared integration file has one Luna owner",
+      "other files remain disjoint task scopes",
+      "no concurrent writer touches the shared file"
+    ]
   },
   {
-    "id": "luna-timeout",
-    "prompt": "A Luna times out before returning a usable result.",
-    "expected_level": "Level 2",
-    "expected_mode": "Bounded Retry",
-    "expected_delegation": 1,
-    "required_assertions": ["record failure", "repair task packet", "at most one retry"]
+    "id": "incomplete-luna-packet",
+    "prompt": "$sol-luna: execute a task whose packet omits Do not touch and Verification.",
+    "expected": {
+      "route": "sol_then_luna",
+      "sol": "required",
+      "luna": "blocked",
+      "review": "BLOCKED",
+      "capacity": "live"
+    },
+    "required_assertions": [
+      "Luna returns BLOCKED before writing",
+      "missing packet fields are not invented",
+      "the blocker identifies the missing fields"
+    ]
   },
   {
-    "id": "luna-result-conflict",
-    "prompt": "Two Luna results contradict each other.",
-    "expected_level": "Level 2",
-    "expected_mode": "Sol Arbitration",
-    "expected_delegation": 1,
-    "required_assertions": ["do not merge mechanically", "Sol arbitrates", "evidence decides"]
+    "id": "exact-selection-unavailable",
+    "prompt": "$sol-luna: continue even though exact model and reasoning-effort selection cannot be proved.",
+    "expected": {
+      "route": "blocked",
+      "sol": "blocked",
+      "luna": "blocked",
+      "review": "BLOCKED",
+      "capacity": "not_applicable"
+    },
+    "required_assertions": [
+      "Fail Closed is returned",
+      "no model identity is spoofed",
+      "no silent substitution is made"
+    ]
   },
   {
-    "id": "requirement-omission",
-    "prompt": "Implementation passed its tests but omitted one original acceptance criterion.",
-    "expected_level": "Level 2",
-    "expected_mode": "Sol Final Review",
-    "expected_delegation": 1,
-    "required_assertions": ["requirements coverage", "FAIL verdict", "narrow required fix"]
+    "id": "focused-sol-fix",
+    "prompt": "$sol-luna: review a Luna result that misses one acceptance criterion.",
+    "expected": {
+      "route": "sol_then_luna",
+      "sol": "required",
+      "luna": "required",
+      "review": "FIX",
+      "capacity": "live"
+    },
+    "required_assertions": [
+      "Sol review can return FIX",
+      "at most one focused fix is issued",
+      "a second failure becomes BLOCKED"
+    ]
   },
   {
-    "id": "model-unavailable",
-    "prompt": "The selected Sol or Luna model cannot be selected by the runtime.",
-    "expected_level": "Level 2",
-    "expected_mode": "Fail Closed",
-    "expected_delegation": 0,
-    "required_assertions": ["no identity spoofing", "explicit blocker or authorized downgrade", "no silent substitution"]
-  },
-  {
-    "id": "native-nested",
-    "prompt": "Use Sol to create Luna only if nested custom-agent routing is proved.",
-    "expected_level": "Level 2",
-    "expected_mode": "Native Nested",
-    "expected_delegation": 2,
-    "required_assertions": ["depth at least 2", "actual model evidence", "actual reasoning evidence"]
-  },
-  {
-    "id": "compatibility-mode",
-    "prompt": "Run Sol planning, root-created Luna execution, and Sol review when nesting is unavailable.",
-    "expected_level": "Level 2",
-    "expected_mode": "Compatibility",
-    "expected_delegation": 2,
-    "required_assertions": ["root launches Luna", "same task packet", "Sol final review"]
-  },
-  {
-    "id": "dirty-worktree",
-    "prompt": "Execute scoped changes while unrelated user modifications are uncommitted.",
-    "expected_level": "Level 2",
-    "expected_mode": "Protected Write",
-    "expected_delegation": 1,
-    "required_assertions": ["preserve user changes", "exclusive write scope", "inspect final diff"]
+    "id": "dirty-worktree-preserved",
+    "prompt": "$sol-luna: change only the named files while unrelated user edits are uncommitted.",
+    "expected": {
+      "route": "sol_then_luna",
+      "sol": "required",
+      "luna": "required",
+      "review": "PASS",
+      "capacity": "live"
+    },
+    "required_assertions": [
+      "unrelated user edits are preserved",
+      "the final diff is limited to Write scope",
+      "Main verifies the real diff before integration"
+    ]
   }
 ]

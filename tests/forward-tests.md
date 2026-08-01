@@ -1,36 +1,45 @@
-# Forward Tests
+# v0.2.0 Forward Tests
 
 Date: 2026-08-01
 
-Scope: simulated prompts and temporary test roots only. No business repository or production system was read or modified.
+Scope: routing-contract fixtures plus isolated installer roots. No business
+repository, global agent file, or live production system is read or modified.
 
 ## Method
 
-- The 13 cases are defined in `tests/fixtures/forward-cases.json`.
-- A fresh read-only `gpt-5.6-sol` agent with `high` reasoning read the actual Skill, routing protocol, agent TOMLs, fixture, and contract tests.
-- Each case was classified independently against the repository contract. The evaluator returned level, mode, delegation count, concrete assertions, and source-line evidence.
-- Static and installer behavior was separately verified by the Python test suite. Real model execution is covered in the implementation report rather than mixed into the Skill runtime context.
+- The ten scenarios are defined in `tests/fixtures/forward-cases.json`.
+- Each case describes the expected route without exposing internal runtime
+  mechanics as a public mode or fixed worker-count promise.
+- Contract tests check explicit invocation, direct handling of ordinary simple
+  work, Sol-only planning, complete Luna packets/results, ownership, dynamic
+  live-capacity batching, exact selection proof, and focused review fixes.
+- Installer tests use a temporary `ORCHESTRATE_HOME`, synthesize a v0.1
+  installation with checksums, and exercise migration, modified-target
+  preservation, rollback, uninstall, restore, unrelated files, and
+  `config.toml` integrity.
 
-## Results
+## Scenario matrix
 
-| Case | Actual route | Delegation | Result | Key evidence |
-| --- | --- | ---: | --- | --- |
-| Simple button copy | Level 0 / Direct | 0 | PASS | No Sol or Luna; Main verifies the narrow diff. |
-| Coupled architecture analysis | Level 1 / Sol Assist | 1 | PASS | One read-only Sol; no forced Luna. |
-| Three independent module audits | Level 2 / Sol to Luna | 3 | PASS | One graph, one parallel frontier, disjoint scopes. |
-| Same-file proposals | Level 2 / Sol to Luna | 2 | PASS | Parallel read-only proposals; one exclusive writer. |
-| Database to API to frontend | Level 3 / High-Risk | 3 | PASS | Dependency waves, authorization, recovery checkpoint. |
-| Luna PASS without evidence | Level 2 / Correction | 1 | PASS | PASS rejected; one narrow Correction Packet. |
-| Luna timeout | Level 2 / Bounded Retry | 1 | PASS | Failure recorded; repaired packet; at most one retry. |
-| Conflicting Luna results | Level 2 / Sol Arbitration | 1 | PASS | No mechanical merge; evidence-based arbitration. |
-| Omitted original requirement | Level 2 / Sol Final Review | 1 | PASS | Coverage review returns FAIL and a narrow fix. |
-| Required model unavailable | Level 2 / Fail Closed | 0 | PASS | No spoofing or silent substitution. |
-| Native Nested | Level 2 / Fail Closed | 0 | BLOCKED | Depth >=2 and exact nested Luna model/effort were not live-proved. |
-| Compatibility | Level 2 / Compatibility | 2 | PASS | Main launches Sol, Luna, then Sol review with the same packet. |
-| Dirty worktree | Level 2 / Protected Write | 1 | PASS | User changes preserved; exclusive scope and final diff review. |
+| Case | Expected route | Luna expectation | Review expectation |
+| --- | --- | --- | --- |
+| Ordinary simple work | `direct` | none | not applicable |
+| Explicit `$sol-luna` execution | `sol_then_luna` | required | PASS |
+| Plan-only request | `sol` | optional, including zero | not applicable |
+| Single-file execution | `sol_then_luna` | required | PASS |
+| Changing live capacity | `sol_then_luna` | required, dynamically batched | PASS |
+| Shared integration file | `sol_then_luna` | one owner for the shared file | PASS |
+| Incomplete Luna packet | `sol_then_luna` | BLOCKED before write | BLOCKED |
+| Unprovable exact selection | `blocked` | BLOCKED | BLOCKED |
+| One missed criterion | `sol_then_luna` | one focused fix at most | FIX |
+| Dirty worktree | `sol_then_luna` | scoped writes only | PASS |
 
-Summary: 12 scenario assertions passed. Native Nested was deliberately not claimed: the current runtime did not expose sufficient live evidence for nested custom-agent selection, effective depth, exact nested model/effort, and inherited permission boundary. This is a correct fail-closed result, not a silent downgrade. Compatibility remains eligible for the live route test.
+## RED status
 
-## RED baseline
+Against the current v0.1 production files, the updated suite exited non-zero:
+21 tests ran with 14 assertion failures and 0 errors. The failures identify
+the missing new skill, Sol controller, simplified routing contract, and
+v0.1-to-v0.2 installer migration; they are not import, parsing, or
+temporary-root setup errors.
 
-Before the target Skill existed, four independent pressure prompts already avoided unsafe shortcuts, but they did not reliably produce the canonical execution graph, Luna packet/return, Correction Packet, and Sol final-review schemas. Those structural omissions established the RED baseline recorded in `tests/fixtures/baseline-red.md`.
+No public runtime-mode enumeration or fixed worker-count taxonomy is part of
+this forward contract.
