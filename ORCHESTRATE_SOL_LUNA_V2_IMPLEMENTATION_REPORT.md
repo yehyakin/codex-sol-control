@@ -1,146 +1,234 @@
-# Orchestrate Sol Luna V2 Implementation Report
+# Sol Luna v0.2 Implementation Report
 
-Date: 2026-08-01
+Date: 2026-08-02
 
 Repository: https://github.com/yehyakin/codex-sol-luna-orchestrator
 
-Core implementation commit: `a3b6af82a9bafddf9d136989a9abc7428584a065`
-
-Release target: `v0.1.0`
+Release candidate: `v0.2.0` (pending final report commit, tag, and push)
 
 ## 1. Final architecture
 
-The package implements one adaptive route owned by Main:
+The public model has two roles:
 
 ```text
-User request
-  -> Main classifies complexity
-     -> Level 0: Main executes directly
-     -> Level 1: Sol assists; Main executes
-     -> Level 2/3: Sol plans -> Luna executes -> Sol reviews -> Main integrates
+User goal
+  -> Sol controls the work
+     -> one or more Luna Max workers execute bounded tasks
+     -> Sol reviews real files, diffs, and verification evidence
 ```
 
-Main always owns authorization, workspace safety, dispatch, integration, final verification, and the user reply. Sol is the read-only planner and evidence reviewer. Luna is a bounded worker that cannot create subagents or approve its own result.
+Sol understands the goal, defines completion, splits and assigns work,
+schedules dependency stages, arbitrates conflicts, and decides `PASS`, `FIX`,
+or `BLOCKED`. Luna Max executes one complete task packet, stays inside its write
+scope, self-checks, and returns evidence. It cannot create subagents or approve
+the overall result.
+
+The runtime Host retains authorization, workspace safety, dispatch mechanics,
+integration, and the user reply. Those responsibilities do not create a third
+public orchestration role.
 
 ## 2. Reference projects and licenses
 
-| Project snapshot | Detected license | Use in this repository |
+| Reviewed project snapshot | Detected license | Use |
 | --- | --- | --- |
-| `joeke80215/orchestrate-sol-luna@eba163a` | Apache-2.0 | Ideas and protocol comparison; no source code copied. |
+| `joeke80215/orchestrate-sol-luna@eba163a` | Apache-2.0 | Role separation, evidence gates, exact-selection ideas. |
 | `manhua-man/codex-parallel-subagent-planner@ea3d8db` | No license file detected | Ideas only; no text or code copied. |
 | `yinguangyao/codex-dispatch-skill@00630de` | No license file detected | Ideas only; no text or code copied. |
-| `douglasmonsky/codex-orchestrate@f2954a0` | MIT | Ideas only; no source code copied. |
-| `Glaicer/subagent-orchestrator-skill@96eaeb1` | MIT | Ideas only; no source code copied. |
+| `douglasmonsky/codex-orchestrate@f2954a0` | MIT | Ideas only; no source copied. |
+| `Glaicer/subagent-orchestrator-skill@96eaeb1` | MIT | Ideas only; no source copied. |
 
-The audit read actual Skill files, agent definitions, references, and validators/tests where present, not only README files. This repository uses Apache License 2.0. README and NOTICE preserve the prior-art and license distinctions without claiming the underlying concepts as original.
+The audit inspected actual Skill files, agent definitions, references, and
+available validation material rather than relying only on README summaries.
+This repository is Apache-2.0. README and NOTICE preserve the prior-art and
+license distinctions.
 
 ## 3. Designs absorbed and rejected
 
-Absorbed: strict Sol/Luna role separation, fresh-context role switching, exact-model fail-closed behavior, task graphs, dependency waves, read/write scopes, exclusive writers, falsifiable verification, bounded correction, actual Diff review, conflict arbitration, recoverable state, and Main-owned integration.
+Absorbed: one controller, bounded workers, fresh contexts, exact model and
+reasoning proof, fail-closed dispatch, dynamic capacity, dependency stages,
+exclusive file ownership, falsifiable verification, actual Diff review, one
+focused fix, transactional installation, and dirty-worktree preservation.
 
-Rejected: mandatory delegation for small tasks, a fixed all-serial three-role pipeline, permanent agent fleets, unrelated model tiers, dashboards, heavy ledgers, marketing/history text, and any project-specific workflow.
+Rejected: public routing levels, public runtime-mode taxonomy, a third Main
+orchestration role, fixed worker counts, mandatory delegation, permanent agent
+fleets, dashboards, heavy ledgers, unrelated model tiers, and business-specific
+workflows.
 
-## 4. Routing levels
+## 4. Routing behavior
 
-- Level 0 / Direct: narrow, deterministic work; zero delegation.
-- Level 1 / Sol Assist: complex reasoning without useful parallel execution; one Sol and no forced Luna.
-- Level 2 / Sol to Luna: multi-file or multi-module work with bounded execution and unified review.
-- Level 3 / High-Risk: authorization, recovery checkpoint, exclusive ownership, stop conditions, and mandatory Sol review.
+- Ordinary simple work remains direct when `$sol-luna` is not explicitly
+  invoked.
+- Explicit `$sol-luna` starts Sol.
+- Planning-only work may finish with Sol and zero Luna workers.
+- Execution uses the minimum useful number of Luna workers.
+- Ready tasks launch only up to current live capacity; excess work waits for a
+  later batch.
+- Independent, disjoint writes may run together. Dependencies and overlapping
+  writes run in later stages.
 
-The default worker count is 1-3 and cannot exceed the active runtime cap.
+The Skill promises no fixed Luna maximum.
 
-## 5. Native Nested and Compatibility
+## 5. Runtime dispatch
 
-Compatibility is the proven default: Main launches Sol, Main launches Luna from the approved packet, and Main returns actual results to Sol for final review. A real Compatibility route passed end to end.
+The proven route is Host-dispatched: Sol produces the plan, the Host launches
+Luna with that plan, and Sol reviews the returned evidence and actual
+workspace. This is an internal transport detail, not a public mode.
 
-Native Nested remains fail-closed. The current config had no explicit max-depth override, and the runtime did not provide live proof of effective depth at least two plus nested Luna identity/model/effort/permission selection. Configuration text alone was not accepted as proof.
+Direct nested Sol-to-Luna custom-agent launch was not proven by the current
+tool surface. The package therefore does not claim it and remains fail-closed
+when exact nested selection cannot be observed.
 
 ## 6. Model and agent configuration
 
-| Agent | Model | Reasoning | Configured sandbox | Boundary |
+| Agent | Model | Reasoning | Sandbox ceiling | Role |
 | --- | --- | --- | --- | --- |
-| `sol-planner` | `gpt-5.6-sol` | `high` | `read-only` | Plans and reviews; no bulk implementation. |
-| `luna-max-worker` | `gpt-5.6-luna` | `max` | `workspace-write` ceiling | Intersects with parent permission; no subagents. |
+| `sol-controller` | `gpt-5.6-sol` | `high` | `read-only` | Controller and final reviewer. |
+| `luna-max-worker` | `gpt-5.6-luna` | `max` | `workspace-write` | Bounded execution; no subagents. |
 
-Fresh runtime banners proved exact Sol/high and Luna/max calls. A fresh read-only parent discovered both installed custom agents; Luna's effective sandbox was reduced to read-only, demonstrating that the child definition did not widen parent authority.
+Exact runtime banners were observed for Sol/high/read-only and
+Luna/max/workspace-write. Agent names or TOML text alone were not accepted as
+runtime proof. No model, effort, or permission substitution was used.
 
-The active desktop task exposed four total concurrency slots. No repository or global config edit was made to raise thread or nesting limits.
+## 7. Repository structure
 
-## 7. File structure
+```text
+.agents/skills/sol-luna/
+  SKILL.md
+  agents/openai.yaml
+  references/orchestration.md
+  references/runtime-notes.md
+.codex/agents/
+  sol-controller.toml
+  luna-max-worker.toml
+scripts/
+tests/
+README.md
+NOTICE
+LICENSE
+```
 
-The repository contains the concise Skill entrypoint, one routing reference, two agent TOMLs, shell/PowerShell lifecycle scripts, fixtures, tests, README, NOTICE, LICENSE, and this report. Forward-test results remain under `tests/`; they are not copied into Skill runtime context.
+The Skill entrypoint is concise, its two references are one level deep, and
+test reports remain outside runtime Skill context.
 
 ## 8. Installation and backups
 
-Phase 1 external safety backup: `/tmp/codex-sol-luna-backup.7Big0r`.
+Pre-upgrade external backup:
+`/tmp/sol-luna-v020-backup.ZOme28`
+
+Installer backup:
+`/Users/kin3/.codex/sol-luna/backups/20260801T202931Z-90567`
 
 Installed targets:
 
-- `/Users/kin3/.agents/skills/orchestrate-sol-luna`
-- `/Users/kin3/.codex/agents/sol-planner.toml`
+- `/Users/kin3/.agents/skills/sol-luna`
+- `/Users/kin3/.codex/agents/sol-controller.toml`
 - `/Users/kin3/.codex/agents/luna-max-worker.toml`
 
-Installer backup: `/Users/kin3/.codex/orchestrate-sol-luna/backups/20260801T131819Z-61811`.
+Repository and installed Skill trees compare equal, and both agent TOMLs match
+byte-for-byte. The unmodified v0.1 Skill and Sol paths were migrated. Unrelated
+agents were preserved. The `config.toml` SHA-256 was identical before and after
+installation; its contents were neither replaced nor reported.
 
-All three installed targets compare equal to repository source. The live `config.toml` SHA-256 remained `0714bd5bcbd9635bb2fb0dc09c1e1eac5edc7874858288ab7f0baee7c63c7ddd` before and after installation. The installer did not overwrite the full config or unrelated agents.
+## 9. Forward tests
 
-## 9. Forward Test results
+The lean v0.2 matrix contains ten scenarios: ordinary direct work, explicit
+execution, planning-only zero Luna, single-file ownership, live-capacity
+batching, shared integration ownership, incomplete packet blocking, unavailable
+exact selection, one focused fix, and dirty-worktree preservation.
 
-All 13 required scenarios were evaluated. Twelve produced PASS. The Native Nested scenario produced the required fail-closed BLOCKED result because its live prerequisites were not proved. This is correct behavior, not a failed Compatibility route.
-
-Static verification passed:
-
-- repository validator: PASS;
-- Python 3.12 contract/installer suite: 17 tests, all PASS;
-- TOML parsing: PASS;
-- YAML parsing on the iMac Ruby runtime: PASS;
-- Bash syntax: PASS;
-- Git whitespace: PASS;
-- PowerShell deterministic structural checks: PASS.
+The final repository suite ran 21 tests with 21 PASS and zero failures. It also
+exercised isolated v0.1 migration, modified-target preservation, install
+rollback, uninstall refusal after user modification, restore-latest,
+unrelated-file preservation, and `config.toml` integrity.
 
 ## 10. Real model calls
 
-The live Compatibility fixture used only a temporary synthetic Git repository:
+- Fresh Sol planning and review used `gpt-5.6-sol`, high reasoning, and
+  read-only access.
+- The bounded repair worker used `gpt-5.6-luna`, max reasoning, and
+  workspace-write access in session
+  `019fbefd-daef-7f10-a0a4-9ea9597b0bd6`.
+- A fresh global discovery session used exact Sol/high/read-only in session
+  `019fbf04-ffb1-7c42-81b1-86cd469418f5`.
 
-1. Exact `gpt-5.6-sol/high/read-only` generated a canonical graph and two disjoint Luna packets.
-2. Two exact `gpt-5.6-luna/max/workspace-write` workers ran concurrently and changed one exclusive file each.
-3. Each Luna returned exact-byte and targeted-unittest evidence.
-4. Main verified the full two-test suite, complete Diff, exact bytes, unchanged tests, and whitespace.
-5. A fresh exact `gpt-5.6-sol/high/read-only` reviewed the real files and Diff and returned PASS with high evidence quality.
+The real repair changed only the intended validator expression, ran all three
+required commands, and returned exact evidence. The Host/parent independently reran the
+commands before Sol returned `PASS`.
 
-No real business repository was used by the fixture.
+## 11. Parallelism and write conflicts
 
-## 11. Parallel and write-conflict tests
+During the upgrade, two Luna work streams were launched concurrently for
+disjoint core and script scopes. The core worker encountered protected hidden
+directories and returned `BLOCKED` without a write; Sol reassigned the untouched
+scope rather than pretending success. The script worker retained ownership of
+the lifecycle scripts.
 
-The live route proved parallel disjoint writes. The same-file fixture forbids concurrent writers: read-only alternatives may run in parallel, Sol selects a solution, and exactly one task receives write ownership. The dependency fixture schedules database, API, and frontend-shaped synthetic work in ordered waves.
+The contract permits parallel disjoint work, prevents two writers on one file,
+assigns one owner to shared integration files, and batches excess independent
+tasks when live capacity is lower than the ready frontier.
 
-## 12. Failure and downgrade tests
+## 12. Failure and recovery evidence
 
-The suite covers missing Luna evidence, timeout, conflicting returns, omitted requirements, unavailable exact model, dirty worktree preservation, and installer failure after replacement. Missing evidence triggers a Correction Packet, the same narrow issue may be retried at most once, and unavailable identity/model proof fails closed. Installer fault injection restored all prior exact targets and preserved unrelated files and config.
+The first integrated run exposed an undefined Python `SKILL_ROOT` reference in
+`validate.sh`. After its permitted correction budget had been used, Sol returned
+`BLOCKED`; the result was reported without installing or publishing.
+
+The user then explicitly authorized a new repair run. Its first Sol planning
+call timed out and was recorded; one fresh Sol retry produced a single-file
+packet. Luna traced the quoted shell/Python boundary, used the already-passed
+`skill_file.parent`, and preserved the forbidden-term check. Repository
+validation and all 21 tests passed, then Sol reviewed the real file and evidence
+and returned `PASS`.
+
+This demonstrates bounded retry, real blocking, new-run authorization, scoped
+ownership, and evidence-based recovery rather than retry-until-green behavior.
 
 ## 13. Fresh-session discovery
 
-A new ephemeral Codex session loaded the installed `$orchestrate-sol-luna` Skill and returned `Level 0 / delegation 0` for a simulated one-line copy edit. A separate fresh-session probe discovered and called both installed custom agent types with their exact pinned models and reasoning efforts.
+A new ephemeral Codex session started in a temporary directory, outside the
+source repository, and read the globally installed Skill. For a planning-only
+prompt it returned:
+
+```text
+skill_discovered=yes
+controller=Sol
+luna_count=0
+route_result=PASS
+```
+
+No files or external systems were changed by the probe.
 
 ## 14. GitHub commit and version
 
-- Branch: `main`
-- Baseline commit: `e78f5ea49d92a9aa7328926bb472fd1e33867752`
-- Core implementation commit: `a3b6af82a9bafddf9d136989a9abc7428584a065`
-- Release tag: `v0.1.0`, applied to the final report-bearing commit after final verification
+- Baseline: `v0.1.0` at `1350ceae58eec3c55a8139488a799518a5d437bb`
+- v0.2 contract-test commit: `21cc922bd05288bed4cd1898527c32987633413e`
+- v0.2 implementation commit: `059e2c473430e389626e6898f53100eb8b2cda5b`
+- Development branch: `codex/v0.2-sol-luna-simplification`
+- Planned release tag: `v0.2.0`, to be applied to the final report-bearing
+  release commit after this report is committed
 - Remote: https://github.com/yehyakin/codex-sol-luna-orchestrator
 
-GitHub is the source of truth. The global directories are installation copies only.
+At report-write time, the v0.2 branch, report commit, tag, and push are pending.
+GitHub remains the source of truth after publication; global paths are
+installation copies.
 
 ## 15. Known limitations
 
-1. Native Nested is not enabled because effective depth at least two and exact nested launch behavior were not live-proved.
-2. `pwsh` is not installed on this iMac, so `install.ps1` received structural checks but no Windows execution or PowerShell AST run.
-3. The requested literal `skill-creator` Skill was not installed or callable. The available `writing-skills` workflow, TDD, repository contract tests, and validator were used instead. Literal Skill Creator validation is not claimed.
-4. The system `/usr/bin/python3` is 3.9; full tests require Python 3.11+ and were run with the Codex-bundled Python 3.12.13.
+1. Direct nested Sol-to-Luna launch is unproven. The tested Host-dispatched
+   route is used, and exact selection remains fail-closed.
+2. `pwsh` is unavailable on this iMac. `install.ps1` passed deterministic
+   structural checks but not a Windows execution or PowerShell AST run.
+3. `skill-creator`'s `quick_validate.py` requires PyYAML, which was not bundled
+   in either available Python. PyYAML was installed only into an external
+   temporary validation directory; the official validator then returned
+   `Skill is valid!`. No global Python dependency was modified.
+4. Live worker capacity is runtime-dependent. The Skill intentionally promises
+   no fixed Luna count.
 
 ## 16. Recommendations
 
-- Add Windows CI with `pwsh`, AST parsing, and isolated install/rollback tests.
-- Re-run the Native Nested probe only after the runtime exposes and proves depth at least two.
-- Keep future protocol changes repository-first, rerun all validators and forward cases, then reinstall atomically.
+- Add Windows CI with `pwsh`, AST parsing, and isolated lifecycle tests.
+- Add a direct nested-launch probe only when the runtime exposes observable
+  custom-agent identity, model, effort, permissions, and nesting evidence.
+- Keep future changes repository-first, validate with Skill Creator and the
+  full suite, reinstall atomically, and retain the Sol review gate.
