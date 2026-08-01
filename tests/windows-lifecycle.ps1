@@ -318,10 +318,18 @@ function Assert-Installed {
 }
 
 function Assert-Uninstalled {
-    param([Parameter(Mandatory = $true)][string]$TestHome)
+    param(
+        [Parameter(Mandatory = $true)][string]$TestHome,
+        [switch]$ExpectSharedLuna
+    )
     Assert-PathAbsent (Join-Path $TestHome ".agents/skills/sol-luna")
     Assert-PathAbsent (Join-Path $TestHome ".codex/agents/sol-controller.toml")
-    Assert-PathAbsent (Join-Path $TestHome ".codex/agents/luna-max-worker.toml")
+    if ($ExpectSharedLuna) {
+        Assert-PathExists (Join-Path $TestHome ".codex/agents/luna-max-worker.toml")
+    }
+    else {
+        Assert-PathAbsent (Join-Path $TestHome ".codex/agents/luna-max-worker.toml")
+    }
     Assert-PathAbsent (Join-Path $TestHome ".codex/sol-luna/install-state")
 }
 
@@ -452,7 +460,7 @@ function Test-V01MigrationAndRestoreLatest {
     Assert-UserMarkersPreserved $TestHome $markers
 
     Invoke-Uninstall $TestHome -RestoreLatest
-    Assert-Uninstalled $TestHome
+    Assert-Uninstalled $TestHome -ExpectSharedLuna
     Assert-Equal $oldSkill (Get-PathFingerprint $legacySkill) "v0.1 skill was not restored"
     Assert-Equal $oldSol (Get-PathFingerprint $legacySol) "v0.1 Sol agent was not restored"
     Assert-Equal $oldLuna (Get-PathFingerprint $legacyLuna) "shared Luna was not restored"
