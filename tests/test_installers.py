@@ -86,6 +86,10 @@ class InstallerTests(unittest.TestCase):
         self.tempdir.cleanup()
 
     def run_script(self, name: str, *args: str) -> subprocess.CompletedProcess[str]:
+        if os.name == "nt":
+            self.skipTest(
+                "Bash installer execution is POSIX-only; Windows runtime coverage is provided by tests/windows-lifecycle.ps1."
+            )
         return subprocess.run(
             ["bash", str(SCRIPTS / name), *args],
             cwd=ROOT,
@@ -391,6 +395,10 @@ class InstallerTests(unittest.TestCase):
         self.assertNotIn("New-Item -ItemType Directory -LiteralPath", text)
 
     def test_shell_scripts_parse(self) -> None:
+        if os.name == "nt":
+            self.skipTest(
+                "Bash installer execution is POSIX-only; Windows runtime coverage is provided by tests/windows-lifecycle.ps1."
+            )
         for name in ["install.sh", "validate.sh", "uninstall.sh"]:
             result = subprocess.run(
                 ["bash", "-n", str(SCRIPTS / name)],
