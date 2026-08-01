@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Contract tests for the v0.2.0 ``sol-luna`` skill package."""
+"""Contract tests for the v0.2.0 and v0.3.0 ``sol-luna`` package."""
 
 from __future__ import annotations
 
@@ -22,6 +22,17 @@ RUNTIME_NOTE_CANDIDATES = (
     SKILL_ROOT / "runtime-notes.md",
     SKILL_ROOT / "references" / "runtime-notes.md",
 )
+V030_REQUIRED_FILES = (
+    "README.zh-CN.md",
+    "docs/assets/sol-luna-hero.svg",
+    "docs/assets/sol-luna-architecture.svg",
+    "scripts/validate.ps1",
+    "scripts/uninstall.ps1",
+    "tests/windows-lifecycle.ps1",
+    ".github/workflows/windows-validation.yml",
+)
+CANONICAL_REPOSITORY_URL = "https://github.com/yehyakin/codex-sol-luna"
+OLD_REPOSITORY_URL = "https://github.com/yehyakin/codex-sol-luna-orchestrator"
 
 
 def read_if_present(path: Path) -> str:
@@ -58,6 +69,81 @@ class RepositoryContractTests(unittest.TestCase):
             [],
             [str(path.relative_to(ROOT)) for path in required if not path.is_file()],
         )
+
+    def test_required_v030_files_exist(self) -> None:
+        missing = [relative for relative in V030_REQUIRED_FILES if not (ROOT / relative).is_file()]
+        self.assertEqual([], missing, "missing v0.3 contract artifact(s)")
+
+    def test_repository_rename_uses_the_canonical_v030_url(self) -> None:
+        for relative in ("README.md", "README.zh-CN.md"):
+            path = ROOT / relative
+            self.assertTrue(path.is_file(), relative)
+            text = path.read_text(encoding="utf-8")
+            self.assertIn(CANONICAL_REPOSITORY_URL, text, relative)
+            self.assertNotIn(OLD_REPOSITORY_URL, text, relative)
+
+    def test_windows_sources_declare_the_v030_native_lifecycle_contract(self) -> None:
+        required = {
+            "install": ROOT / "scripts" / "install.ps1",
+            "validate": ROOT / "scripts" / "validate.ps1",
+            "uninstall": ROOT / "scripts" / "uninstall.ps1",
+            "lifecycle_test": ROOT / "tests" / "windows-lifecycle.ps1",
+        }
+        missing = [name for name, path in required.items() if not path.is_file()]
+        self.assertEqual([], missing, "missing Windows v0.3 file(s)")
+
+        install = required["install"].read_text(encoding="utf-8")
+        for marker in (
+            "#requires -Version 5.1",
+            "Set-StrictMode",
+            "-LiteralPath",
+            "ReparsePoint",
+            "SHA256",
+            "ORCHESTRATE_FAILPOINT",
+            "after-replace",
+            "orchestrate-sol-luna",
+            "README.zh-CN.md",
+            "docs/assets/sol-luna-hero.svg",
+            "docs/assets/sol-luna-architecture.svg",
+            "scripts/validate.ps1",
+            "scripts/uninstall.ps1",
+        ):
+            self.assertIn(marker, install, marker)
+
+        validate = required["validate"].read_text(encoding="utf-8")
+        for marker in (
+            "#requires -Version 5.1",
+            "Get-Content",
+            "Parser]::ParseFile",
+            "Markdown",
+            "SVG",
+            "PowerShell syntax",
+        ):
+            self.assertIn(marker, validate, marker)
+
+        uninstall = required["uninstall"].read_text(encoding="utf-8")
+        for marker in (
+            "RestoreLatest",
+            "SHA256",
+            "install-state",
+            "-LiteralPath",
+            "config.toml",
+        ):
+            self.assertIn(marker, uninstall, marker)
+
+    def test_windows_workflow_covers_both_supported_powershell_editions(self) -> None:
+        path = ROOT / ".github" / "workflows" / "windows-validation.yml"
+        self.assertTrue(path.is_file(), path)
+        text = path.read_text(encoding="utf-8")
+        for marker in (
+            "windows-latest",
+            "windows-2022",
+            "powershell",
+            "pwsh",
+            "tests/windows-lifecycle.ps1",
+            "unittest discover",
+        ):
+            self.assertIn(marker, text, marker)
 
     def test_public_skill_is_named_and_explicitly_invoked(self) -> None:
         text = read_if_present(SKILL_ROOT / "SKILL.md")

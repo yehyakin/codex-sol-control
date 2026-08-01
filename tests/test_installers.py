@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Black-box v0.2 installer and v0.1 migration tests."""
+"""Black-box v0.2 installer tests plus the v0.3 Windows RED contract."""
 
 from __future__ import annotations
 
@@ -20,6 +20,12 @@ LEGACY_SOL_REL = Path(".codex/agents/sol-planner.toml")
 NEW_SKILL_REL = Path(".agents/skills/sol-luna")
 NEW_SOL_REL = Path(".codex/agents/sol-controller.toml")
 LUNA_REL = Path(".codex/agents/luna-max-worker.toml")
+WINDOWS_LIFECYCLE_REL = Path("tests/windows-lifecycle.ps1")
+WINDOWS_SCRIPT_RELS = (
+    Path("scripts/install.ps1"),
+    Path("scripts/validate.ps1"),
+    Path("scripts/uninstall.ps1"),
+)
 
 
 def digest(path: Path) -> str:
@@ -324,6 +330,65 @@ class InstallerTests(unittest.TestCase):
         uninstall = (SCRIPTS / "uninstall.sh").read_text(encoding="utf-8")
         for fragment in [".agents/skills/sol-luna", "sol-controller.toml", "--restore-latest"]:
             self.assertIn(fragment, uninstall, fragment)
+
+    def test_native_windows_v030_scripts_keep_ps51_safety_and_rollback_markers(self) -> None:
+        missing = [str(path) for path in WINDOWS_SCRIPT_RELS if not (ROOT / path).is_file()]
+        self.assertEqual([], missing, "missing native Windows v0.3 script(s)")
+
+        install = (ROOT / WINDOWS_SCRIPT_RELS[0]).read_text(encoding="utf-8")
+        for marker in (
+            "#requires -Version 5.1",
+            "Set-StrictMode",
+            "-LiteralPath",
+            "ReparsePoint",
+            "SHA256",
+            "ORCHESTRATE_FAILPOINT",
+            "after-replace",
+            "README.zh-CN.md",
+            "docs/assets/sol-luna-hero.svg",
+        ):
+            self.assertIn(marker, install, marker)
+
+        validate = (ROOT / WINDOWS_SCRIPT_RELS[1]).read_text(encoding="utf-8")
+        self.assertRegex(validate, r"(?i)Parser\]::ParseFile")
+        self.assertIn("#requires -Version 5.1", validate)
+
+        uninstall = (ROOT / WINDOWS_SCRIPT_RELS[2]).read_text(encoding="utf-8")
+        for marker in ("RestoreLatest", "SHA256", "install-state", "-LiteralPath"):
+            self.assertIn(marker, uninstall, marker)
+        for ps_text in (install, validate, uninstall):
+            self.assertNotRegex(ps_text, r"\?\?|\?\.", "PowerShell 7-only operator")
+
+    def test_windows_lifecycle_red_test_declares_isolated_safety_cases(self) -> None:
+        path = ROOT / WINDOWS_LIFECYCLE_REL
+        self.assertTrue(path.is_file(), path)
+        text = path.read_text(encoding="utf-8")
+        for marker in (
+            "Set-StrictMode",
+            "ORCHESTRATE_HOME",
+            "Get-FileHash",
+            "after-replace",
+            "RestoreLatest",
+            "config.toml",
+            "keep-me.toml",
+            "v0.2",
+            "v0.1",
+            "spaces",
+            "finally",
+            "$Install",
+            "$Validate",
+            "$Uninstall",
+            "[System.IO.Directory]::CreateDirectory($Path)",
+            "[System.IO.Directory]::CreateDirectory($TestRoot)",
+            "Test-ModifiedV01MigrationPreservesUserTargets",
+            "Test-FilesystemRootRefusal",
+            "Test-ReparsePointRefusal",
+            "GetPathRoot",
+            "mklink /J",
+            "SKIP",
+        ):
+            self.assertIn(marker, text, marker)
+        self.assertNotIn("New-Item -ItemType Directory -LiteralPath", text)
 
     def test_shell_scripts_parse(self) -> None:
         for name in ["install.sh", "validate.sh", "uninstall.sh"]:
