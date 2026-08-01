@@ -275,7 +275,7 @@ function Assert-Source {
     if ($skill -notmatch "(?m)^---\r?$" -or
         $skill -notmatch "(?m)^name:\s*sol-luna\s*$" -or
         $skill -notmatch "(?m)^description:\s*Use when\b" -or
-        $skill -notmatch "\$sol-luna") {
+        $skill -notmatch '\$sol-luna') {
         throw "source validation failed"
     }
 
