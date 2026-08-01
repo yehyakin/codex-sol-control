@@ -7,7 +7,7 @@ on:
 
 jobs:
   windows-validation:
-    name: ${{ matrix.os }} / ${{ matrix.shell }}
+    name: ${{ matrix.os }} / ${{ matrix.edition }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -15,7 +15,7 @@ jobs:
         os:
           - windows-latest
           - windows-2022
-        shell:
+        edition:
           - powershell
           - pwsh
 
@@ -28,8 +28,9 @@ jobs:
         with:
           python-version: "3.13"
 
-      - name: Parse native PowerShell syntax
-        shell: ${{ matrix.shell }}
+      - name: Parse native PowerShell syntax (powershell)
+        if: matrix.edition == 'powershell'
+        shell: powershell
         run: |
           $paths = @(
             "scripts/install.ps1"
@@ -50,14 +51,55 @@ jobs:
             }
           }
 
-      - name: Run scripts/validate.ps1
-        shell: ${{ matrix.shell }}
+      - name: Parse native PowerShell syntax (pwsh)
+        if: matrix.edition == 'pwsh'
+        shell: pwsh
+        run: |
+          $paths = @(
+            "scripts/install.ps1"
+            "scripts/validate.ps1"
+            "scripts/uninstall.ps1"
+            "tests/windows-lifecycle.ps1"
+          )
+          foreach ($path in $paths) {
+            $tokens = $null
+            $errors = $null
+            [System.Management.Automation.Language.Parser]::ParseFile(
+              (Join-Path -Path (Get-Location).Path -ChildPath $path),
+              [ref]$tokens,
+              [ref]$errors
+            ) | Out-Null
+            if ($errors.Count -gt 0) {
+              throw "PowerShell parse failed for $path"
+            }
+          }
+
+      - name: Run scripts/validate.ps1 (powershell)
+        if: matrix.edition == 'powershell'
+        shell: powershell
         run: ./scripts/validate.ps1
 
-      - name: Run tests/windows-lifecycle.ps1
-        shell: ${{ matrix.shell }}
+      - name: Run scripts/validate.ps1 (pwsh)
+        if: matrix.edition == 'pwsh'
+        shell: pwsh
+        run: ./scripts/validate.ps1
+
+      - name: Run tests/windows-lifecycle.ps1 (powershell)
+        if: matrix.edition == 'powershell'
+        shell: powershell
         run: ./tests/windows-lifecycle.ps1
 
-      - name: Run Python unittest discovery
-        shell: ${{ matrix.shell }}
+      - name: Run tests/windows-lifecycle.ps1 (pwsh)
+        if: matrix.edition == 'pwsh'
+        shell: pwsh
+        run: ./tests/windows-lifecycle.ps1
+
+      - name: Run Python unittest discovery (powershell)
+        if: matrix.edition == 'powershell'
+        shell: powershell
+        run: python -m unittest discover -s tests -q
+
+      - name: Run Python unittest discovery (pwsh)
+        if: matrix.edition == 'pwsh'
+        shell: pwsh
         run: python -m unittest discover -s tests -q
