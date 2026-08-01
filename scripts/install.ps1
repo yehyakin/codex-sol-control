@@ -5,10 +5,11 @@ param()
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 # Transaction rollback restores every moved target before the error is rethrown.
+$script:CreatedDirectories = New-Object System.Collections.Generic.List[string]
 
 function Test-PathExists {
     param([Parameter(Mandatory = $true)][string]$Path)
-    return (Test-Path -LiteralPath $Path -Force)
+    return (Test-Path -LiteralPath $Path)
 }
 
 function Test-ReparsePoint {
@@ -16,8 +17,30 @@ function Test-ReparsePoint {
     return (($Item.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0)
 }
 
+function Assert-PathChain {
+    param([Parameter(Mandatory = $true)][string]$Path)
+    $cursor = [System.IO.Path]::GetFullPath($Path)
+    while ($true) {
+        if (Test-PathExists $cursor) {
+            $item = Get-Item -LiteralPath $cursor -Force
+            if (Test-ReparsePoint $item) {
+                throw "unsafe path contains a reparse point"
+            }
+            if (-not $item.PSIsContainer -and $cursor -ne $Path) {
+                throw "unsafe path ancestor is not a directory"
+            }
+        }
+        $parent = Split-Path -Parent $cursor
+        if ([string]::IsNullOrEmpty($parent) -or $parent -eq $cursor) {
+            break
+        }
+        $cursor = $parent
+    }
+}
+
 function Ensure-Directory {
     param([Parameter(Mandatory = $true)][string]$Path)
+    $fullPath = [System.IO.Path]::GetFullPath($Path)
     if (Test-PathExists $Path) {
         $item = Get-Item -LiteralPath $Path -Force
         if (-not $item.PSIsContainer -or (Test-ReparsePoint $item)) {
@@ -25,7 +48,14 @@ function Ensure-Directory {
         }
     }
     else {
-        New-Item -ItemType Directory -Path $Path -Force | Out-Null
+        Assert-PathChain $fullPath
+        $parent = Split-Path -Parent $fullPath
+        if ([string]::IsNullOrEmpty($parent) -or $parent -eq $fullPath) {
+            throw "cannot create an install directory"
+        }
+        Ensure-Directory $parent
+        [System.IO.Directory]::CreateDirectory($fullPath) | Out-Null
+        $script:CreatedDirectories.Add($fullPath)
     }
 }
 
@@ -86,10 +116,11 @@ function Get-BytesDigest {
 
 function Get-TreeDigest {
     param([Parameter(Mandatory = $true)][string]$Path)
+    Assert-PlainTree $Path
     $entries = New-Object System.Collections.Generic.List[string]
-    $items = Get-ChildItem -LiteralPath $Path -Force -Recurse | Sort-Object -Property FullName
+    $items = @(Get-ChildItem -LiteralPath $Path -Force -Recurse | Sort-Object -Property FullName)
     foreach ($item in $items) {
-        $relative = $item.FullName.Substring($Path.Length).TrimStart([char[]]("/\")).Replace("\", "/")
+        $relative = $item.FullName.Substring($Path.Length).TrimStart([char[]]"/\").Replace("\", "/")
         if ($item.PSIsContainer) {
             $entries.Add("D`t$relative`n")
         }
@@ -106,18 +137,44 @@ function Copy-Exact {
         [Parameter(Mandatory = $true)][string]$Source,
         [Parameter(Mandatory = $true)][string]$Destination
     )
+    Assert-PlainTree $Source
+    $parent = Split-Path -Parent $Destination
+    if (-not (Test-PathExists $parent)) {
+        throw "copy destination parent is missing"
+    }
+    Assert-Target $parent "Directory"
     if ((Get-Item -LiteralPath $Source -Force).PSIsContainer) {
         Copy-Item -LiteralPath $Source -Destination $Destination -Recurse -Force
     }
     else {
         Copy-Item -LiteralPath $Source -Destination $Destination -Force
     }
+    Assert-PlainTree $Destination
 }
 
 function Remove-Exact {
     param([Parameter(Mandatory = $true)][string]$Path)
     if (Test-PathExists $Path) {
+        Assert-PlainTree $Path
         Remove-Item -LiteralPath $Path -Recurse -Force
+    }
+}
+
+function Remove-EmptyCreatedDirectories {
+    for ($index = $script:CreatedDirectories.Count - 1; $index -ge 0; $index--) {
+        $path = $script:CreatedDirectories[$index]
+        if (-not (Test-PathExists $path)) {
+            continue
+        }
+        try {
+            $item = Get-Item -LiteralPath $path -Force
+            if ($item.PSIsContainer -and -not (Test-ReparsePoint $item)) {
+                Remove-Item -LiteralPath $path -Force -ErrorAction Stop
+            }
+        }
+        catch {
+            # A non-empty or concurrently changed parent is left untouched.
+        }
     }
 }
 
@@ -132,12 +189,15 @@ function Write-Utf8Text {
 function Get-StateMap {
     param([Parameter(Mandatory = $true)][string]$Path)
     $map = @{}
-    foreach ($line in Get-Content -LiteralPath $Path) {
+    foreach ($line in @(Get-Content -LiteralPath $Path)) {
         if ([string]::IsNullOrWhiteSpace($line)) {
             continue
         }
         if ($line -notmatch "^(?<key>[A-Za-z_]+)=(?<value>.*)$") {
             throw "invalid install state"
+        }
+        if ($map.ContainsKey($Matches.key)) {
+            throw "duplicate install state key"
         }
         $map[$Matches.key] = $Matches.value
     }
@@ -162,6 +222,13 @@ function Assert-Hash {
     }
 }
 
+function Assert-BackupId {
+    param([Parameter(Mandatory = $true)][string]$Value)
+    if ($Value -notmatch "^[A-Za-z0-9._-]+$" -or $Value -eq "." -or $Value -eq "..") {
+        throw "unsafe backup identifier"
+    }
+}
+
 function Assert-Source {
     param([Parameter(Mandatory = $true)][string]$Root)
 
@@ -174,7 +241,13 @@ function Assert-Source {
         "scripts/validate.sh",
         "scripts/uninstall.sh",
         "scripts/install.ps1",
+        "scripts/validate.ps1",
+        "scripts/uninstall.ps1",
         "README.md",
+        "README.zh-CN.md",
+        "docs/assets/sol-luna-hero.svg",
+        "docs/assets/sol-luna-architecture.svg",
+        "tests/windows-lifecycle.ps1",
         "NOTICE",
         "LICENSE"
     )
@@ -183,9 +256,14 @@ function Assert-Source {
         if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
             throw "source validation failed"
         }
+        $fileItem = Get-Item -LiteralPath $path -Force
+        if (Test-ReparsePoint $fileItem) {
+            throw "source validation failed"
+        }
     }
 
     $skillRoot = Join-Path $Root ".agents/skills/sol-luna"
+    Assert-PlainTree $skillRoot
     $runtimeDirect = Join-Path $skillRoot "runtime-notes.md"
     $runtimeReference = Join-Path $skillRoot "references/runtime-notes.md"
     if (-not (Test-Path -LiteralPath $runtimeDirect -PathType Leaf) -and
@@ -226,12 +304,12 @@ function Assert-Source {
         }
     }
 
-    $bash = Get-Command bash -ErrorAction SilentlyContinue
-    if ($null -ne $bash) {
-        & $bash.Source (Join-Path $Root "scripts/validate.sh") *> $null
-        if ($LASTEXITCODE -ne 0) {
-            throw "source validation failed"
-        }
+    $validator = Join-Path $Root "scripts/validate.ps1"
+    try {
+        & $validator *> $null
+    }
+    catch {
+        throw "source validation failed: $($_.Exception.Message)"
     }
 }
 
@@ -242,15 +320,14 @@ $rawBase = $env:ORCHESTRATE_HOME
 if ([string]::IsNullOrWhiteSpace($rawBase)) {
     $rawBase = [Environment]::GetFolderPath("UserProfile")
 }
+if ([string]::IsNullOrWhiteSpace($rawBase) -or -not [System.IO.Path]::IsPathRooted($rawBase)) {
+    throw "ORCHESTRATE_HOME must be an absolute path"
+}
 $baseDir = [System.IO.Path]::GetFullPath($rawBase)
 if ($baseDir -eq [System.IO.Path]::GetPathRoot($baseDir)) {
     throw "refusing the filesystem root as ORCHESTRATE_HOME"
 }
-Ensure-Directory $baseDir
-$baseDir = (Get-Item -LiteralPath $baseDir -Force).FullName
-if (Test-ReparsePoint (Get-Item -LiteralPath $baseDir -Force)) {
-    throw "ORCHESTRATE_HOME must not be a reparse point"
-}
+Assert-PathChain $baseDir
 
 $skillSource = Join-Path $repoRoot ".agents/skills/sol-luna"
 $solSource = Join-Path $repoRoot ".codex/agents/sol-controller.toml"
@@ -303,9 +380,7 @@ if (Test-PathExists $stateFile) {
         throw "existing v0.2 state has an unsupported version"
     }
     $v2BackupId = Get-StateValue $v2State "backup_id"
-    if ($v2BackupId -notmatch "^[A-Za-z0-9._-]+$" -or $v2BackupId -eq "." -or $v2BackupId -eq "..") {
-        throw "existing v0.2 state has an unsafe backup identifier"
-    }
+    Assert-BackupId $v2BackupId
     $v2SkillDigest = Get-StateValue $v2State "skill_sha256"
     $v2SolDigest = Get-StateValue $v2State "sol_sha256"
     $v2LunaDigest = Get-StateValue $v2State "luna_sha256"
@@ -324,7 +399,7 @@ if (Test-PathExists $stateFile) {
     }
     $v2StatePresent = $true
 }
-elseif (Test-PathExists $newSkillTarget -or Test-PathExists $newSolTarget) {
+elseif ((Test-PathExists $newSkillTarget) -or (Test-PathExists $newSolTarget)) {
     throw "existing v0.2 target has no ownership state"
 }
 
@@ -349,10 +424,10 @@ if (Test-PathExists $legacyStateFile) {
 $legacySkillRemove = $false
 $legacySolRemove = $false
 if ($legacyStatePresent) {
-    if (Test-PathExists $legacySkillTarget -and (Get-TreeDigest $legacySkillTarget) -eq $legacySkillDigest) {
+    if ((Test-PathExists $legacySkillTarget) -and ((Get-TreeDigest $legacySkillTarget) -eq $legacySkillDigest)) {
         $legacySkillRemove = $true
     }
-    if (Test-PathExists $legacySolTarget -and (Get-FileDigest $legacySolTarget) -eq $legacySolDigest) {
+    if ((Test-PathExists $legacySolTarget) -and ((Get-FileDigest $legacySolTarget) -eq $legacySolDigest)) {
         $legacySolRemove = $true
     }
 }
@@ -367,96 +442,11 @@ if (-not $v2StatePresent -and (Test-PathExists $lunaTarget)) {
     }
 }
 
-Ensure-Directory (Join-Path $baseDir ".agents")
-Ensure-Directory (Join-Path $baseDir ".agents/skills")
-Ensure-Directory $codexDir
-Ensure-Directory $agentsDir
-Ensure-Directory $stateRoot
-Ensure-Directory $backupRoot
-
 $backupId = "{0}-{1}" -f (Get-Date).ToUniversalTime().ToString("yyyyMMddTHHmmssZ"), $PID
 $backupDir = Join-Path $backupRoot $backupId
-while (Test-PathExists $backupDir) {
-    $backupId = "{0}-{1}-{2}" -f (Get-Date).ToUniversalTime().ToString("yyyyMMddTHHmmssZ"), $PID, (Get-Random)
-    $backupDir = Join-Path $backupRoot $backupId
-}
-New-Item -ItemType Directory -Path $backupDir -Force | Out-Null
-New-Item -ItemType Directory -Path (Join-Path $backupDir "legacy") -Force | Out-Null
-New-Item -ItemType Directory -Path (Join-Path $backupDir "v020") -Force | Out-Null
-
-$legacySkillPresence = "absent"
-$legacySkillBackupDigest = ""
-if (Test-PathExists $legacySkillTarget) {
-    $legacySkillPresence = "present"
-    $legacySkillBackupDigest = Get-TreeDigest $legacySkillTarget
-    Copy-Exact $legacySkillTarget (Join-Path $backupDir "legacy/skill")
-}
-$legacySolPresence = "absent"
-$legacySolBackupDigest = ""
-if (Test-PathExists $legacySolTarget) {
-    $legacySolPresence = "present"
-    $legacySolBackupDigest = Get-FileDigest $legacySolTarget
-    Copy-Exact $legacySolTarget (Join-Path $backupDir "legacy/sol-planner.toml")
-}
-$legacyLunaPresence = "absent"
-$legacyLunaBackupDigest = ""
-if (Test-PathExists $lunaTarget) {
-    $legacyLunaPresence = "present"
-    $legacyLunaBackupDigest = Get-FileDigest $lunaTarget
-    Copy-Exact $lunaTarget (Join-Path $backupDir "legacy/luna-max-worker.toml")
-}
-
-$v020SkillPresence = "absent"
-$v020SkillBackupDigest = ""
-if (Test-PathExists $newSkillTarget) {
-    $v020SkillPresence = "present"
-    $v020SkillBackupDigest = Get-TreeDigest $newSkillTarget
-    Copy-Exact $newSkillTarget (Join-Path $backupDir "v020/skill")
-}
-$v020SolPresence = "absent"
-$v020SolBackupDigest = ""
-if (Test-PathExists $newSolTarget) {
-    $v020SolPresence = "present"
-    $v020SolBackupDigest = Get-FileDigest $newSolTarget
-    Copy-Exact $newSolTarget (Join-Path $backupDir "v020/sol-controller.toml")
-}
-$v020LunaPresence = $legacyLunaPresence
-$v020LunaBackupDigest = $legacyLunaBackupDigest
-if ($legacyLunaPresence -eq "present") {
-    Copy-Exact $lunaTarget (Join-Path $backupDir "v020/luna-max-worker.toml")
-}
-
-$configPresence = "absent"
-$configDigest = ""
-if (Test-PathExists $configTarget) {
-    $configPresence = "present"
-    $configDigest = Get-FileDigest $configTarget
-}
-
-$manifest = New-Object System.Collections.Generic.List[string]
-$manifest.Add("version=2")
-$manifest.Add("legacy_skill_presence=$legacySkillPresence")
-$manifest.Add("legacy_skill_sha256=$legacySkillBackupDigest")
-$manifest.Add("legacy_sol_presence=$legacySolPresence")
-$manifest.Add("legacy_sol_sha256=$legacySolBackupDigest")
-$manifest.Add("legacy_luna_presence=$legacyLunaPresence")
-$manifest.Add("legacy_luna_sha256=$legacyLunaBackupDigest")
-$manifest.Add("v020_skill_presence=$v020SkillPresence")
-$manifest.Add("v020_skill_sha256=$v020SkillBackupDigest")
-$manifest.Add("v020_sol_presence=$v020SolPresence")
-$manifest.Add("v020_sol_sha256=$v020SolBackupDigest")
-$manifest.Add("v020_luna_presence=$v020LunaPresence")
-$manifest.Add("v020_luna_sha256=$v020LunaBackupDigest")
-$manifest.Add("config_presence=$configPresence")
-$manifest.Add("config_sha256=$configDigest")
-Write-Utf8Text (Join-Path $backupDir "manifest") (($manifest -join [Environment]::NewLine) + [Environment]::NewLine)
-
-$transactionDir = Join-Path $stateRoot (".transaction-" + [Guid]::NewGuid().ToString("N"))
-New-Item -ItemType Directory -Path (Join-Path $transactionDir "stage") -Force | Out-Null
-Copy-Exact $skillSource (Join-Path $transactionDir "stage/v020-skill")
-Copy-Exact $solSource (Join-Path $transactionDir "stage/v020-sol-controller.toml")
-Copy-Exact $lunaSource (Join-Path $transactionDir "stage/v020-luna-max-worker.toml")
-
+$transactionDir = ""
+$manifestTemp = ""
+$stateTemp = ""
 $stateOld = $false
 $stateNew = $false
 $skillOld = $false
@@ -467,9 +457,106 @@ $lunaOld = $false
 $lunaNew = $false
 $legacySkillOld = $false
 $legacySolOld = $false
-$stateTemp = ""
 
 try {
+    Ensure-Directory $baseDir
+    $baseDir = (Get-Item -LiteralPath $baseDir -Force).FullName
+    Assert-PathChain $baseDir
+    if (Test-ReparsePoint (Get-Item -LiteralPath $baseDir -Force)) {
+        throw "ORCHESTRATE_HOME must not be a reparse point"
+    }
+    Ensure-Directory (Join-Path $baseDir ".agents")
+    Ensure-Directory (Join-Path $baseDir ".agents/skills")
+    Ensure-Directory $codexDir
+    Ensure-Directory $agentsDir
+    Ensure-Directory $stateRoot
+    Ensure-Directory $backupRoot
+
+    while (Test-PathExists $backupDir) {
+        $backupId = "{0}-{1}-{2}" -f (Get-Date).ToUniversalTime().ToString("yyyyMMddTHHmmssZ"), $PID, (Get-Random)
+        $backupDir = Join-Path $backupRoot $backupId
+    }
+    Ensure-Directory $backupDir
+    Ensure-Directory (Join-Path $backupDir "legacy")
+    Ensure-Directory (Join-Path $backupDir "v020")
+
+    $legacySkillPresence = "absent"
+    $legacySkillBackupDigest = ""
+    if (Test-PathExists $legacySkillTarget) {
+        $legacySkillPresence = "present"
+        $legacySkillBackupDigest = Get-TreeDigest $legacySkillTarget
+        Copy-Exact $legacySkillTarget (Join-Path $backupDir "legacy/skill")
+    }
+    $legacySolPresence = "absent"
+    $legacySolBackupDigest = ""
+    if (Test-PathExists $legacySolTarget) {
+        $legacySolPresence = "present"
+        $legacySolBackupDigest = Get-FileDigest $legacySolTarget
+        Copy-Exact $legacySolTarget (Join-Path $backupDir "legacy/sol-planner.toml")
+    }
+    $legacyLunaPresence = "absent"
+    $legacyLunaBackupDigest = ""
+    if (Test-PathExists $lunaTarget) {
+        $legacyLunaPresence = "present"
+        $legacyLunaBackupDigest = Get-FileDigest $lunaTarget
+        Copy-Exact $lunaTarget (Join-Path $backupDir "legacy/luna-max-worker.toml")
+    }
+
+    $v020SkillPresence = "absent"
+    $v020SkillBackupDigest = ""
+    if (Test-PathExists $newSkillTarget) {
+        $v020SkillPresence = "present"
+        $v020SkillBackupDigest = Get-TreeDigest $newSkillTarget
+        Copy-Exact $newSkillTarget (Join-Path $backupDir "v020/skill")
+    }
+    $v020SolPresence = "absent"
+    $v020SolBackupDigest = ""
+    if (Test-PathExists $newSolTarget) {
+        $v020SolPresence = "present"
+        $v020SolBackupDigest = Get-FileDigest $newSolTarget
+        Copy-Exact $newSolTarget (Join-Path $backupDir "v020/sol-controller.toml")
+    }
+    $v020LunaPresence = $legacyLunaPresence
+    $v020LunaBackupDigest = $legacyLunaBackupDigest
+    if ($legacyLunaPresence -eq "present") {
+        Copy-Exact $lunaTarget (Join-Path $backupDir "v020/luna-max-worker.toml")
+    }
+
+    $configPresence = "absent"
+    $configDigest = ""
+    if (Test-PathExists $configTarget) {
+        $configPresence = "present"
+        $configDigest = Get-FileDigest $configTarget
+    }
+
+    $manifest = New-Object System.Collections.Generic.List[string]
+    $manifest.Add("version=2")
+    $manifest.Add("legacy_skill_presence=$legacySkillPresence")
+    $manifest.Add("legacy_skill_sha256=$legacySkillBackupDigest")
+    $manifest.Add("legacy_sol_presence=$legacySolPresence")
+    $manifest.Add("legacy_sol_sha256=$legacySolBackupDigest")
+    $manifest.Add("legacy_luna_presence=$legacyLunaPresence")
+    $manifest.Add("legacy_luna_sha256=$legacyLunaBackupDigest")
+    $manifest.Add("v020_skill_presence=$v020SkillPresence")
+    $manifest.Add("v020_skill_sha256=$v020SkillBackupDigest")
+    $manifest.Add("v020_sol_presence=$v020SolPresence")
+    $manifest.Add("v020_sol_sha256=$v020SolBackupDigest")
+    $manifest.Add("v020_luna_presence=$v020LunaPresence")
+    $manifest.Add("v020_luna_sha256=$v020LunaBackupDigest")
+    $manifest.Add("config_presence=$configPresence")
+    $manifest.Add("config_sha256=$configDigest")
+    $manifestTemp = Join-Path $backupDir (".manifest-" + [Guid]::NewGuid().ToString("N"))
+    Write-Utf8Text $manifestTemp (($manifest -join [Environment]::NewLine) + [Environment]::NewLine)
+    Move-Item -LiteralPath $manifestTemp -Destination (Join-Path $backupDir "manifest")
+    $manifestTemp = ""
+
+    $transactionDir = Join-Path $stateRoot (".transaction-" + [Guid]::NewGuid().ToString("N"))
+    Ensure-Directory $transactionDir
+    Ensure-Directory (Join-Path $transactionDir "stage")
+    Copy-Exact $skillSource (Join-Path $transactionDir "stage/v020-skill")
+    Copy-Exact $solSource (Join-Path $transactionDir "stage/v020-sol-controller.toml")
+    Copy-Exact $lunaSource (Join-Path $transactionDir "stage/v020-luna-max-worker.toml")
+
     if (Test-PathExists $stateFile) {
         Move-Item -LiteralPath $stateFile -Destination (Join-Path $transactionDir "old-state")
         $stateOld = $true
@@ -506,7 +593,8 @@ try {
     Move-Item -LiteralPath (Join-Path $transactionDir "stage/v020-luna-max-worker.toml") -Destination $lunaTarget
     $lunaNew = $true
 
-    if ($env:ORCHESTRATE_HOME -and $env:ORCHESTRATE_FAILPOINT -eq "after-replace") {
+    if (-not [string]::IsNullOrWhiteSpace($env:ORCHESTRATE_HOME) -and
+        $env:ORCHESTRATE_FAILPOINT -eq "after-replace") {
         throw "injected failure after replacement"
     }
 
@@ -535,9 +623,11 @@ try {
     }
 
     Remove-Exact $transactionDir
+    $transactionDir = ""
 }
 catch {
     if ($stateTemp -and (Test-PathExists $stateTemp)) { Remove-Exact $stateTemp }
+    if ($manifestTemp -and (Test-PathExists $manifestTemp)) { Remove-Exact $manifestTemp }
     if ($stateNew) { Remove-Exact $stateFile }
     if ($stateOld -and (Test-PathExists (Join-Path $transactionDir "old-state"))) {
         Move-Item -LiteralPath (Join-Path $transactionDir "old-state") -Destination $stateFile
@@ -560,8 +650,9 @@ catch {
     if ($legacySkillOld -and (Test-PathExists (Join-Path $transactionDir "old-legacy-skill"))) {
         Move-Item -LiteralPath (Join-Path $transactionDir "old-legacy-skill") -Destination $legacySkillTarget
     }
-    if (Test-PathExists $transactionDir) { Remove-Exact $transactionDir }
+    if ($transactionDir -and (Test-PathExists $transactionDir)) { Remove-Exact $transactionDir }
     if (Test-PathExists $backupDir) { Remove-Exact $backupDir }
+    Remove-EmptyCreatedDirectories
     throw
 }
 
