@@ -163,7 +163,7 @@ function Get-StateMap {
         if ([string]::IsNullOrWhiteSpace($line)) {
             continue
         }
-        if ($line -notmatch "^(?<key>[A-Za-z_]+)=(?<value>.*)$") {
+        if ($line -notmatch "^(?<key>[A-Za-z_][A-Za-z0-9_]*)=(?<value>.*)$") {
             throw "invalid install state or backup manifest"
         }
         if ($map.ContainsKey($Matches.key)) {
