@@ -1,7 +1,7 @@
 # Sol Luna README Visual Redesign Design
 
-**Date:** 2026-08-03  
-**Status:** Approved  
+**Date:** 2026-08-03
+**Status:** Approved
 **Scope:** `README.md`, `README.en.md`, README contract tests, and repository-owned README artwork
 
 ## Goal
