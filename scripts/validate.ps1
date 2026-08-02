@@ -145,7 +145,7 @@ function Assert-MarkdownLinks {
     $text = Read-Utf8Text $Path
     $text = [regex]::Replace(
         $text,
-        '(?ms)^(?<fence>`{3,}|~{3,})[^\r\n]*\r?\n.*?^\k<fence>[ \t]*$',
+        '(?ms)^(?<fence>`{3,}|~{3,})[^\r\n]*\r?\n.*?^\k<fence>[ \t]*\r?$',
         ''
     )
     $pattern = '\]\(\s*(<[^>]+>|[^)\s]+)'

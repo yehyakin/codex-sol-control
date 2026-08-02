@@ -356,6 +356,11 @@ class InstallerTests(unittest.TestCase):
         validate = (ROOT / WINDOWS_SCRIPT_RELS[1]).read_text(encoding="utf-8")
         self.assertRegex(validate, r"(?i)Parser\]::ParseFile")
         self.assertIn("#requires -Version 5.1", validate)
+        self.assertIn(
+            r"[ \t]*\r?$",
+            validate,
+            "PowerShell Markdown fence matching must accept CRLF closing lines",
+        )
 
         uninstall = (ROOT / WINDOWS_SCRIPT_RELS[2]).read_text(encoding="utf-8")
         for marker in ("RestoreLatest", "SHA256", "install-state", "-LiteralPath"):
