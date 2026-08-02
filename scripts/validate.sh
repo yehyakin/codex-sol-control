@@ -10,6 +10,10 @@ OPENAI_FILE="$SKILL_ROOT/agents/openai.yaml"
 SOL_FILE="$ROOT_DIR/.codex/agents/sol-controller.toml"
 LUNA_FILE="$ROOT_DIR/.codex/agents/luna-max-worker.toml"
 PS_FILE="$SCRIPT_DIR/install.ps1"
+PS_VALIDATE_FILE="$SCRIPT_DIR/validate.ps1"
+PS_UNINSTALL_FILE="$SCRIPT_DIR/uninstall.ps1"
+WINDOWS_LIFECYCLE_FILE="$ROOT_DIR/tests/windows-lifecycle.ps1"
+WINDOWS_WORKFLOW_FILE="$ROOT_DIR/.github/workflows/windows-validation.yml"
 
 failures=0
 fail() {
@@ -20,13 +24,21 @@ fail() {
 required_files=(
   ".agents/skills/sol-luna/SKILL.md"
   ".agents/skills/sol-luna/agents/openai.yaml"
+  ".agents/skills/sol-luna/references/orchestration.md"
   ".codex/agents/sol-controller.toml"
   ".codex/agents/luna-max-worker.toml"
   "scripts/install.sh"
   "scripts/validate.sh"
   "scripts/uninstall.sh"
   "scripts/install.ps1"
+  "scripts/validate.ps1"
+  "scripts/uninstall.ps1"
   "README.md"
+  "README.zh-CN.md"
+  "docs/assets/sol-luna-hero.svg"
+  "docs/assets/sol-luna-architecture.svg"
+  "tests/windows-lifecycle.ps1"
+  ".github/workflows/windows-validation.yml"
   "NOTICE"
   "LICENSE"
 )
@@ -89,7 +101,7 @@ done
 if [[ -z "$PYTHON_BIN" ]]; then
   fail 'Python 3.11 or newer is required for TOML validation'
 else
-  if ! "$PYTHON_BIN" - "$ROOT_DIR" "$SKILL_FILE" "$OPENAI_FILE" "$RUNTIME_FILE" "$SOL_FILE" "$LUNA_FILE" "$PS_FILE" <<'PY' >/dev/null 2>&1
+  if ! "$PYTHON_BIN" - "$ROOT_DIR" "$SKILL_FILE" "$OPENAI_FILE" "$RUNTIME_FILE" "$SOL_FILE" "$LUNA_FILE" "$PS_FILE" "$PS_VALIDATE_FILE" "$PS_UNINSTALL_FILE" "$WINDOWS_LIFECYCLE_FILE" "$WINDOWS_WORKFLOW_FILE" <<'PY' >/dev/null 2>&1
 from __future__ import annotations
 
 import re
@@ -105,6 +117,10 @@ runtime_file = Path(sys.argv[4]) if sys.argv[4] else None
 sol_file = Path(sys.argv[5])
 luna_file = Path(sys.argv[6])
 ps_file = Path(sys.argv[7])
+ps_validate_file = Path(sys.argv[8])
+ps_uninstall_file = Path(sys.argv[9])
+windows_lifecycle_file = Path(sys.argv[10])
+windows_workflow_file = Path(sys.argv[11])
 
 
 def fail() -> "NoReturn":
@@ -304,6 +320,61 @@ for marker in (
 ):
     if marker.lower() not in ps_text.lower():
         fail()
+
+for path, markers in (
+    (
+        ps_validate_file,
+        (
+            "#requires -Version 5.1",
+            "Get-Content",
+            "Parser]::ParseFile",
+            "Markdown",
+            "SVG",
+            "PowerShell syntax",
+        ),
+    ),
+    (
+        ps_uninstall_file,
+        (
+            "RestoreLatest",
+            "SHA256",
+            "install-state",
+            "-LiteralPath",
+            "config.toml",
+        ),
+    ),
+    (
+        windows_lifecycle_file,
+        (
+            "#requires -Version 5.1",
+            "Set-StrictMode",
+            "scripts/install.ps1",
+            "scripts/validate.ps1",
+            "scripts/uninstall.ps1",
+            "Invoke-LifecycleScript",
+            "RestoreLatest",
+            "Windows lifecycle contract: PASS",
+        ),
+    ),
+    (
+        windows_workflow_file,
+        (
+            "windows-latest",
+            "windows-2022",
+            "powershell",
+            "pwsh",
+            "scripts/install.ps1",
+            "scripts/validate.ps1",
+            "scripts/uninstall.ps1",
+            "tests/windows-lifecycle.ps1",
+            "unittest discover",
+        ),
+    ),
+):
+    text = read_text(path).lower()
+    for marker in markers:
+        if marker.lower() not in text:
+            fail()
 PY
   then
     fail 'Python structural, TOML, Markdown, whitespace, or credential validation failed'
@@ -354,17 +425,29 @@ fi
 
 PWSH_BIN=$(command -v pwsh 2>/dev/null || true)
 if [[ -n "$PWSH_BIN" ]]; then
-  printf 'PowerShell: pwsh AST parse\n'
-  if ! PS1_VALIDATE_PATH="$PS_FILE" "$PWSH_BIN" -NoLogo -NoProfile -NonInteractive -Command '
-    $tokens = $null
-    $errors = $null
-    [System.Management.Automation.Language.Parser]::ParseFile(
-      $env:PS1_VALIDATE_PATH,
-      [ref]$tokens,
-      [ref]$errors
-    ) | Out-Null
-    if ($errors.Count -gt 0) { exit 1 }
-  ' >/dev/null 2>&1; then
+  printf 'PowerShell: pwsh AST parse (install, validate, uninstall, lifecycle)\n'
+  if ! PS1_INSTALL_PATH="$PS_FILE" \
+    PS1_VALIDATE_PATH="$PS_VALIDATE_FILE" \
+    PS1_UNINSTALL_PATH="$PS_UNINSTALL_FILE" \
+    PS1_LIFECYCLE_PATH="$WINDOWS_LIFECYCLE_FILE" \
+    "$PWSH_BIN" -NoLogo -NoProfile -NonInteractive -Command '
+      $paths = @(
+        $env:PS1_INSTALL_PATH,
+        $env:PS1_VALIDATE_PATH,
+        $env:PS1_UNINSTALL_PATH,
+        $env:PS1_LIFECYCLE_PATH
+      )
+      foreach ($path in $paths) {
+        $tokens = $null
+        $errors = $null
+        [System.Management.Automation.Language.Parser]::ParseFile(
+          $path,
+          [ref]$tokens,
+          [ref]$errors
+        ) | Out-Null
+        if ($null -ne $errors -and $errors.Count -gt 0) { exit 1 }
+      }
+    ' >/dev/null 2>&1; then
     fail 'PowerShell AST parsing failed'
   fi
 else

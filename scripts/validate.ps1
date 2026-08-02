@@ -289,6 +289,7 @@ $requiredFiles = @(
     "docs/assets/sol-luna-hero.svg",
     "docs/assets/sol-luna-architecture.svg",
     "tests/windows-lifecycle.ps1",
+    ".github/workflows/windows-validation.yml",
     "NOTICE",
     "LICENSE"
 )
@@ -339,6 +340,21 @@ foreach ($markdown in @(Get-ChildItem -LiteralPath $repoRoot -Filter "*.md" -Fil
 
 Assert-Svg (Join-Path $repoRoot "docs/assets/sol-luna-hero.svg")
 Assert-Svg (Join-Path $repoRoot "docs/assets/sol-luna-architecture.svg")
+
+$workflowPath = Join-Path $repoRoot ".github/workflows/windows-validation.yml"
+$workflowText = Read-Utf8Text $workflowPath
+foreach ($marker in @(
+    "windows-latest",
+    "windows-2022",
+    "powershell",
+    "pwsh",
+    "tests/windows-lifecycle.ps1",
+    "unittest discover"
+)) {
+    if ($workflowText.IndexOf($marker, [System.StringComparison]::Ordinal) -lt 0) {
+        throw "Validation: Windows workflow is missing $marker"
+    }
+}
 
 foreach ($path in @(
     (Join-Path $repoRoot "scripts/install.ps1"),

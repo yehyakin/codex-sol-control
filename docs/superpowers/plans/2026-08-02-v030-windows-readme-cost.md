@@ -327,4 +327,3 @@ gh release create v0.3.0 --repo yehyakin/codex-sol-luna --verify-tag --title "co
 Expected: `main`, `origin/main`, and `v0.3.0^{}` resolve to the same commit;
 the GitHub release is published from that exact tag; the final report states
 any remaining limitation without weakening a failed gate.
-
