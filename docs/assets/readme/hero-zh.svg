@@ -50,7 +50,7 @@
     <path d="M852 140V192M826 166H878" stroke="#F7F3E8" stroke-width="4" stroke-linecap="round"/>
     <text x="852" y="174" text-anchor="middle" fill="#0B1020" font-size="22" font-weight="800">SOL</text>
   </g>
-  <text x="852" y="235" text-anchor="middle" fill="#F7F3E8" font-size="20" font-weight="700">唯一主控 · 审核证据</text>
+  <text x="852" y="110" text-anchor="middle" fill="#F7F3E8" font-size="18" font-weight="700">唯一主控 · 审核证据</text>
 
   <g id="luna-worker-1">
     <circle cx="748" cy="302" r="32" fill="#65D6C4" fill-opacity="0.16" stroke="#65D6C4" stroke-width="2"/>
