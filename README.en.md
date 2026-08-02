@@ -373,3 +373,8 @@ code was copied from them:
 
 This repository is licensed under [Apache License 2.0](LICENSE). Attribution
 context for reviewed prior art is recorded in [NOTICE](NOTICE).
+
+**Thanks / 致谢**
+
+Thank you to the [LINUX DO forum](https://linux.do/) community for its attention,
+feedback, and support.

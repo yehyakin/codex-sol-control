@@ -341,3 +341,7 @@ hash 保持不变。
 
 本仓库采用 [Apache License 2.0](LICENSE)。审查过的先例的归属说明记录在
 [NOTICE](NOTICE) 中。
+
+**致谢 / Thanks**
+
+感谢 [LINUX DO 论坛](https://linux.do/) 社区的关注、反馈与支持。
