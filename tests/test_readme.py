@@ -287,7 +287,22 @@ class ReadmeContractTests(unittest.TestCase):
         rendered = self.rendered_markdown(text).rstrip()
         matches = list(ACK_HEADING_RE.finditer(rendered))
         self.assertTrue(matches, f"{readme_name}: missing final acknowledgement heading")
-        return self.normalize_soft_line(rendered[matches[-1].start() :])
+        acknowledgement = rendered[matches[-1].start() :]
+        return re.sub(r"\s+", " ", acknowledgement).strip()
+
+    def test_trailing_acknowledgement_normalizes_heading_gap_without_hiding_trailing_content(self) -> None:
+        sentence = "感谢 [LINUX DO 论坛](https://linux.do/) 社区的关注、反馈与支持"
+        fixture = f"**致谢 / Thanks**\n\n{sentence}"
+        expected = f"**致谢 / Thanks** {sentence}"
+        self.assertEqual(expected, self.trailing_acknowledgement(fixture, "fixture README"))
+
+        with_trailing_content = f"{fixture}\n\n尾随内容"
+        normalized = self.trailing_acknowledgement(with_trailing_content, "fixture README")
+        self.assertIn("尾随内容", normalized)
+        self.assertFalse(
+            normalized.endswith(sentence),
+            "trailing content must remain visible so final-block validation can reject it",
+        )
 
     def readme_documents(self) -> dict[Path, str]:
         missing = [str(path.relative_to(ROOT)) for path in README_FILES if not path.is_file()]
