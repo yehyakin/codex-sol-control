@@ -1,10 +1,23 @@
-[English](README.md) · [简体中文](README.zh-CN.md)
+[简体中文](README.md) · [English](README.en.md)
 
 # Sol Luna
 
-`codex-sol-luna` is a deliberately small orchestration Skill for Codex v0.3.0.
-It keeps one model in charge of the plan and gives bounded execution to Luna Max
-workers. The result is a reviewable loop instead of an unbounded agent swarm.
+`codex-sol-luna` is a deliberately small Codex orchestration Skill: Sol is the
+single controller that understands, plans, splits, assigns, and reviews; Luna
+Max executes bounded tasks, verifies the work, and returns evidence.
+
+## Estimated cost saving: about 59%
+
+Under the current typical model, Luna Max performs about 70% of the execution
+work at 115% of the delegated token baseline while added Sol planning and review
+costs 8%. The resulting whole-workflow estimate is about **59% lower**.
+
+**Conservative estimate: about 38% · Execution-heavy estimate: about 74%**
+
+This is a modeled estimate based on the 2026-08-02 pricing snapshot and public
+formula, not a guarantee for every task. Direct tasks claim 0% routing savings;
+repeated context, poor decomposition, retries, or heavy Sol review can reduce or
+erase the benefit. Full pricing, formula, and evidence boundaries appear below.
 
 ![Sol Luna hero: Sol controls the loop and Luna Max executes bounded work](docs/assets/sol-luna-hero.svg)
 
@@ -124,7 +137,9 @@ Windows lifecycle tests. A Windows Server CI pass proves Server behavior only;
 this README does not claim native Windows 11 evidence until a real Windows 11
 run is recorded.
 
-## Runtime identities and fail-closed behavior
+## Why it is reliable: identity, ownership, evidence, and correction
+
+### Runtime identities and fail-closed behavior
 
 The runtime identities are exact and intentionally boring:
 
@@ -144,7 +159,7 @@ Luna Max may not spawn or create subagents. It also may not widen its write
 scope, redesign Sol's plan, approve the overall task, or treat a partial result
 as delivery.
 
-## Stages, ownership, evidence, and correction
+### Stages, ownership, evidence, and correction
 
 Sol's plan has four small responsibilities:
 
@@ -178,7 +193,7 @@ Evidence: <diff, test, build, log, or artifact location>
 Blocker: <None or the concrete blocker>
 ```
 
-## Install, validate, uninstall, backup, and rollback
+### Install, validate, uninstall, backup, and rollback
 
 The installers validate source files before the first mutation, resolve exact
 literal paths, reject unsafe roots and reparse points, and use checksums to
@@ -213,6 +228,14 @@ pwsh -NoProfile -File scripts/uninstall.ps1 -RestoreLatest
 The PowerShell validation and lifecycle files are owned by the Windows work
 stream. Their supported targets and commands are documented here independently
 of native Windows 11 evidence.
+
+## Real-project benchmark
+
+The real-project benchmark reuses completed Sol Luna task evidence first and
+runs only the minimum read-only probes needed for material gaps. Public results
+retain anonymous categories only and distinguish `measured`, `estimated`, and
+`unavailable` evidence. When exact per-model usage is unavailable, **59%**
+remains `estimated`; it is not presented as a measured real-project saving.
 
 ## Cost model and pricing snapshot
 
@@ -283,8 +306,8 @@ subscription capacity are different claims.
 scripts/                       macOS/Linux lifecycle and validation scripts
 tests/                         contract, forward-case, and lifecycle tests
 docs/assets/                   repository-owned hero and architecture SVGs
-README.md                      this English guide
-README.zh-CN.md                complete Simplified Chinese peer
+README.md                      canonical Simplified Chinese guide
+README.en.md                   complete English peer
 ```
 
 The public Skill is [`$sol-luna`](.agents/skills/sol-luna/SKILL.md). The exact

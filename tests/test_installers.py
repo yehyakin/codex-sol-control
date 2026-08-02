@@ -348,7 +348,7 @@ class InstallerTests(unittest.TestCase):
             "SHA256",
             "ORCHESTRATE_FAILPOINT",
             "after-replace",
-            "README.zh-CN.md",
+            "README.en.md",
             "docs/assets/sol-luna-hero.svg",
         ):
             self.assertIn(marker, install, marker)

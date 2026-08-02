@@ -143,6 +143,11 @@ function Assert-MarkdownLinks {
     )
 
     $text = Read-Utf8Text $Path
+    $text = [regex]::Replace(
+        $text,
+        '(?ms)^(?<fence>`{3,}|~{3,})[^\r\n]*\r?\n.*?^\k<fence>[ \t]*$',
+        ''
+    )
     $pattern = '\]\(\s*(<[^>]+>|[^)\s]+)'
     foreach ($match in [regex]::Matches($text, $pattern)) {
         $target = $match.Groups[1].Value.Trim()
@@ -285,7 +290,7 @@ $requiredFiles = @(
     "scripts/validate.ps1",
     "scripts/uninstall.ps1",
     "README.md",
-    "README.zh-CN.md",
+    "README.en.md",
     "docs/assets/sol-luna-hero.svg",
     "docs/assets/sol-luna-architecture.svg",
     "tests/windows-lifecycle.ps1",

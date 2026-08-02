@@ -23,7 +23,7 @@ RUNTIME_NOTE_CANDIDATES = (
     SKILL_ROOT / "references" / "runtime-notes.md",
 )
 V030_REQUIRED_FILES = (
-    "README.zh-CN.md",
+    "README.en.md",
     "docs/assets/sol-luna-hero.svg",
     "docs/assets/sol-luna-architecture.svg",
     "scripts/validate.ps1",
@@ -75,7 +75,7 @@ class RepositoryContractTests(unittest.TestCase):
         self.assertEqual([], missing, "missing v0.3 contract artifact(s)")
 
     def test_repository_rename_uses_the_canonical_v030_url(self) -> None:
-        for relative in ("README.md", "README.zh-CN.md"):
+        for relative in ("README.md", "README.en.md"):
             path = ROOT / relative
             self.assertTrue(path.is_file(), relative)
             text = path.read_text(encoding="utf-8")
@@ -102,7 +102,7 @@ class RepositoryContractTests(unittest.TestCase):
             "ORCHESTRATE_FAILPOINT",
             "after-replace",
             "orchestrate-sol-luna",
-            "README.zh-CN.md",
+            "README.en.md",
             "docs/assets/sol-luna-hero.svg",
             "docs/assets/sol-luna-architecture.svg",
             "scripts/validate.ps1",
@@ -170,10 +170,10 @@ class RepositoryContractTests(unittest.TestCase):
         openai_text = read_if_present(SKILL_ROOT / "agents" / "openai.yaml")
         self.assertIn('default_prompt: "使用 $sol-luna', openai_text)
 
-        english_readme = read_if_present(ROOT / "README.md")
-        chinese_readme = read_if_present(ROOT / "README.zh-CN.md")
-        self.assertIn("Runtime output defaults to Simplified Chinese", english_readme)
+        chinese_readme = read_if_present(ROOT / "README.md")
+        english_readme = read_if_present(ROOT / "README.en.md")
         self.assertIn("运行时默认使用简体中文", chinese_readme)
+        self.assertIn("Runtime output defaults to Simplified Chinese", english_readme)
 
     def test_sol_plan_has_only_the_v020_canonical_fields(self) -> None:
         text = self.contract_text()

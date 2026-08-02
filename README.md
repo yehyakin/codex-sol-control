@@ -1,10 +1,22 @@
-[English](README.md) · [简体中文](README.zh-CN.md)
+[简体中文](README.md) · [English](README.en.md)
 
 # Sol Luna
 
-`codex-sol-luna` 是面向 Codex v0.3.0 的小型、刻意收敛的编排 Skill。
-它让一个模型负责计划，同时把有边界的执行交给 Luna Max worker，形成可审查
-的工作闭环，而不是无边界的 agent swarm。
+`codex-sol-luna` 是一个刻意保持小型、清晰的 Codex 编排 Skill：Sol 是唯一
+主控，负责理解、规划、拆分、分配和审核；Luna Max 只执行有边界的任务、完成
+自检并返回证据。
+
+## 成本约节省 59%
+
+在当前典型模型中，把约 70% 的执行工作交给 Luna Max，即使 Luna 为完成这些
+工作使用约 115% 的相对 token，并增加约 8% 的 Sol 规划与审核开销，整个工作流
+的估算成本仍可下降约 **59%**。
+
+**保守场景约节省 38% · 执行密集场景约节省 74%**
+
+这是基于 2026-08-02 价格快照和公开公式得到的估算，不是每个任务的保证。
+简单 Direct 任务的路由节省为 0%；重复上下文、错误拆分、重试或过重的 Sol
+审核都可能降低甚至抵消节省。完整价格、公式和证据边界见后文。
 
 ![Sol Luna 英雄图：Sol 控制闭环，Luna Max 执行有边界的工作](docs/assets/sol-luna-hero.svg)
 
@@ -117,7 +129,9 @@ pwsh -NoProfile -File scripts/uninstall.ps1 -RestoreLatest
 临时 home。Windows Server CI 通过只证明 Server 行为；在记录真实 Windows 11
 运行结果以前，本 README 不宣称已有原生 Windows 11 证据。
 
-## 运行时身份与失败关闭行为
+## 为什么可靠：身份、所有权、证据与修正
+
+### 运行时身份与失败关闭行为
 
 运行时身份必须精确且保持简单：
 
@@ -134,7 +148,7 @@ Sol 是唯一的 controller；Luna Max worker 执行有边界的任务并返回�
 Luna Max 不得 spawn 或 create subagents，也不得扩大写入范围、重写 Sol 的计划、
 批准整体任务，或把部分结果当作交付。
 
-## 阶段、所有权、证据与修正
+### 阶段、所有权、证据与修正
 
 Sol 的计划包含四项小而明确的职责：
 
@@ -164,7 +178,7 @@ Evidence: <diff, test, build, log, or artifact location>
 Blocker: <None or the concrete blocker>
 ```
 
-## 安装、验证、卸载、备份与回滚
+### 安装、验证、卸载、备份与回滚
 
 安装器在第一次修改之前验证源文件，使用精确 literal path，拒绝不安全的根路径
 和 reparse point，并使用 checksum 保护已拥有的目标。替换前先备份现有目标；
@@ -196,6 +210,13 @@ pwsh -NoProfile -File scripts/uninstall.ps1 -RestoreLatest
 
 PowerShell 验证和生命周期文件由 Windows 工作流独立负责。这里先说明支持的
 目标和命令，不把 Server 结果推断为原生 Windows 11 证据。
+
+## 真实项目基准
+
+真实项目基准优先复用已完成的 Sol Luna 任务证据，仅对证据缺口运行最少的
+只读探针。公开结果只保留匿名类别，严格区分 `measured（实测）`、
+`estimated（估算）` 和 `unavailable（不可得）`。在精确分模型用量不可得时，
+**59%** 仍属于 `estimated`，不会被写成实测成本节省。
 
 ## 成本模型与价格快照
 
@@ -260,8 +281,8 @@ credits 或升级套餐。API 的美元节省与 subscription 的容量不是同
 scripts/                       macOS/Linux 生命周期与验证脚本
 tests/                         contract、forward-case 与生命周期测试
 docs/assets/                   仓库自有 hero 与 architecture SVG
-README.md                      English guide
-README.zh-CN.md                完整的简体中文 peer
+README.md                      默认简体中文指南
+README.en.md                   完整的 English peer
 ```
 
 公开 Skill 是 [`$sol-luna`](.agents/skills/sol-luna/SKILL.md)。精确的 agent 定义见

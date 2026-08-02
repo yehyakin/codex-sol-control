@@ -244,7 +244,7 @@ function Assert-Source {
         "scripts/validate.ps1",
         "scripts/uninstall.ps1",
         "README.md",
-        "README.zh-CN.md",
+        "README.en.md",
         "docs/assets/sol-luna-hero.svg",
         "docs/assets/sol-luna-architecture.svg",
         "tests/windows-lifecycle.ps1",

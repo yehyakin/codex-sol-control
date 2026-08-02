@@ -11,7 +11,9 @@ from urllib.parse import unquote, urlsplit
 
 
 ROOT = Path(__file__).resolve().parents[1]
-README_FILES = (ROOT / "README.md", ROOT / "README.zh-CN.md")
+CHINESE_README = ROOT / "README.md"
+ENGLISH_README = ROOT / "README.en.md"
+README_FILES = (CHINESE_README, ENGLISH_README)
 SVG_FILES = (
     ROOT / "docs" / "assets" / "sol-luna-hero.svg",
     ROOT / "docs" / "assets" / "sol-luna-architecture.svg",
@@ -28,6 +30,7 @@ MARKDOWN_IMAGE_RE = re.compile(
 HEADING_RE = re.compile(r"(?im)^#{1,6}\s+(?P<title>.+?)\s*$")
 
 SECTION_HEADING_PATTERNS = (
+    ("headline_cost", re.compile(r"(?i)estimated\s+cost\s+saving|成本约节省")),
     ("architecture", re.compile(r"(?i)architecture|架构")),
     (
         "use",
@@ -38,18 +41,11 @@ SECTION_HEADING_PATTERNS = (
     ),
     ("platform", re.compile(r"(?i)platform|quickstart|平台|快速开始|快速入门")),
     (
-        "runtime",
-        re.compile(r"(?i)runtime|identity|fail[- ]closed|运行时|身份|失败关闭|故障关闭"),
+        "reliability",
+        re.compile(r"(?i)reliab|identity|ownership|evidence|correction|可靠|身份|所有权|证据|修正"),
     ),
-    (
-        "ownership",
-        re.compile(r"(?i)stage|ownership|evidence|correction|阶段|所有权|证据|修正"),
-    ),
-    (
-        "lifecycle",
-        re.compile(r"(?i)install|validate|uninstall|backup|rollback|安装|验证|卸载|备份|回滚"),
-    ),
-    ("cost", re.compile(r"(?i)cost|pricing|成本|价格|费用")),
+    ("benchmark", re.compile(r"(?i)real[- ]project\s+benchmark|真实项目基准")),
+    ("cost_details", re.compile(r"(?i)cost\s+model|pricing\s+snapshot|成本模型|价格快照")),
     (
         "repository",
         re.compile(
@@ -86,20 +82,22 @@ class ReadmeContractTests(unittest.TestCase):
 
     def test_both_complete_readmes_exist_and_start_with_language_switches(self) -> None:
         documents = self.readme_documents()
-        for path, text in documents.items():
-            head = "\n".join(text.splitlines()[:24])
-            self.assertTrue(
-                re.search(r"\[[^\]]+\]\(README(?:\.zh-CN)?\.md(?:#[^)]*)?\)", head),
-                f"{path.name}: missing explicit README language switch",
-            )
-            if path.name == "README.md":
-                self.assertRegex(
-                    head,
-                    r"\[[^\]]+\]\(README\.zh-CN\.md(?:#[^)]*)?\)",
-                    path.name,
-                )
-            else:
-                self.assertRegex(head, r"\[[^\]]+\]\(README\.md(?:#[^)]*)?\)", path.name)
+        chinese_head = "\n".join(documents[CHINESE_README].splitlines()[:24])
+        english_head = "\n".join(documents[ENGLISH_README].splitlines()[:24])
+
+        self.assertRegex(chinese_head, r"\[简体中文\]\(README\.md\)")
+        self.assertRegex(chinese_head, r"\[English\]\(README\.en\.md\)")
+        self.assertRegex(english_head, r"\[简体中文\]\(README\.md\)")
+        self.assertRegex(english_head, r"\[English\]\(README\.en\.md\)")
+
+    def test_chinese_readme_is_cost_first(self) -> None:
+        text = CHINESE_README.read_text(encoding="utf-8")
+        first_screen = "\n".join(text.splitlines()[:48])
+        self.assertIn("成本约节省 59%", first_screen)
+        self.assertRegex(first_screen, r"保守.{0,20}38%")
+        self.assertRegex(first_screen, r"执行密集.{0,20}74%")
+        self.assertRegex(first_screen, r"估算|不是.{0,20}保证")
+        self.assertLess(text.index("成本约节省 59%"), text.index("## 架构"))
 
     def test_readmes_use_the_canonical_repository_name(self) -> None:
         documents = self.readme_documents()

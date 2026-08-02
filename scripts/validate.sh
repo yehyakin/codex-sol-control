@@ -34,7 +34,7 @@ required_files=(
   "scripts/validate.ps1"
   "scripts/uninstall.ps1"
   "README.md"
-  "README.zh-CN.md"
+  "README.en.md"
   "docs/assets/sol-luna-hero.svg"
   "docs/assets/sol-luna-architecture.svg"
   "tests/windows-lifecycle.ps1"
@@ -244,6 +244,11 @@ for markdown in root.rglob("*.md"):
     if ".git" in markdown.parts or markdown.is_symlink():
         continue
     text = read_text(markdown)
+    text = re.sub(
+        r"(?ms)^(?P<fence>`{3,}|~{3,})[^\n]*\n.*?^(?P=fence)[ \t]*$",
+        "",
+        text,
+    )
     for match in re.finditer(r"\]\(\s*(<[^>]+>|[^)\s]+)", text):
         target = match.group(1)
         if target.startswith("<") and target.endswith(">"):
