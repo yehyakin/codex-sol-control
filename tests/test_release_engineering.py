@@ -9,6 +9,7 @@ import subprocess
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -37,6 +38,10 @@ def snapshot_tree(root: Path) -> dict[str, tuple[str, bytes | str | None]]:
 
 class ReleaseEngineeringTests(unittest.TestCase):
     def run_posix(self, script: str, home: Path, *args: str) -> subprocess.CompletedProcess[str]:
+        if os.name == "nt":
+            self.skipTest(
+                "POSIX installer execution is covered by macOS/Linux; Windows runtime coverage is provided by tests/windows-lifecycle.ps1."
+            )
         env = os.environ.copy()
         env["ORCHESTRATE_HOME"] = str(home)
         return subprocess.run(
@@ -48,6 +53,17 @@ class ReleaseEngineeringTests(unittest.TestCase):
             stderr=subprocess.STDOUT,
             check=False,
         )
+
+    def test_posix_execution_skips_windows_before_starting_bash(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="sol-luna-check.") as temporary:
+            home = Path(temporary) / "home"
+            with (
+                mock.patch.object(os, "name", "nt"),
+                mock.patch("subprocess.run") as run,
+                self.assertRaises(unittest.SkipTest),
+            ):
+                self.run_posix("install.sh", home, "--check")
+            run.assert_not_called()
 
     def test_install_check_fresh_home_returns_two_without_writes(self) -> None:
         with tempfile.TemporaryDirectory(prefix="sol-luna-check.") as temporary:
