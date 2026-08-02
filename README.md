@@ -56,6 +56,11 @@ Stay direct when:
 An explicit `$sol-luna` invocation always starts with Sol. Ordinary simple work
 remains direct unless the Skill is explicitly selected.
 
+Runtime output defaults to Simplified Chinese for Sol plans and reviews, Luna
+task results, and status updates. An explicit user request for another language
+overrides this default. Code, commands, paths, identifiers, and original
+evidence may retain their source language.
+
 ## Platform support and quickstart
 
 The lifecycle has two supported command families:

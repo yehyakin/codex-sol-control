@@ -155,6 +155,26 @@ class RepositoryContractTests(unittest.TestCase):
         self.assertRegex(text, r"(?i)ordinary\s+simple\s+(work|tasks?).{0,120}\bdirect\b")
         self.assertRegex(text, r"(?i)planning[- ]only.{0,120}zero\s+Luna")
 
+    def test_runtime_defaults_to_chinese_unless_the_user_overrides_it(self) -> None:
+        skill_text = read_if_present(SKILL_ROOT / "SKILL.md")
+        self.assertIn("默认使用中文", skill_text)
+        self.assertIn("用户明确要求", skill_text)
+        self.assertIn("其他语言", skill_text)
+
+        for path in (SOL_AGENT, LUNA_AGENT):
+            with path.open("rb") as handle:
+                instructions = tomllib.load(handle)["developer_instructions"]
+            self.assertIn("默认使用中文", instructions, path.name)
+            self.assertRegex(instructions, r"用户.*明确.*其他语言", path.name)
+
+        openai_text = read_if_present(SKILL_ROOT / "agents" / "openai.yaml")
+        self.assertIn('default_prompt: "使用 $sol-luna', openai_text)
+
+        english_readme = read_if_present(ROOT / "README.md")
+        chinese_readme = read_if_present(ROOT / "README.zh-CN.md")
+        self.assertIn("Runtime output defaults to Simplified Chinese", english_readme)
+        self.assertIn("运行时默认使用简体中文", chinese_readme)
+
     def test_sol_plan_has_only_the_v020_canonical_fields(self) -> None:
         text = self.contract_text()
         for field in ["goal", "done_when", "tasks", "stages"]:

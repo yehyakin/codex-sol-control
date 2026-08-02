@@ -1,4 +1,4 @@
 interface:
   display_name: "Sol Luna"
   short_description: "Sol controls; Luna Max executes and returns evidence."
-  default_prompt: "Use $sol-luna to plan, delegate, execute, verify, and review this task."
+  default_prompt: "使用 $sol-luna 规划、分配、执行、验证并审核这项任务。"

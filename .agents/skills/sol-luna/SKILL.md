@@ -11,6 +11,12 @@ verify their results, and return evidence for Sol to review.
 Ordinary simple work stays direct unless the user explicitly invokes
 `$sol-luna`. An explicit invocation always starts with Sol. Planning-only work may use zero Luna workers.
 
+## Language
+
+默认使用中文编写 Sol 计划、Luna 任务与结果、状态更新和最终审核。用户明确要求
+其他语言时，使用用户指定的语言。代码、命令、路径、标识符和原始证据可按需保留
+原文。
+
 ## Roles
 
 - **Sol:** understand the real goal, define `done_when`, split work, assign file
