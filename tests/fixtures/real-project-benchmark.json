@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "run_date": "2026-08-02",
+  "method": "existing_evidence_then_read_only_gap_probes",
+  "privacy": "anonymous_aggregate_only",
+  "categories": [
+    {
+      "id": "codebase",
+      "sample_count": 1,
+      "metrics": {
+        "route": {"value": "sol_then_luna", "evidence": "measured"},
+        "luna_workers": {"value": null, "evidence": "unavailable"},
+        "waves": {"value": null, "evidence": "unavailable"},
+        "verification": {"value": "evidence_present", "evidence": "measured"},
+        "final_review": {"value": "BLOCKED", "evidence": "measured"},
+        "elapsed_seconds": {"value": 2340, "evidence": "measured"}
+      }
+    },
+    {
+      "id": "documentation",
+      "sample_count": 1,
+      "metrics": {
+        "route": {"value": "sol_then_luna", "evidence": "measured"},
+        "luna_workers": {"value": null, "evidence": "unavailable"},
+        "waves": {"value": null, "evidence": "unavailable"},
+        "verification": {"value": "evidence_present", "evidence": "measured"},
+        "final_review": {"value": "PASS", "evidence": "measured"},
+        "elapsed_seconds": {"value": 379, "evidence": "measured"}
+      }
+    },
+    {
+      "id": "infrastructure",
+      "sample_count": 1,
+      "metrics": {
+        "route": {"value": "direct", "evidence": "measured"},
+        "luna_workers": {"value": 0, "evidence": "measured"},
+        "waves": {"value": 0, "evidence": "measured"},
+        "verification": {"value": "evidence_present", "evidence": "measured"},
+        "final_review": {"value": "not_applicable", "evidence": "measured"},
+        "elapsed_seconds": {"value": 859, "evidence": "measured"}
+      }
+    }
+  ],
+  "cost": {
+    "typical_workflow_saving_percent": {"value": 59, "evidence": "estimated"},
+    "measured_workflow_saving_percent": {"value": null, "evidence": "unavailable"},
+    "exact_per_model_usage_available": {"value": false, "evidence": "measured"}
+  }
+}

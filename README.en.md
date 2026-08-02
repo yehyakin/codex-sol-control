@@ -231,11 +231,23 @@ of native Windows 11 evidence.
 
 ## Real-project benchmark
 
-The real-project benchmark reuses completed Sol Luna task evidence first and
-runs only the minimum read-only probes needed for material gaps. Public results
-retain anonymous categories only and distinguish `measured`, `estimated`, and
-`unavailable` evidence. When exact per-model usage is unavailable, **59%**
-remains `estimated`; it is not presented as a measured real-project saving.
+We reused completed Sol Luna task evidence first and allowed only the minimum
+read-only probes needed for material gaps. Existing records covered all three
+routing categories, so no additional model call was required and no business
+project was modified. Public results retain anonymous aggregate categories only.
+
+| Anonymous category | Route | Luna workers | Waves | Verification | Sol review | Elapsed |
+| --- | --- | ---: | ---: | --- | --- | ---: |
+| Codebase | `sol_then_luna` (`measured`) | `unavailable` | `unavailable` | evidence present (`measured`) | `BLOCKED` (`measured`) | 2340 s (`measured`) |
+| Documentation | `sol_then_luna` (`measured`) | `unavailable` | `unavailable` | evidence present (`measured`) | `PASS` (`measured`) | 379 s (`measured`) |
+| Infrastructure | `direct` (`measured`) | 0 (`measured`) | 0 (`measured`) | evidence present (`measured`) | not applicable (`measured`) | 859 s (`measured`) |
+
+Evidence is labeled `measured`, `estimated`, or `unavailable`. The current
+**59%** remains `estimated`; because comparable exact per-model usage was not
+exposed, a real-project `measured` cost saving remains `unavailable`.
+
+See [`tests/real-project-benchmark.md`](tests/real-project-benchmark.md) for the
+complete method, anonymous result, and limitations.
 
 ## Cost model and pricing snapshot
 
