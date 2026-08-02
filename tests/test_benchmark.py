@@ -11,9 +11,25 @@ ROOT = Path(__file__).resolve().parents[1]
 FIXTURE = ROOT / "tests" / "fixtures" / "real-project-benchmark.json"
 REPORT = ROOT / "tests" / "real-project-benchmark.md"
 README_FILES = (ROOT / "README.md", ROOT / "README.en.md")
+BENCHMARK_DOCUMENTS = README_FILES + (
+    REPORT,
+    ROOT
+    / "docs"
+    / "superpowers"
+    / "specs"
+    / "2026-08-02-chinese-cost-first-real-project-benchmark-design.md",
+    ROOT
+    / "docs"
+    / "superpowers"
+    / "plans"
+    / "2026-08-02-chinese-cost-first-real-project-benchmark.md",
+)
 ALLOWED_EVIDENCE = {"measured", "estimated", "unavailable"}
 EXPECTED_CATEGORIES = {"codebase", "documentation", "infrastructure"}
-PRIVATE_PATH_RE = re.compile(r"(?:/Users/|[A-Za-z]:[\\/]Users[\\/])")
+PRIVATE_PATH_RE = re.compile(
+    r"(?:/Users/[A-Za-z0-9._-]+/|"
+    r"[A-Za-z]:[\\/]Users[\\/][A-Za-z0-9._-]+[\\/])"
+)
 
 
 class RealProjectBenchmarkTests(unittest.TestCase):
@@ -40,8 +56,9 @@ class RealProjectBenchmarkTests(unittest.TestCase):
     def test_public_artifacts_contain_no_private_paths_or_source_identity_fields(self) -> None:
         data = self.load_fixture()
         texts = [json.dumps(data, ensure_ascii=False)]
-        if REPORT.is_file():
-            texts.append(REPORT.read_text(encoding="utf-8"))
+        for path in BENCHMARK_DOCUMENTS:
+            self.assertTrue(path.is_file(), path)
+            texts.append(path.read_text(encoding="utf-8"))
         combined = "\n".join(texts)
         self.assertNotRegex(combined, PRIVATE_PATH_RE)
         forbidden_keys = {

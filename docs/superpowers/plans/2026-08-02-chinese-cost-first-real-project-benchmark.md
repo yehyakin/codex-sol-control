@@ -632,7 +632,7 @@ First try:
 
 ```bash
 /opt/homebrew/bin/python3.13 \
-  /Users/kin3/.codex/skills/.system/skill-creator/scripts/quick_validate.py \
+  "${CODEX_HOME:-$HOME/.codex}/skills/.system/skill-creator/scripts/quick_validate.py" \
   .agents/skills/sol-luna
 ```
 
@@ -646,9 +646,9 @@ directory. Expected final output: `Skill is valid!`.
 Run:
 
 ```bash
-diff -qr .agents/skills/sol-luna /Users/kin3/.agents/skills/sol-luna
-cmp -s .codex/agents/sol-controller.toml /Users/kin3/.codex/agents/sol-controller.toml
-cmp -s .codex/agents/luna-max-worker.toml /Users/kin3/.codex/agents/luna-max-worker.toml
+diff -qr .agents/skills/sol-luna "$HOME/.agents/skills/sol-luna"
+cmp -s .codex/agents/sol-controller.toml "$HOME/.codex/agents/sol-controller.toml"
+cmp -s .codex/agents/luna-max-worker.toml "$HOME/.codex/agents/luna-max-worker.toml"
 ```
 
 Expected: no output and exit 0. README-only and benchmark changes do not require
