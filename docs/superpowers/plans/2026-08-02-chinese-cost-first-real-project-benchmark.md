@@ -395,7 +395,7 @@ replace only metric values and evidence labels after evidence collection:
       "id": "documentation",
       "sample_count": 1,
       "metrics": {
-        "route": {"value": "sol_then_luna", "evidence": "measured"},
+        "route": {"value": null, "evidence": "unavailable"},
         "luna_workers": {"value": null, "evidence": "unavailable"},
         "waves": {"value": null, "evidence": "unavailable"},
         "verification": {"value": null, "evidence": "unavailable"},
@@ -573,7 +573,7 @@ sanitized fixture values or the literal word `不可得`:
 | 匿名类别 | 路由 | Luna 数量 | Wave | 验证 | Sol 终审 | 耗时 |
 | --- | --- | ---: | ---: | --- | --- | ---: |
 | 代码项目 | Sol → Luna（实测） | 不可得 | 不可得 | 不可得 | 不可得 | 不可得 |
-| 文档项目 | Sol → Luna（实测） | 不可得 | 不可得 | 不可得 | 不可得 | 不可得 |
+| 文档项目 | 不可得 | 不可得 | 不可得 | 不可得 | 不可得 | 不可得 |
 | 基础设施项目 | 不可得 | 不可得 | 不可得 | 不可得 | 不可得 | 不可得 |
 
 证据分为 `measured（实测）`、`estimated（估算）` 和
