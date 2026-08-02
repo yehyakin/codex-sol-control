@@ -23,14 +23,19 @@ ASSETS = {
 }
 
 SVG_NAMESPACE = "http://www.w3.org/2000/svg"
+XLINK_NAMESPACE = "http://www.w3.org/1999/xlink"
 SVG_TAG = f"{{{SVG_NAMESPACE}}}"
 FORBIDDEN_TAG_RE = re.compile(
     r"(?is)<(?:script|foreignObject|image|animate|set)\b"
 )
 URL_RE = re.compile(r"https?://[^\s\"'<>]+", re.IGNORECASE)
-REMOTE_RESOURCE_RE = re.compile(
-    r"(?is)@(?:font-face|import)\b|url\(\s*(?!#|data:)[^)]+\)"
+PROTOCOL_RELATIVE_RE = re.compile(r"(?<!:)//[A-Za-z0-9._~:/?#@!$&'()*+,;=%-]+")
+URL_FUNCTION_RE = re.compile(r"url\(\s*([^)]*?)\s*\)", re.IGNORECASE)
+NAMESPACE_DECLARATION_RE = re.compile(
+    r"\bxmlns(?::[A-Za-z_][\w.-]*)?\s*=\s*(['\"])(.*?)\1",
+    re.IGNORECASE | re.DOTALL,
 )
+REMOTE_FONT_RE = re.compile(r"(?is)@(?:font-face|import)\b")
 FONT_SIZE_RE = re.compile(
     r"(?:^|;)\s*font-size\s*:\s*([0-9]+(?:\.[0-9]+)?)\s*(?:px|pt|em|rem|%)?",
     re.IGNORECASE,
@@ -152,13 +157,121 @@ def geometry_signature(root: ET.Element) -> tuple[tuple[str, tuple[tuple[str, st
     return tuple(signature)
 
 
-def endpoint_kind(value: str) -> str | None:
-    normalized = value.strip().casefold()
-    if normalized in {"sol", "sol-controller", "sol controller"}:
-        return "sol"
-    if re.fullmatch(r"luna(?:-worker-[1-3])?(?: worker)?", normalized):
-        return "luna"
-    return None
+def resource_safety_errors(source: str, root: ET.Element) -> list[str]:
+    """Return violations of the local-only SVG resource policy.
+
+    The SVG namespace (and the standard XLink declaration needed to parse an
+    ``xlink:href`` attribute) are XML plumbing, not external resources.  Every
+    actual resource reference must be a local ``#fragment``.
+    """
+
+    errors: list[str] = []
+    namespace_values = {
+        value.strip() for _, value in NAMESPACE_DECLARATION_RE.findall(source)
+    }
+    allowed_namespaces = {SVG_NAMESPACE, XLINK_NAMESPACE}
+    errors.extend(
+        f"unexpected namespace URI: {value}"
+        for value in sorted(namespace_values - allowed_namespaces)
+    )
+
+    source_without_namespace_declarations = NAMESPACE_DECLARATION_RE.sub("", source)
+    errors.extend(
+        f"unexpected external URL: {url}"
+        for url in URL_RE.findall(source_without_namespace_declarations)
+        if url not in allowed_namespaces
+    )
+    errors.extend(
+        f"protocol-relative resource: {match.group(0)}"
+        for match in PROTOCOL_RELATIVE_RE.finditer(source_without_namespace_declarations)
+    )
+    if REMOTE_FONT_RE.search(source_without_namespace_declarations):
+        errors.append("remote font or CSS import declaration")
+
+    for match in URL_FUNCTION_RE.finditer(source_without_namespace_declarations):
+        value = match.group(1).strip().strip("\"'").strip()
+        if not value.startswith("#"):
+            errors.append(f"non-local url() resource: {value}")
+
+    for element in root.iter():
+        for attribute, value in element.attrib.items():
+            attribute_name = local_name(attribute).casefold()
+            if attribute_name in {"href", "src", "srcset"}:
+                normalized = value.strip()
+                if not normalized.startswith("#"):
+                    errors.append(
+                        f"non-local {attribute_name} resource: {normalized}"
+                    )
+    return errors
+
+
+EXPECTED_WORKERS = (
+    "luna-worker-1",
+    "luna-worker-2",
+    "luna-worker-3",
+)
+
+
+def worker_path_errors(root: ET.Element) -> list[str]:
+    """Validate three independent Sol-to-worker task/evidence round trips."""
+
+    errors: list[str] = []
+    flow_elements = [
+        element
+        for element in root.iter()
+        if element.attrib.get("data-flow", "").casefold() in {"task", "evidence"}
+    ]
+    tasks = [
+        element
+        for element in flow_elements
+        if element.attrib.get("data-flow", "").casefold() == "task"
+    ]
+    evidence = [
+        element
+        for element in flow_elements
+        if element.attrib.get("data-flow", "").casefold() == "evidence"
+    ]
+    if not tasks:
+        errors.append("missing task paths")
+    if not evidence:
+        errors.append("missing evidence paths")
+
+    task_targets: list[str] = []
+    for element in tasks:
+        source = element.attrib.get("data-from", "").strip()
+        target = element.attrib.get("data-to", "").strip()
+        if source != "sol-controller":
+            errors.append(f"task path must start at sol-controller: {source!r}")
+        if target not in EXPECTED_WORKERS:
+            errors.append(f"task path has invalid Luna owner: {target!r}")
+        task_targets.append(target)
+
+    evidence_sources: list[str] = []
+    for element in evidence:
+        source = element.attrib.get("data-from", "").strip()
+        target = element.attrib.get("data-to", "").strip()
+        if source not in EXPECTED_WORKERS:
+            errors.append(f"evidence path has invalid Luna owner: {source!r}")
+        if target != "sol-controller":
+            errors.append(f"evidence path must return to sol-controller: {target!r}")
+        evidence_sources.append(source)
+
+    expected_workers = set(EXPECTED_WORKERS)
+    if set(task_targets) != expected_workers:
+        errors.append(
+            "task path data-to must exactly cover luna-worker-1..3: "
+            f"{sorted(set(task_targets))!r}"
+        )
+    if len(task_targets) != len(EXPECTED_WORKERS):
+        errors.append("task paths must contain exactly one path per Luna worker")
+    if set(evidence_sources) != expected_workers:
+        errors.append(
+            "evidence path data-from must exactly cover luna-worker-1..3: "
+            f"{sorted(set(evidence_sources))!r}"
+        )
+    if len(evidence_sources) != len(EXPECTED_WORKERS):
+        errors.append("evidence paths must contain exactly one path per Luna worker")
+    return errors
 
 
 class ControlOrbitAssetContractTests(unittest.TestCase):
@@ -196,20 +309,10 @@ class ControlOrbitAssetContractTests(unittest.TestCase):
                     self.assertTrue(element_text(desc), f"{name}: desc is empty")
 
                 self.assertNotRegex(source, FORBIDDEN_TAG_RE, f"{name}: forbidden SVG tag")
-                self.assertNotRegex(
-                    source,
-                    r"(?is)<(?:script|foreignObject|image|animate|set)\b",
-                    f"{name}: forbidden SVG tag",
-                )
-                self.assertNotRegex(
-                    source,
-                    REMOTE_RESOURCE_RE,
-                    f"{name}: remote font or external resource",
-                )
-                urls = URL_RE.findall(source)
-                self.assertTrue(
-                    all(url == SVG_NAMESPACE for url in urls),
-                    f"{name}: unexpected external URL(s): {urls}",
+                self.assertEqual(
+                    [],
+                    resource_safety_errors(source, root),
+                    f"{name}: resource safety violation",
                 )
                 for element in root.iter():
                     event_attributes = [
@@ -221,22 +324,19 @@ class ControlOrbitAssetContractTests(unittest.TestCase):
                         event_attributes,
                         f"{name}: event handler attribute(s): {event_attributes}",
                     )
-                    for attribute in ("href", "src"):
-                        if attribute in element.attrib:
-                            self.assertTrue(
-                                element.attrib[attribute].startswith("#"),
-                                f"{name}: external {attribute} is forbidden",
-                            )
 
                 text = element_text(root)
                 if name.endswith("-zh.svg"):
                     self.assertIn("Sol", text, name)
                     self.assertIn("Luna", text, name)
                     self.assertRegex(text, CHINESE_TEXT_RE, f"{name}: missing Chinese copy")
-                else:
+                elif name == "hero-en.svg":
                     self.assertIn("Sol", text, name)
                     self.assertIn("Luna", text, name)
                     self.assertIn("estimated", text.casefold(), name)
+                else:
+                    self.assertIn("Sol", text, name)
+                    self.assertIn("Luna", text, name)
                 if name.startswith("hero-"):
                     self.assertIn("59%", text, name)
                     self.assertIn("FILES", text, name)
@@ -247,6 +347,19 @@ class ControlOrbitAssetContractTests(unittest.TestCase):
                 else:
                     for token in ("PASS", "FIX", "BLOCKED"):
                         self.assertIn(token, text, f"{name}: missing {token}")
+                    for token in ("DIRECT", "SOL-ONLY", "SOL → LUNA"):
+                        self.assertIn(token, text, f"{name}: missing route {token}")
+                    if name.endswith("-zh.svg"):
+                        self.assertIn("同一文件只能有一个 Owner", text, name)
+                        self.assertIn("重叠范围不得并发", text, name)
+                    else:
+                        folded_text = text.casefold()
+                        self.assertIn("one file, one owner", folded_text, name)
+                        self.assertIn(
+                            "overlapping scopes never run concurrently",
+                            folded_text,
+                            name,
+                        )
 
                 ids = [element.attrib["id"] for element in root.iter() if "id" in element.attrib]
                 self.assertEqual(
@@ -294,39 +407,7 @@ class ControlOrbitAssetContractTests(unittest.TestCase):
             return
 
         for name, root in parsed.items():
-            flow_elements = [
-                element
-                for element in root.iter()
-                if element.attrib.get("data-flow", "").casefold() in {"task", "evidence"}
-            ]
-            self.assertTrue(flow_elements, f"{name}: missing task/evidence path metadata")
-            task_paths = [
-                element for element in flow_elements if element.attrib["data-flow"].casefold() == "task"
-            ]
-            evidence_paths = [
-                element
-                for element in flow_elements
-                if element.attrib["data-flow"].casefold() == "evidence"
-            ]
-            self.assertTrue(task_paths, f"{name}: missing Sol-to-Luna task path")
-            self.assertTrue(evidence_paths, f"{name}: missing Luna-to-Sol evidence path")
-
-            for element in flow_elements:
-                flow = element.attrib["data-flow"].casefold()
-                source_kind = endpoint_kind(element.attrib.get("data-from", ""))
-                target_kind = endpoint_kind(element.attrib.get("data-to", ""))
-                self.assertIsNotNone(source_kind, f"{name}: path has invalid data-from")
-                self.assertIsNotNone(target_kind, f"{name}: path has invalid data-to")
-                if flow == "task":
-                    self.assertEqual("sol", source_kind, f"{name}: task path must start at Sol")
-                    self.assertEqual("luna", target_kind, f"{name}: task path must end at Luna")
-                elif flow == "evidence":
-                    self.assertEqual("luna", source_kind, f"{name}: evidence must start at Luna")
-                    self.assertEqual("sol", target_kind, f"{name}: evidence must end at Sol")
-                self.assertFalse(
-                    source_kind == target_kind == "luna",
-                    f"{name}: Luna-to-Luna path is forbidden",
-                )
+            self.assertEqual([], worker_path_errors(root), f"{name}: worker path violation")
 
         for language in ("zh", "en"):
             hero_geometry = geometry_signature(parsed[f"hero-{language}.svg"])
@@ -342,6 +423,64 @@ class ControlOrbitAssetContractTests(unittest.TestCase):
                 geometry_signature(parsed[f"control-plane-{other_language}.svg"]),
                 "control-plane Chinese/English geometry must match",
             )
+
+    def test_resource_safety_helper_fixtures(self) -> None:
+        local_source = f"""
+        <svg xmlns="{SVG_NAMESPACE}">
+          <defs><linearGradient id="local" /></defs>
+          <use href="#local" />
+          <rect style="fill:url(#local)" />
+        </svg>
+        """
+        local_root = ET.fromstring(local_source)
+        self.assertEqual([], resource_safety_errors(local_source, local_root))
+
+        rejected_sources = {
+            "data": f'<svg xmlns="{SVG_NAMESPACE}"><use href="data:image/svg+xml;base64,AA==" /></svg>',
+            "http": f'<svg xmlns="{SVG_NAMESPACE}"><use href="https://cdn.example/asset.svg" /></svg>',
+            "protocol-relative": f'<svg xmlns="{SVG_NAMESPACE}"><use href="//cdn.example/asset.svg" /></svg>',
+            "relative": f'<svg xmlns="{SVG_NAMESPACE}"><use href="../asset.svg" /></svg>',
+            "xlink": (
+                f'<svg xmlns="{SVG_NAMESPACE}" xmlns:xlink="{XLINK_NAMESPACE}">'
+                '<use xlink:href="https://cdn.example/asset.svg" /></svg>'
+            ),
+            "remote-font": (
+                f'<svg xmlns="{SVG_NAMESPACE}"><style>@font-face {{'
+                "font-family: Remote; src: url(https://cdn.example/font.woff2) }}"
+                "</style></svg>"
+            ),
+        }
+        for label, source in rejected_sources.items():
+            with self.subTest(resource=label):
+                root = ET.fromstring(source)
+                self.assertTrue(resource_safety_errors(source, root), label)
+
+    def test_worker_path_helper_requires_every_round_trip(self) -> None:
+        def fixture(task_workers: tuple[str, ...], evidence_workers: tuple[str, ...]) -> ET.Element:
+            root = ET.Element(f"{SVG_TAG}svg")
+            for index, worker in enumerate(task_workers):
+                path = ET.SubElement(root, f"{SVG_TAG}path", id=f"task-{index}")
+                path.set("data-flow", "task")
+                path.set("data-from", "sol-controller")
+                path.set("data-to", worker)
+            for index, worker in enumerate(evidence_workers):
+                path = ET.SubElement(root, f"{SVG_TAG}path", id=f"evidence-{index}")
+                path.set("data-flow", "evidence")
+                path.set("data-from", worker)
+                path.set("data-to", "sol-controller")
+            return root
+
+        complete = fixture(EXPECTED_WORKERS, EXPECTED_WORKERS)
+        self.assertEqual([], worker_path_errors(complete))
+
+        missing_task = fixture(EXPECTED_WORKERS[:2], EXPECTED_WORKERS)
+        self.assertTrue(worker_path_errors(missing_task))
+
+        missing_evidence = fixture(EXPECTED_WORKERS, EXPECTED_WORKERS[:2])
+        self.assertTrue(worker_path_errors(missing_evidence))
+
+        generalized_luna = fixture(("luna", "luna-worker-2", "luna-worker-3"), EXPECTED_WORKERS)
+        self.assertTrue(worker_path_errors(generalized_luna))
 
 
 if __name__ == "__main__":
