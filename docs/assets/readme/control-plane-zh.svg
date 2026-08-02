@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 520" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', sans-serif" font-size="18">
+  <title>Control Orbit 路由与证据审查平面</title>
+  <desc>三条水平泳道对比 DIRECT、SOL-ONLY 与 SOL → LUNA；有界任务沿独立路径发出，三个 Luna 工作节点分别把证据送回 Sol，最终由 Sol 给出 PASS、FIX 或 BLOCKED。</desc>
+
+  <rect width="1200" height="520" fill="#0B1020"/>
+  <rect x="28" y="24" width="1144" height="472" rx="24" fill="#111A30" stroke="#9AA6B8" stroke-opacity="0.35" stroke-width="2"/>
+  <text x="54" y="62" fill="#F7F3E8" font-size="30" font-weight="800" letter-spacing="2">CONTROL ORBIT · ROUTING PROOF</text>
+  <path d="M52 78H1148" fill="none" stroke="#9AA6B8" stroke-opacity="0.35" stroke-width="2"/>
+
+  <rect x="52" y="94" width="1096" height="82" rx="16" fill="#0B1020" stroke="#9AA6B8" stroke-opacity="0.28" stroke-width="2"/>
+  <rect x="52" y="190" width="1096" height="82" rx="16" fill="#0B1020" stroke="#9AA6B8" stroke-opacity="0.28" stroke-width="2"/>
+  <rect x="52" y="286" width="1096" height="174" rx="16" fill="#0B1020" stroke="#65D6C4" stroke-opacity="0.55" stroke-width="2"/>
+
+  <text x="76" y="132" fill="#F7F3E8" font-size="24" font-weight="800">DIRECT</text>
+  <text x="76" y="158" fill="#9AA6B8" font-size="18">当前 Codex 直接完成 · 零委派</text>
+  <path d="M366 136H1090" fill="none" stroke="#9AA6B8" stroke-width="3" stroke-linecap="round"/>
+  <path d="M1090 136L1076 128V144Z" fill="#9AA6B8"/>
+  <text x="1112" y="142" text-anchor="end" fill="#F7F3E8" font-size="20" font-weight="700">DONE</text>
+
+  <text x="76" y="228" fill="#F7F3E8" font-size="24" font-weight="800">SOL-ONLY</text>
+  <text x="76" y="254" fill="#9AA6B8" font-size="18">计划 / 判断 / 审核 · 无 Luna</text>
+  <path d="M366 232H1090" fill="none" stroke="#FF6B3D" stroke-width="3" stroke-linecap="round"/>
+  <circle cx="650" cy="232" r="8" fill="#FF6B3D"/>
+  <circle cx="860" cy="232" r="8" fill="#FF6B3D"/>
+  <path d="M1090 232L1076 224V240Z" fill="#FF6B3D"/>
+
+  <text x="76" y="324" fill="#F7F3E8" font-size="24" font-weight="800">SOL → LUNA</text>
+  <text x="76" y="350" fill="#65D6C4" font-size="18">有界任务 → 独立 Owner → 证据返回</text>
+
+  <g fill="none" stroke="#FF6B3D" stroke-width="4" stroke-linecap="round">
+    <path id="task-path-1" data-flow="task" data-from="sol-controller" data-to="luna-worker-1" d="M340 392C390 366 440 350 492 350"/>
+    <path id="task-path-2" data-flow="task" data-from="sol-controller" data-to="luna-worker-2" d="M342 400H492"/>
+    <path id="task-path-3" data-flow="task" data-from="sol-controller" data-to="luna-worker-3" d="M340 408C390 434 440 450 492 450"/>
+  </g>
+  <g fill="none" stroke="#8FA7FF" stroke-width="4" stroke-dasharray="6 10" stroke-linecap="round">
+    <path id="evidence-path-1" data-flow="evidence" data-from="luna-worker-1" data-to="sol-controller" d="M492 366C440 378 390 390 340 410"/>
+    <path id="evidence-path-2" data-flow="evidence" data-from="luna-worker-2" data-to="sol-controller" d="M492 400H342"/>
+    <path id="evidence-path-3" data-flow="evidence" data-from="luna-worker-3" data-to="sol-controller" d="M492 434C440 422 390 410 340 390"/>
+  </g>
+  <g fill="#FF6B3D">
+    <path d="M492 346L504 350L492 354Z"/>
+    <path d="M492 396L504 400L492 404Z"/>
+    <path d="M492 446L504 450L492 454Z"/>
+  </g>
+  <g fill="#8FA7FF">
+    <path d="M340 406L328 410L340 414Z"/>
+    <path d="M342 396L330 400L342 404Z"/>
+    <path d="M340 386L328 390L340 394Z"/>
+  </g>
+
+  <g id="sol-controller">
+    <circle cx="300" cy="400" r="48" fill="#FF6B3D" fill-opacity="0.16" stroke="#FF6B3D" stroke-width="2"/>
+    <circle cx="300" cy="400" r="34" fill="#FF6B3D" stroke="#F7F3E8" stroke-width="3"/>
+    <path d="M300 378V422M278 400H322" stroke="#F7F3E8" stroke-width="4" stroke-linecap="round"/>
+    <text x="300" y="408" text-anchor="middle" fill="#0B1020" font-size="22" font-weight="800">SOL</text>
+  </g>
+  <text x="300" y="458" text-anchor="middle" fill="#F7F3E8" font-size="20" font-weight="700">Sol 规划 / 判断 / 审核</text>
+
+  <g id="luna-worker-1">
+    <circle cx="520" cy="350" r="27" fill="#65D6C4" fill-opacity="0.16" stroke="#65D6C4" stroke-width="2"/>
+    <circle cx="520" cy="350" r="19" fill="#65D6C4" stroke="#F7F3E8" stroke-width="2"/>
+    <path d="M510 350H530M520 340V360" stroke="#0B1020" stroke-width="3"/>
+    <text x="560" y="357" fill="#65D6C4" font-size="20" font-weight="700">Luna 1 · 独立 Owner</text>
+  </g>
+  <g id="luna-worker-2">
+    <circle cx="520" cy="400" r="27" fill="#65D6C4" fill-opacity="0.16" stroke="#65D6C4" stroke-width="2"/>
+    <circle cx="520" cy="400" r="19" fill="#65D6C4" stroke="#F7F3E8" stroke-width="2"/>
+    <path d="M510 400H530M520 390V410" stroke="#0B1020" stroke-width="3"/>
+    <text x="560" y="407" fill="#65D6C4" font-size="20" font-weight="700">Luna 2 · 独立 Owner</text>
+  </g>
+  <g id="luna-worker-3">
+    <circle cx="520" cy="450" r="27" fill="#65D6C4" fill-opacity="0.16" stroke="#65D6C4" stroke-width="2"/>
+    <circle cx="520" cy="450" r="19" fill="#65D6C4" stroke="#F7F3E8" stroke-width="2"/>
+    <path d="M510 450H530M520 440V460" stroke="#0B1020" stroke-width="3"/>
+    <text x="560" y="457" fill="#65D6C4" font-size="20" font-weight="700">Luna 3 · 独立 Owner</text>
+  </g>
+
+  <rect x="820" y="334" width="270" height="38" rx="10" fill="#65D6C4" fill-opacity="0.12" stroke="#65D6C4" stroke-opacity="0.55" stroke-width="2"/>
+  <rect x="820" y="382" width="270" height="38" rx="10" fill="#FF6B3D" fill-opacity="0.12" stroke="#FF6B3D" stroke-opacity="0.55" stroke-width="2"/>
+  <rect x="820" y="430" width="270" height="38" rx="10" fill="#8FA7FF" fill-opacity="0.12" stroke="#8FA7FF" stroke-opacity="0.55" stroke-width="2"/>
+  <text x="955" y="361" text-anchor="middle" fill="#65D6C4" font-size="22" font-weight="800">PASS</text>
+  <text x="955" y="409" text-anchor="middle" fill="#FF6B3D" font-size="22" font-weight="800">FIX</text>
+  <text x="955" y="457" text-anchor="middle" fill="#8FA7FF" font-size="22" font-weight="800">BLOCKED</text>
+
+  <path d="M76 478H1124" fill="none" stroke="#9AA6B8" stroke-opacity="0.35" stroke-width="2"/>
+  <text x="76" y="492" fill="#F7F3E8" font-size="20" font-weight="700">同一文件只能有一个 Owner · 重叠范围不得并发</text>
+</svg>

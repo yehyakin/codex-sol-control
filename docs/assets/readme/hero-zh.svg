@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 420" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', sans-serif" font-size="18">
+  <title>Sol 主控与 Luna Max 执行团队的 Control Orbit</title>
+  <desc>Sol 作为唯一主控，把三个互不重叠的有界任务交给 Luna Max 工作节点；FILES、DIFF、TEST 证据沿点线路返回 Sol 审核。</desc>
+
+  <rect width="1200" height="420" fill="#0B1020"/>
+  <rect x="28" y="28" width="1144" height="364" rx="24" fill="#111A30" stroke="#9AA6B8" stroke-opacity="0.35" stroke-width="2"/>
+  <path d="M48 118H622M48 330H622" fill="none" stroke="#9AA6B8" stroke-opacity="0.35" stroke-width="2"/>
+  <path d="M650 58H1148M650 366H1148" fill="none" stroke="#9AA6B8" stroke-opacity="0.22" stroke-width="2"/>
+
+  <text x="64" y="78" fill="#F7F3E8" font-size="36" font-weight="800" letter-spacing="2">SOL / LUNA</text>
+  <text x="64" y="106" fill="#65D6C4" font-size="24" font-weight="600">Sol 主控 · Luna Max 执行</text>
+  <text x="64" y="174" fill="#FF6B3D" font-size="30" font-weight="800">普通任务约节省 59%</text>
+  <text x="64" y="205" fill="#9AA6B8" font-size="18">基于典型路由假设 · 估算，非保证</text>
+
+  <text x="64" y="268" fill="#F7F3E8" font-size="22" font-weight="700">PLAN → EXECUTE → REVIEW</text>
+  <circle cx="74" cy="304" r="5" fill="#FF6B3D"/>
+  <path d="M90 304H210M226 304H346M362 304H482" fill="none" stroke="#FF6B3D" stroke-width="3"/>
+  <circle cx="500" cy="304" r="5" fill="#8FA7FF"/>
+  <text x="64" y="358" fill="#F7F3E8" font-size="21" font-weight="700">FILES · DIFF · TEST</text>
+  <text x="64" y="382" fill="#9AA6B8" font-size="20">证据回到 Sol 后才可 PASS / FIX / BLOCKED</text>
+
+  <text x="680" y="88" fill="#9AA6B8" font-size="18" letter-spacing="2">CONTROL ORBIT · 有界并行</text>
+  <path d="M700 166H1114M700 166V316M1114 166V316" fill="none" stroke="#9AA6B8" stroke-opacity="0.2" stroke-width="2"/>
+
+  <g fill="none" stroke="#FF6B3D" stroke-width="4" stroke-linecap="round">
+    <path id="task-path-1" data-flow="task" data-from="sol-controller" data-to="luna-worker-1" d="M820 204C770 226 748 247 748 270"/>
+    <path id="task-path-2" data-flow="task" data-from="sol-controller" data-to="luna-worker-2" d="M852 220C860 239 884 248 884 270"/>
+    <path id="task-path-3" data-flow="task" data-from="sol-controller" data-to="luna-worker-3" d="M884 204C940 226 1020 247 1020 270"/>
+  </g>
+  <g fill="none" stroke="#8FA7FF" stroke-width="4" stroke-dasharray="6 10" stroke-linecap="round">
+    <path id="evidence-path-1" data-flow="evidence" data-from="luna-worker-1" data-to="sol-controller" d="M748 270C748 238 786 215 820 192"/>
+    <path id="evidence-path-2" data-flow="evidence" data-from="luna-worker-2" data-to="sol-controller" d="M884 270C884 240 870 220 852 198"/>
+    <path id="evidence-path-3" data-flow="evidence" data-from="luna-worker-3" data-to="sol-controller" d="M1020 270C1020 238 946 215 884 192"/>
+  </g>
+  <g fill="#FF6B3D">
+    <path d="M744 270L748 282L752 270Z"/>
+    <path d="M880 270L884 282L888 270Z"/>
+    <path d="M1016 270L1020 282L1024 270Z"/>
+  </g>
+  <g fill="#8FA7FF">
+    <path d="M816 194L820 182L824 194Z"/>
+    <path d="M848 200L852 188L856 200Z"/>
+    <path d="M880 194L884 182L888 194Z"/>
+  </g>
+
+  <g id="sol-controller">
+    <circle cx="852" cy="166" r="52" fill="#FF6B3D" fill-opacity="0.16" stroke="#FF6B3D" stroke-width="2"/>
+    <circle cx="852" cy="166" r="38" fill="#FF6B3D" stroke="#F7F3E8" stroke-width="3"/>
+    <path d="M852 140V192M826 166H878" stroke="#F7F3E8" stroke-width="4" stroke-linecap="round"/>
+    <text x="852" y="174" text-anchor="middle" fill="#0B1020" font-size="22" font-weight="800">SOL</text>
+  </g>
+  <text x="852" y="235" text-anchor="middle" fill="#F7F3E8" font-size="20" font-weight="700">唯一主控 · 审核证据</text>
+
+  <g id="luna-worker-1">
+    <circle cx="748" cy="302" r="32" fill="#65D6C4" fill-opacity="0.16" stroke="#65D6C4" stroke-width="2"/>
+    <circle cx="748" cy="302" r="24" fill="#65D6C4" stroke="#F7F3E8" stroke-width="2"/>
+    <path d="M736 302H760M748 290V314" stroke="#0B1020" stroke-width="3" stroke-linecap="round"/>
+    <text x="748" y="350" text-anchor="middle" fill="#65D6C4" font-size="20" font-weight="700">LUNA 1</text>
+  </g>
+  <g id="luna-worker-2">
+    <circle cx="884" cy="302" r="32" fill="#65D6C4" fill-opacity="0.16" stroke="#65D6C4" stroke-width="2"/>
+    <circle cx="884" cy="302" r="24" fill="#65D6C4" stroke="#F7F3E8" stroke-width="2"/>
+    <path d="M872 302H896M884 290V314" stroke="#0B1020" stroke-width="3" stroke-linecap="round"/>
+    <text x="884" y="350" text-anchor="middle" fill="#65D6C4" font-size="20" font-weight="700">LUNA 2</text>
+  </g>
+  <g id="luna-worker-3">
+    <circle cx="1020" cy="302" r="32" fill="#65D6C4" fill-opacity="0.16" stroke="#65D6C4" stroke-width="2"/>
+    <circle cx="1020" cy="302" r="24" fill="#65D6C4" stroke="#F7F3E8" stroke-width="2"/>
+    <path d="M1008 302H1032M1020 290V314" stroke="#0B1020" stroke-width="3" stroke-linecap="round"/>
+    <text x="1020" y="350" text-anchor="middle" fill="#65D6C4" font-size="20" font-weight="700">LUNA 3</text>
+  </g>
+</svg>
