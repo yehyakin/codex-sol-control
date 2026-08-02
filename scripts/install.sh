@@ -5,6 +5,23 @@ IFS=$'\n\t'
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)
 REPO_ROOT=$(CDPATH= cd -- "$SCRIPT_DIR/.." && pwd -P)
 
+check_mode=0
+if (( $# > 1 )); then
+  printf 'Usage: install.sh [--check]\n' >&2
+  exit 1
+fi
+if (( $# == 1 )); then
+  case "$1" in
+    --check)
+      check_mode=1
+      ;;
+    *)
+      printf 'Usage: install.sh [--check]\n' >&2
+      exit 1
+      ;;
+  esac
+fi
+
 die() {
   printf 'install.sh: %s\n' "$1" >&2
   exit 1
@@ -71,6 +88,23 @@ assert_plain_tree() {
   if [[ -d "$path" ]]; then
     link=$(find "$path" -type l -print -quit)
     [[ -z "$link" ]] || die 'symbolic links are not allowed in an owned tree'
+  fi
+}
+
+assert_existing_path_chain() {
+  local path="$1"
+  local cursor="$path"
+  local parent
+  while ! path_exists "$cursor"; do
+    [[ "$cursor" == / ]] && break
+    parent=${cursor%/*}
+    [[ -n "$parent" ]] || parent=/
+    [[ "$parent" != "$cursor" ]] || break
+    cursor="$parent"
+  done
+  if path_exists "$cursor"; then
+    [[ ! -L "$cursor" ]] || die 'an install path contains a symbolic link'
+    [[ -d "$cursor" ]] || die 'an install path ancestor is not a directory'
   fi
 }
 
@@ -149,21 +183,36 @@ assert_plain_tree "$skill_source"
 assert_plain_tree "$sol_source"
 assert_plain_tree "$luna_source"
 
-validation_log=$(mktemp "${TMPDIR:-/tmp}/sol-luna-validation.XXXXXX") || die 'cannot create a validation temporary file'
-if ! bash "$SCRIPT_DIR/validate.sh" >"$validation_log" 2>&1; then
+if (( check_mode )); then
+  bash "$SCRIPT_DIR/validate.sh" || die 'source validation failed'
+else
+  validation_log=$(mktemp "${TMPDIR:-/tmp}/sol-luna-validation.XXXXXX") || die 'cannot create a validation temporary file'
+  if ! bash "$SCRIPT_DIR/validate.sh" >"$validation_log" 2>&1; then
+    rm -f "$validation_log"
+    die 'source validation failed'
+  fi
   rm -f "$validation_log"
-  die 'source validation failed'
 fi
-rm -f "$validation_log"
 
 raw_home=${ORCHESTRATE_HOME:-${HOME:-}}
 [[ -n "$raw_home" ]] || die 'ORCHESTRATE_HOME or HOME is required'
 [[ "$raw_home" == /* ]] || die 'ORCHESTRATE_HOME must be an absolute path'
 [[ "$raw_home" != / ]] || die 'refusing the filesystem root as ORCHESTRATE_HOME'
 [[ ! -L "$raw_home" ]] || die 'ORCHESTRATE_HOME must not be a symbolic link'
-
-ensure_dir "$raw_home"
-base_dir=$(CDPATH= cd -- "$raw_home" && pwd -P) || die 'cannot resolve ORCHESTRATE_HOME'
+raw_home=${raw_home%/}
+[[ -n "$raw_home" ]] || die 'refusing the filesystem root as ORCHESTRATE_HOME'
+if (( check_mode )); then
+  assert_existing_path_chain "$raw_home"
+  if path_exists "$raw_home"; then
+    [[ -d "$raw_home" ]] || die 'ORCHESTRATE_HOME must be a directory'
+    base_dir=$(CDPATH= cd -- "$raw_home" && pwd -P) || die 'cannot resolve ORCHESTRATE_HOME'
+  else
+    base_dir="$raw_home"
+  fi
+else
+  ensure_dir "$raw_home"
+  base_dir=$(CDPATH= cd -- "$raw_home" && pwd -P) || die 'cannot resolve ORCHESTRATE_HOME'
+fi
 [[ "$base_dir" != / ]] || die 'refusing the filesystem root as ORCHESTRATE_HOME'
 
 new_skill_target="$base_dir/.agents/skills/sol-luna"
@@ -192,6 +241,19 @@ for directory in \
     [[ ! -L "$directory" && -d "$directory" ]] || die 'an install parent is unsafe'
   fi
 done
+
+if (( check_mode )); then
+  for directory in \
+    "$base_dir/.agents" \
+    "$base_dir/.agents/skills" \
+    "$codex_dir" \
+    "$agents_dir" \
+    "$state_root" \
+    "$backup_root" \
+    "$legacy_state_root"; do
+    assert_existing_path_chain "$directory"
+  done
+fi
 
 assert_target "$new_skill_target" directory
 assert_target "$new_sol_target" file
@@ -267,6 +329,24 @@ if (( ! v2_state_present )) && path_exists "$luna_target"; then
   else
     die 'existing shared Luna has no ownership state'
   fi
+fi
+
+if (( check_mode )); then
+  source_skill_sha256=$(sha256_tree "$skill_source") || die 'cannot hash the source skill'
+  source_sol_sha256=$(sha256_file "$sol_source") || die 'cannot hash the source Sol controller'
+  source_luna_sha256=$(sha256_file "$luna_source") || die 'cannot hash the source Luna agent'
+  if (( v2_state_present )) &&
+    [[ "$v2_skill_sha256" == "$source_skill_sha256" ]] &&
+    [[ "$v2_sol_sha256" == "$source_sol_sha256" ]] &&
+    [[ "$v2_luna_sha256" == "$source_luna_sha256" ]] &&
+    ! path_exists "$legacy_skill_target" &&
+    ! path_exists "$legacy_sol_target" &&
+    ! path_exists "$legacy_state_file"; then
+    printf 'Check: installation is consistent; no changes required\n'
+    exit 0
+  fi
+  printf 'Check: installation is safe and requires install/update\n'
+  exit 2
 fi
 
 ensure_dir "$base_dir/.agents/skills"

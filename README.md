@@ -12,11 +12,14 @@
 工作使用约 115% 的相对 token，并增加约 8% 的 Sol 规划与审核开销，整个工作流
 的估算成本仍可下降约 **59%**。
 
-**保守场景约节省 38% · 执行密集场景约节省 74%**
+**保守场景约节省 38% · 可靠性门槛复杂场景估算约节省 65%**
 
 这是基于 2026-08-02 价格快照和公开公式得到的估算，不是每个任务的保证。
-简单 Direct 任务的路由节省为 0%；重复上下文、错误拆分、重试或过重的 Sol
-审核都可能降低甚至抵消节省。完整价格、公式和证据边界见后文。
+简单 Direct 任务的路由节省为 0%；典型 59% 后剩余成本为 41%，如果可靠性门槛避免
+相当于剩余成本 15% 的无效返工，41%*85%=34.85%，约等于节省 65%（estimated/估算，
+不是 measured/实测）。这个条件化场景与 execution-heavy 74% 分开，不混为同一结论；
+重复上下文、错误拆分、重试或过重的 Sol 审核都可能降低甚至抵消节省。完整价格、公式
+和证据边界见后文。
 
 ![Sol Luna 英雄图：Sol 控制闭环，Luna Max 执行有边界的工作](docs/assets/sol-luna-hero.svg)
 
@@ -129,6 +132,9 @@ pwsh -NoProfile -File scripts/uninstall.ps1 -RestoreLatest
 临时 home。Windows Server CI 通过只证明 Server 行为；在记录真实 Windows 11
 运行结果以前，本 README 不宣称已有原生 Windows 11 证据。
 
+发布时的运行表面与证据状态见
+[`docs/release/runtime-surface-matrix.md`](docs/release/runtime-surface-matrix.md)。
+
 ## 为什么可靠：身份、所有权、证据与修正
 
 ### 运行时身份与失败关闭行为
@@ -174,9 +180,23 @@ Status: PASS | BLOCKED
 Summary: <what happened>
 Changed: <exact files, or None>
 Verification: <commands, exit status, and concise output>
-Evidence: <diff, test, build, log, or artifact location>
+Evidence: <diff, test, build, log, or artifact location bound to the final candidate>
+Failure class: runtime | model_identity | permission | dependency | scope | verification | conflict | none
 Blocker: <None or the concrete blocker>
 ```
+
+Evidence 必须绑定最终候选身份，可以使用最终 commit+diff identity 或精确的
+changed-file snapshot。验证后候选发生变化时，旧证据立即失效，必须重跑受影响的验证；
+结果不增加顶层 `Candidate` 字段。transport/spawn 的 `completed` 只表示投递生命周期完成，
+不能替代结构化 Luna `PASS`、Verification/Evidence/changed-path proof 或 Sol review。
+
+Correction Packet 保留原 owner、原 scope 且最多一次，必须带 `Failure class` 与
+`Delta`；`Delta` 只能是同范围任务包变化或新证据。相同任务包且没有新证据时必须
+`BLOCKED`，不得重新 launch。
+
+Resume packet 只用于预计跨上下文压缩、会话中断或长时间运行的任务，字段仅有
+`goal`、`completed`、`in_flight`、`artifact_location`、`next_action`。短任务和 Direct
+任务不生成 resume packet。
 
 ### 安装、验证、卸载、备份与回滚
 
@@ -271,7 +291,7 @@ savings = delegated_share * (1 - luna_duplication / 25) - sol_overhead
 | --- | ---: | ---: | ---: | ---: |
 | Conservative / 保守 | 50% | 125% | 10% | about 38% |
 | Typical / 典型 | 70% | 115% | 8% | about 59% |
-| Execution-heavy / 执行密集型 | 85% | 110% | 7% | about 74% |
+| Reliability-gated complex / 可靠性门槛复杂 | condition-based | 15% avoided invalid rework | 41% after typical | about 65% (estimated) |
 
 作为简单参考，一个全 Sol 的 short-context 工作负载（1M input、0.1M output）约为
 **$8.00** 或 **200 ChatGPT credits**。在典型假设下，路由后的等价工作约为

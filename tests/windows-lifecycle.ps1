@@ -261,6 +261,38 @@ function Invoke-LifecycleScript {
     }
 }
 
+function Invoke-CheckProcess {
+    param(
+        [Parameter(Mandatory = $true)][string]$Path,
+        [Parameter(Mandatory = $true)][string]$TestHome
+    )
+    $oldHome = Get-Item Env:ORCHESTRATE_HOME -ErrorAction SilentlyContinue
+    try {
+        $env:ORCHESTRATE_HOME = $TestHome
+        $engine = (Get-Process -Id $PID).Path
+        if ([string]::IsNullOrWhiteSpace($engine)) {
+            $engine = Join-Path $PSHOME "powershell.exe"
+        }
+        $child = Start-Process -FilePath $engine -ArgumentList @(
+            "-NoLogo",
+            "-NoProfile",
+            "-NonInteractive",
+            "-File",
+            $Path,
+            "-Check"
+        ) -Wait -PassThru -NoNewWindow
+        return [int]$child.ExitCode
+    }
+    finally {
+        if ($null -eq $oldHome) {
+            Remove-Item Env:ORCHESTRATE_HOME -ErrorAction SilentlyContinue
+        }
+        else {
+            $env:ORCHESTRATE_HOME = $oldHome.Value
+        }
+    }
+}
+
 function Assert-LifecycleFails {
     param(
         [Parameter(Mandatory = $true)][string]$Path,
@@ -490,6 +522,21 @@ function Test-RollbackFailpoint {
     Assert-UserMarkersPreserved $TestHome $markers
 }
 
+function Test-CheckModeReadOnly {
+    $TestHome = Join-Path $TestRoot "check mode home"
+    $before = Get-PathFingerprint $TestHome
+    $checkExit = Invoke-CheckProcess -Path $Install -TestHome $TestHome
+    Assert-Equal 2 $checkExit "fresh check mode did not return exit code 2"
+    Assert-Equal $before (Get-PathFingerprint $TestHome) "fresh check mode wrote to the home"
+    Assert-PathAbsent $TestHome
+
+    Invoke-Install $TestHome
+    $before = Get-PathFingerprint $TestHome
+    $checkExit = Invoke-CheckProcess -Path $Install -TestHome $TestHome
+    Assert-Equal 0 $checkExit "consistent check mode did not return exit code 0"
+    Assert-Equal $before (Get-PathFingerprint $TestHome) "consistent check mode changed the home"
+}
+
 function Test-IsolatedHomes {
     $TestHomeA = Join-Path $TestRoot "isolated home A"
     $TestHomeB = Join-Path $TestRoot "isolated home B"
@@ -525,6 +572,7 @@ try {
     Test-ModifiedV01MigrationPreservesUserTargets
     Test-ModifiedCurrentTargetRefusal
     Test-RollbackFailpoint
+    Test-CheckModeReadOnly
     Test-IsolatedHomes
     Test-FilesystemRootRefusal
     Test-ReparsePointRefusal

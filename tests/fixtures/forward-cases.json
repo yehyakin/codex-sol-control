@@ -7,7 +7,8 @@
       "sol": "none",
       "luna": "none",
       "review": "not_applicable",
-      "capacity": "not_applicable"
+      "capacity": "not_applicable",
+      "resume": "forbidden"
     },
     "required_assertions": [
       "ordinary simple work remains direct",
@@ -157,6 +158,74 @@
       "unrelated user edits are preserved",
       "the final diff is limited to Write scope",
       "Main verifies the real diff before integration"
+    ]
+  },
+  {
+    "id": "stale-evidence-after-candidate-change",
+    "prompt": "$sol-luna: reject a PASS when the final candidate changed after verification but the old evidence was reused.",
+    "expected": {
+      "route": "sol_then_luna",
+      "sol": "required",
+      "luna": "blocked",
+      "review": "BLOCKED",
+      "capacity": "live",
+      "resume": "not_applicable"
+    },
+    "required_assertions": [
+      "Evidence binds to the final candidate identity",
+      "candidate change invalidates stale evidence",
+      "affected verification is rerun before PASS"
+    ]
+  },
+  {
+    "id": "transport-completed-not-pass",
+    "prompt": "$sol-luna: treat spawn or transport completed as delivery only, not as a task PASS.",
+    "expected": {
+      "route": "sol_then_luna",
+      "sol": "required",
+      "luna": "blocked",
+      "review": "BLOCKED",
+      "capacity": "live",
+      "resume": "not_applicable"
+    },
+    "required_assertions": [
+      "transport completed proves delivery lifecycle only",
+      "structured Luna PASS is still required",
+      "Sol review and changed-path evidence are still required"
+    ]
+  },
+  {
+    "id": "identical-retry-no-delta",
+    "prompt": "$sol-luna: reject a second launch of the identical task packet when no new evidence or delta exists.",
+    "expected": {
+      "route": "sol_then_luna",
+      "sol": "required",
+      "luna": "blocked",
+      "review": "BLOCKED",
+      "capacity": "live",
+      "resume": "not_applicable"
+    },
+    "required_assertions": [
+      "Correction Packet includes Failure class and Delta",
+      "same task packet with no new evidence is not relaunched",
+      "a changed packet or new evidence is required for retry"
+    ]
+  },
+  {
+    "id": "long-task-resume",
+    "prompt": "$sol-luna: resume a long-running task after context compression using the minimal resume packet.",
+    "expected": {
+      "route": "sol_then_luna",
+      "sol": "required",
+      "luna": "required",
+      "review": "PASS",
+      "capacity": "live",
+      "resume": "required"
+    },
+    "required_assertions": [
+      "Resume packet is limited to goal, completed, in_flight, artifact_location, and next_action",
+      "resume applies to long or interrupted work",
+      "short and Direct tasks do not generate a resume packet"
     ]
   }
 ]

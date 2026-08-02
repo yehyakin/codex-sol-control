@@ -1,0 +1,57 @@
+name: POSIX validation
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  posix-validation:
+    name: ${{ matrix.os }} / Python ${{ matrix.python-version }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - macos-latest
+          - ubuntu-latest
+        python-version:
+          - "3.11"
+          - "3.13"
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Validate repository
+        run: bash scripts/validate.sh
+
+      - name: Validate shell syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          for script in scripts/*.sh; do
+            bash -n "$script"
+          done
+
+      - name: Run full unittest suite
+        run: bash scripts/test.sh
+
+      - name: Verify install check is read-only
+        shell: bash
+        run: |
+          set -euo pipefail
+          check_root=$(mktemp -d)
+          trap 'rm -rf "$check_root"' EXIT
+          check_home="$check_root/home"
+          set +e
+          ORCHESTRATE_HOME="$check_home" bash scripts/install.sh --check
+          check_rc=$?
+          set -e
+          test "$check_rc" -eq 2
+          test ! -e "$check_home"

@@ -92,14 +92,26 @@ class RealProjectBenchmarkTests(unittest.TestCase):
         else:
             self.assertIsNone(measured["value"])
 
+    def test_reliability_gated_cost_claim_is_conditioned_and_estimated(self) -> None:
+        cost = self.load_fixture()["cost"]
+        reliability = cost["reliability_gated_complex_saving_percent"]
+        self.assertEqual(65, reliability["value"])
+        self.assertEqual("estimated", reliability["evidence"])
+        self.assertEqual(41, cost["remaining_cost_after_typical_saving_percent"]["value"])
+        self.assertEqual(15, cost["avoided_invalid_rework_percent"]["value"])
+        self.assertEqual(34.85, cost["post_gate_cost_percent"]["value"])
+        self.assertEqual("estimated", cost["post_gate_cost_percent"]["evidence"])
+        self.assertNotEqual("measured", reliability["evidence"])
+
     def test_report_and_readmes_publish_the_same_evidence_boundary(self) -> None:
         self.assertTrue(REPORT.is_file(), REPORT)
         report = REPORT.read_text(encoding="utf-8")
-        for signal in ("measured", "estimated", "unavailable", "59%"):
+        for signal in ("measured", "estimated", "unavailable", "59%", "65%", "34.85%"):
             self.assertIn(signal, report)
         for path in README_FILES:
             text = path.read_text(encoding="utf-8")
-            self.assertIn("59%", text, path.name)
+            for signal in ("59%", "65%", "34.85%"):
+                self.assertIn(signal, text, path.name)
             self.assertRegex(text, r"(?i)measured|实测")
             self.assertRegex(text, r"(?i)estimated|估算")
             self.assertRegex(text, r"(?i)unavailable|不可得")

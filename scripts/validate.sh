@@ -14,6 +14,8 @@ PS_VALIDATE_FILE="$SCRIPT_DIR/validate.ps1"
 PS_UNINSTALL_FILE="$SCRIPT_DIR/uninstall.ps1"
 WINDOWS_LIFECYCLE_FILE="$ROOT_DIR/tests/windows-lifecycle.ps1"
 WINDOWS_WORKFLOW_FILE="$ROOT_DIR/.github/workflows/windows-validation.yml"
+TEST_ENTRYPOINT_FILE="$SCRIPT_DIR/test.sh"
+POSIX_WORKFLOW_FILE="$ROOT_DIR/.github/workflows/posix-validation.yml"
 
 failures=0
 fail() {
@@ -29,6 +31,7 @@ required_files=(
   ".codex/agents/luna-max-worker.toml"
   "scripts/install.sh"
   "scripts/validate.sh"
+  "scripts/test.sh"
   "scripts/uninstall.sh"
   "scripts/install.ps1"
   "scripts/validate.ps1"
@@ -38,7 +41,9 @@ required_files=(
   "docs/assets/sol-luna-hero.svg"
   "docs/assets/sol-luna-architecture.svg"
   "tests/windows-lifecycle.ps1"
+  "tests/test_release_engineering.py"
   ".github/workflows/windows-validation.yml"
+  ".github/workflows/posix-validation.yml"
   "NOTICE"
   "LICENSE"
 )
@@ -84,8 +89,17 @@ fi
 
 PYTHON_BIN=
 for candidate in \
+  "/opt/homebrew/opt/python@3.14/bin/python3.14" \
+  "/opt/homebrew/bin/python3.14" \
+  "python3.14" \
   "/opt/homebrew/opt/python@3.13/bin/python3.13" \
   "/opt/homebrew/bin/python3.13" \
+  "/opt/homebrew/opt/python@3.12/bin/python3.12" \
+  "/opt/homebrew/bin/python3.12" \
+  "python3.12" \
+  "/opt/homebrew/opt/python@3.11/bin/python3.11" \
+  "/opt/homebrew/bin/python3.11" \
+  "python3.11" \
   "python3" \
   "python"; do
   if [[ "$candidate" == */* ]]; then
@@ -101,7 +115,7 @@ done
 if [[ -z "$PYTHON_BIN" ]]; then
   fail 'Python 3.11 or newer is required for TOML validation'
 else
-  if ! "$PYTHON_BIN" - "$ROOT_DIR" "$SKILL_FILE" "$OPENAI_FILE" "$RUNTIME_FILE" "$SOL_FILE" "$LUNA_FILE" "$PS_FILE" "$PS_VALIDATE_FILE" "$PS_UNINSTALL_FILE" "$WINDOWS_LIFECYCLE_FILE" "$WINDOWS_WORKFLOW_FILE" <<'PY' >/dev/null 2>&1
+if ! "$PYTHON_BIN" - "$ROOT_DIR" "$SKILL_FILE" "$OPENAI_FILE" "$RUNTIME_FILE" "$SOL_FILE" "$LUNA_FILE" "$PS_FILE" "$PS_VALIDATE_FILE" "$PS_UNINSTALL_FILE" "$WINDOWS_LIFECYCLE_FILE" "$WINDOWS_WORKFLOW_FILE" "$TEST_ENTRYPOINT_FILE" "$POSIX_WORKFLOW_FILE" <<'PY' >/dev/null 2>&1
 from __future__ import annotations
 
 import re
@@ -121,6 +135,8 @@ ps_validate_file = Path(sys.argv[8])
 ps_uninstall_file = Path(sys.argv[9])
 windows_lifecycle_file = Path(sys.argv[10])
 windows_workflow_file = Path(sys.argv[11])
+test_entrypoint_file = Path(sys.argv[12])
+posix_workflow_file = Path(sys.argv[13])
 
 
 def fail() -> "NoReturn":
@@ -357,6 +373,8 @@ for path, markers in (
             "scripts/validate.ps1",
             "scripts/uninstall.ps1",
             "Invoke-LifecycleScript",
+            "Invoke-CheckProcess",
+            "Test-CheckModeReadOnly",
             "RestoreLatest",
             "Windows lifecycle contract: PASS",
         ),
@@ -373,6 +391,25 @@ for path, markers in (
             "scripts/uninstall.ps1",
             "tests/windows-lifecycle.ps1",
             "unittest discover",
+        ),
+    ),
+    (
+        test_entrypoint_file,
+        (
+            "#!/usr/bin/env bash",
+            "Python 3.11",
+            "unittest discover",
+        ),
+    ),
+    (
+        posix_workflow_file,
+        (
+            "macos-latest",
+            "ubuntu-latest",
+            "3.11",
+            "3.13",
+            "scripts/test.sh",
+            "install.sh --check",
         ),
     ),
 ):
@@ -418,7 +455,7 @@ else
   printf 'YAML parser: Ruby not found; structural checks used\n'
 fi
 
-for shell_script in "$SCRIPT_DIR/install.sh" "$SCRIPT_DIR/validate.sh" "$SCRIPT_DIR/uninstall.sh"; do
+for shell_script in "$SCRIPT_DIR/install.sh" "$SCRIPT_DIR/validate.sh" "$SCRIPT_DIR/uninstall.sh" "$TEST_ENTRYPOINT_FILE"; do
   if [[ -f "$shell_script" ]] && ! bash -n "$shell_script" >/dev/null 2>&1; then
     fail "Bash syntax validation failed: $(basename "$shell_script")"
   fi

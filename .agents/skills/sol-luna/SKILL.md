@@ -83,9 +83,17 @@ Status: PASS | BLOCKED
 Summary: <what happened>
 Changed: <exact files, or None>
 Verification: <commands and exact results>
-Evidence: <diff, test, build, log, or artifact evidence>
+Evidence: <diff, test, build, log, or artifact evidence bound to the final candidate>
+Failure class: runtime | model_identity | permission | dependency | scope | verification | conflict | none
 Blocker: <None or the concrete blocker>
 ```
+
+Evidence must bind to the final candidate identity, represented by a commit+diff
+identity or an exact changed-file snapshot. If the candidate changes after
+verification, prior evidence is stale and affected verification must be rerun
+before `PASS`. A top-level `Candidate` result field is not added.
+
+transport/spawn `completed` only proves delivery lifecycle completion; it cannot substitute for a structured Luna `PASS`, Verification/Evidence/changed-path proof, or Sol review.
 
 Luna may return `PASS` for its assigned task only. Sol decides whether the
 overall work is complete.
@@ -106,6 +114,19 @@ Sol returns `PASS | FIX | BLOCKED`. Evidence-free `PASS`, out-of-scope writes,
 failed verification, conflicts, or missed criteria cannot pass review. Sol may
 issue at most one focused fix to the original owner without expanding its write
 scope. A second failure is `BLOCKED`.
+
+Every Correction Packet keeps the original owner and original scope, and contains
+`Failure class: runtime | model_identity | permission | dependency | scope | verification | conflict | none`
+plus a `Delta` that changes the same-scope task packet or adds new evidence. The
+`none` class is valid only when no failure occurred; any failure uses another
+allowed class. The same task packet with no new evidence is `BLOCKED` and must
+not be relaunched.
+
+## Resume packet (long tasks only)
+
+Resume packets are only for tasks expected to cross context compression, suffer a
+session interruption, or run for a long time. The minimal packet contains only
+`goal`, `completed`, `in_flight`, `artifact_location`, and `next_action`. Short and Direct tasks never generate a resume packet.
 
 Deletion, deployment, production changes, accounts, payment, credentials, or
 other external side effects require explicit user authorization before work

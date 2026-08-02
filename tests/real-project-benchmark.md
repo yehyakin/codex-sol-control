@@ -42,6 +42,11 @@ saving is `unavailable` because comparable exact per-model token or credit usage
 was not exposed in these records. Observing routing, verification, or review
 does not justify inventing the missing cost measurement.
 
+A separate reliability-gated complex-task estimate is about **65%**, not measured.
+After the typical saving, 41% of cost remains; avoiding invalid rework equal to 15%
+of that remainder leaves 41%*85%=34.85%, which is approximately 65% saved. This
+conditional reliability case is separate from any execution-heavy scenario.
+
 ## Privacy and limitations
 
 The public result contains anonymous aggregate categories only. It excludes

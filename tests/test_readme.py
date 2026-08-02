@@ -66,7 +66,6 @@ CHATGPT_RATES = {
 SCENARIOS = (
     (("Conservative", "保守"), ("50%", "125%", "10%", "38%")),
     (("Typical", "典型"), ("70%", "115%", "8%", "59%")),
-    (("Execution-heavy", "执行密集型", "执行偏重"), ("85%", "110%", "7%", "74%")),
 )
 
 
@@ -95,7 +94,7 @@ class ReadmeContractTests(unittest.TestCase):
         first_screen = "\n".join(text.splitlines()[:48])
         self.assertIn("成本约节省 59%", first_screen)
         self.assertRegex(first_screen, r"保守.{0,20}38%")
-        self.assertRegex(first_screen, r"执行密集.{0,20}74%")
+        self.assertRegex(first_screen, r"可靠性门槛.{0,40}65%")
         self.assertRegex(first_screen, r"估算|不是.{0,20}保证")
         self.assertLess(text.index("成本约节省 59%"), text.index("## 架构"))
 
@@ -265,6 +264,41 @@ class ReadmeContractTests(unittest.TestCase):
 
             self.assertRegex(text, r"(?i)(?:Direct|直接)[^\n]{0,100}0%")
 
+    def test_readmes_publish_conditioned_reliability_saving_separately(self) -> None:
+        documents = self.readme_documents()
+        for path, text in documents.items():
+            saving_lines = [line for line in text.splitlines() if "65%" in line]
+            self.assertTrue(saving_lines, f"{path.name}: missing conditioned 65% estimate")
+            self.assertTrue(
+                any("41%" in line and "85%" in line and "34.85%" in line for line in saving_lines),
+                f"{path.name}: 65% estimate is missing the 41% * 85% = 34.85% derivation",
+            )
+            self.assertTrue(
+                any(re.search(r"(?i)estimated|估算", line) for line in saving_lines),
+                f"{path.name}: conditioned 65% estimate must remain estimated",
+            )
+            self.assertFalse(
+                any(re.search(r"(?i)execution[- ]heavy|执行密集|执行偏重", line) for line in saving_lines),
+                f"{path.name}: 65% must not be mixed with execution-heavy wording",
+            )
+
+    def test_readmes_preserve_linux_do_attribution(self) -> None:
+        chinese = CHINESE_README.read_text(encoding="utf-8")
+        english = ENGLISH_README.read_text(encoding="utf-8")
+        self.assertIn(
+            "感谢 [LINUX DO 论坛](https://linux.do/) 社区的关注、反馈与支持。",
+            chinese,
+        )
+        self.assertIn(
+            "Thank you to the [LINUX DO forum](https://linux.do/) community for its attention,\nfeedback, and support.",
+            english,
+        )
+
+    def test_readmes_link_the_release_runtime_surface_matrix(self) -> None:
+        documents = self.readme_documents()
+        for path, text in documents.items():
+            self.assertIn("docs/release/runtime-surface-matrix.md", text, path.name)
+
     def test_readmes_state_disclaimers_and_api_subscription_distinction(self) -> None:
         documents = self.readme_documents()
         for path, text in documents.items():
@@ -296,7 +330,10 @@ class ReadmeContractTests(unittest.TestCase):
             "96%",
             "38%",
             "59%",
-            "74%",
+            "65%",
+            "41%",
+            "85%",
+            "34.85%",
             "0%",
             "config.toml",
             "RestoreLatest",

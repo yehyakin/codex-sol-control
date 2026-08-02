@@ -1,6 +1,8 @@
 #requires -Version 5.1
 [CmdletBinding()]
-param()
+param(
+    [switch]$Check
+)
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
@@ -239,6 +241,7 @@ function Assert-Source {
         ".codex/agents/luna-max-worker.toml",
         "scripts/install.sh",
         "scripts/validate.sh",
+        "scripts/test.sh",
         "scripts/uninstall.sh",
         "scripts/install.ps1",
         "scripts/validate.ps1",
@@ -248,6 +251,9 @@ function Assert-Source {
         "docs/assets/sol-luna-hero.svg",
         "docs/assets/sol-luna-architecture.svg",
         "tests/windows-lifecycle.ps1",
+        "tests/test_release_engineering.py",
+        ".github/workflows/windows-validation.yml",
+        ".github/workflows/posix-validation.yml",
         "NOTICE",
         "LICENSE"
     )
@@ -328,6 +334,12 @@ if ($baseDir -eq [System.IO.Path]::GetPathRoot($baseDir)) {
     throw "refusing the filesystem root as ORCHESTRATE_HOME"
 }
 Assert-PathChain $baseDir
+if ($Check -and (Test-PathExists $baseDir)) {
+    $baseItem = Get-Item -LiteralPath $baseDir -Force
+    if (-not $baseItem.PSIsContainer -or (Test-ReparsePoint $baseItem)) {
+        throw "unsafe ORCHESTRATE_HOME"
+    }
+}
 
 $skillSource = Join-Path $repoRoot ".agents/skills/sol-luna"
 $solSource = Join-Path $repoRoot ".codex/agents/sol-controller.toml"
@@ -440,6 +452,24 @@ if (-not $v2StatePresent -and (Test-PathExists $lunaTarget)) {
     else {
         throw "existing shared Luna has no ownership state"
     }
+}
+
+if ($Check) {
+    $sourceSkillDigest = Get-TreeDigest $skillSource
+    $sourceSolDigest = Get-FileDigest $solSource
+    $sourceLunaDigest = Get-FileDigest $lunaSource
+    if ($v2StatePresent -and
+        $v2SkillDigest -eq $sourceSkillDigest -and
+        $v2SolDigest -eq $sourceSolDigest -and
+        $v2LunaDigest -eq $sourceLunaDigest -and
+        -not (Test-PathExists $legacySkillTarget) -and
+        -not (Test-PathExists $legacySolTarget) -and
+        -not (Test-PathExists $legacyStateFile)) {
+        Write-Output "Check: installation is consistent; no changes required"
+        exit 0
+    }
+    Write-Output "Check: installation is safe and requires install/update"
+    exit 2
 }
 
 $backupId = "{0}-{1}" -f (Get-Date).ToUniversalTime().ToString("yyyyMMddTHHmmssZ"), $PID

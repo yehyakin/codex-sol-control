@@ -201,6 +201,116 @@ class RepositoryContractTests(unittest.TestCase):
         self.assertRegex(text, r"(?i)PASS\s*\|\s*FIX\s*\|\s*BLOCKED")
         self.assertRegex(text, r"(?i)at\s+most\s+one[^\n]*(focused\s+)?fix")
 
+    def test_v040_evidence_binds_final_candidate_and_invalidates_stale_evidence(self) -> None:
+        text = self.contract_text()
+        self.assertIn(
+            "Evidence must bind to the final candidate identity",
+            text,
+        )
+        self.assertRegex(
+            text,
+            r"(?i)commit\+diff identity|exact changed-file snapshot",
+        )
+        self.assertRegex(
+            text,
+            r"(?is)candidate changes? after verification.{0,160}(?:stale|invalid).{0,160}rerun",
+        )
+        self.assertNotRegex(text, r"(?m)^\s*Candidate:\s*")
+
+    def test_v040_transport_completion_cannot_substitute_task_pass(self) -> None:
+        text = self.contract_text()
+        self.assertIn(
+            "transport/spawn `completed` only proves delivery lifecycle completion",
+            text,
+        )
+        self.assertRegex(
+            text,
+            r"(?i)cannot substitute for (?:a )?structured Luna `?PASS`?",
+        )
+        self.assertRegex(
+            text,
+            r"(?i)Verification/Evidence/changed-path proof",
+        )
+        self.assertRegex(text, r"(?i)Sol review")
+
+    def test_v040_correction_packets_require_allowed_failure_class_and_delta(self) -> None:
+        text = self.contract_text()
+        allowed = "runtime | model_identity | permission | dependency | scope | verification | conflict | none"
+        self.assertIn(allowed, text)
+        self.assertIn("Failure class:", text)
+        self.assertIn("Correction Packet", text)
+        self.assertRegex(text, r"(?is)Correction Packet.{0,220}Delta")
+        self.assertRegex(
+            text,
+            r"(?i)same (?:task )?packet.{0,100}no new evidence.{0,100}BLOCKED",
+        )
+
+    def test_v040_resume_packet_is_long_task_only_and_has_minimal_fields(self) -> None:
+        text = self.contract_text()
+        self.assertIn("Resume packet", text)
+        for field in ("goal", "completed", "in_flight", "artifact_location", "next_action"):
+            self.assertRegex(text, rf"(?is)Resume packet.{{0,300}}\b{re.escape(field)}\b")
+        self.assertRegex(text, r"(?i)Resume packet.{0,180}(?:long|compression|interruption)")
+        self.assertIn("Short and Direct tasks never generate a resume packet", text)
+
+    def test_v040_runtime_surface_matrix_is_release_time_only(self) -> None:
+        path = ROOT / "docs" / "release" / "runtime-surface-matrix.md"
+        self.assertTrue(path.is_file(), path)
+        text = path.read_text(encoding="utf-8")
+        for surface in ("Desktop", "CLI", "codex exec"):
+            self.assertIn(surface, text, surface)
+        for signal in (
+            "Agent selection",
+            "exact model",
+            "reasoning",
+            "nested dispatch",
+            "result retrieval",
+            "candidate binding",
+        ):
+            self.assertIn(signal, text, signal)
+        for status in ("VERIFIED", "FAILED", "UNVERIFIED"):
+            self.assertIn(status, text, status)
+        self.assertRegex(text, r"(?i)release[- ]time|release documentation|per-task")
+
+    def test_runtime_notes_preserve_host_safety_checkpoints_and_environment_hygiene(self) -> None:
+        text = self.contract_text()
+        for marker in (
+            "First-artifact checkpoint",
+            "smallest observable first artifact",
+            "Host's stated execution timebox",
+            "Before dispatching a Sol `FIX`",
+            "permissions, and side effects",
+            "Verification environment hygiene",
+            "committed lockfile",
+            "different package manager",
+            "unexpectedly changes the worktree or dependency layout",
+            "stop, attribute the new paths and timestamps",
+        ):
+            self.assertIn(marker, text, marker)
+
+    def test_runtime_matrix_verified_rows_have_checkable_evidence(self) -> None:
+        path = ROOT / "docs" / "release" / "runtime-surface-matrix.md"
+        text = path.read_text(encoding="utf-8")
+        verified_rows = [line for line in text.splitlines() if "| VERIFIED |" in line]
+        for row in verified_rows:
+            self.assertRegex(row, r"`[^`]+`")
+
+    def test_failure_class_none_means_no_failure(self) -> None:
+        contract_paths = (
+            SKILL_ROOT / "SKILL.md",
+            SKILL_ROOT / "references" / "orchestration.md",
+            SKILL_ROOT / "references" / "runtime-notes.md",
+            SOL_AGENT,
+            LUNA_AGENT,
+        )
+        for path in contract_paths:
+            text = read_if_present(path)
+            with self.subTest(path=path.relative_to(ROOT) if path.is_relative_to(ROOT) else path):
+                self.assertRegex(
+                    text,
+                    r"(?is)`?none`?.{0,120}(?:no failure|failure is absent|without a failure)",
+                )
+
     def test_routing_safety_keeps_runtime_mechanics_internal(self) -> None:
         skill_text = read_if_present(SKILL_ROOT / "SKILL.md")
         runtime_path = self.runtime_note_path()
@@ -241,7 +351,7 @@ class RepositoryContractTests(unittest.TestCase):
         self.assertRegex(luna_text, r"(?i)parent permission boundary")
         self.assertRegex(self.contract_text(), r"(?i)Fail Closed")
 
-    def test_forward_fixture_covers_only_v020_routes(self) -> None:
+    def test_forward_fixture_covers_v020_routes_and_v040_reliability_cases(self) -> None:
         path = ROOT / "tests" / "fixtures" / "forward-cases.json"
         cases = json.loads(path.read_text(encoding="utf-8"))
         expected_ids = {
@@ -255,6 +365,10 @@ class RepositoryContractTests(unittest.TestCase):
             "exact-selection-unavailable",
             "focused-sol-fix",
             "dirty-worktree-preserved",
+            "stale-evidence-after-candidate-change",
+            "transport-completed-not-pass",
+            "identical-retry-no-delta",
+            "long-task-resume",
         }
         self.assertEqual(expected_ids, {case["id"] for case in cases})
         self.assertEqual(len(expected_ids), len(cases))
@@ -263,6 +377,7 @@ class RepositoryContractTests(unittest.TestCase):
         allowed_presence = {"none", "optional", "required", "blocked"}
         allowed_reviews = {"not_applicable", "PASS", "FIX", "BLOCKED"}
         allowed_capacity = {"not_applicable", "live"}
+        allowed_resume = {"not_applicable", "forbidden", "required"}
 
         for case in cases:
             self.assertTrue(case["prompt"])
@@ -272,7 +387,13 @@ class RepositoryContractTests(unittest.TestCase):
             self.assertIn(expected["luna"], allowed_presence)
             self.assertIn(expected["review"], allowed_reviews)
             self.assertIn(expected["capacity"], allowed_capacity)
+            if "resume" in expected:
+                self.assertIn(expected["resume"], allowed_resume)
             self.assertGreaterEqual(len(case["required_assertions"]), 3)
+
+        by_id = {case["id"]: case for case in cases}
+        self.assertEqual("forbidden", by_id["ordinary-simple-direct"]["expected"].get("resume"))
+        self.assertEqual("required", by_id["long-task-resume"]["expected"].get("resume"))
 
     def test_public_skill_has_no_unrelated_brand_or_model_contamination(self) -> None:
         combined = "\n".join(

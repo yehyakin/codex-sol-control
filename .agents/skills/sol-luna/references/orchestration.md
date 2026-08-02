@@ -78,13 +78,23 @@ Status: PASS | BLOCKED
 Summary: <what happened>
 Changed: <exact files, or None>
 Verification: <commands, exit status, and concise output>
-Evidence: <diff, test, build, log, or artifact location>
+Evidence: <diff, test, build, log, or artifact location bound to the final candidate>
+Failure class: runtime | model_identity | permission | dependency | scope | verification | conflict | none
 Blocker: <None or the concrete blocker>
 ```
 
 `PASS` requires every assigned acceptance condition and verification to be
 evidenced. Luna approves only its bounded task; it never approves the overall
 project.
+
+Evidence must bind to the final candidate identity using either a commit+diff
+identity or an exact changed-file snapshot. If the candidate changes after
+verification, the old evidence is stale and affected verification must be rerun.
+Do not add a top-level `Candidate` field to the Luna result.
+
+Transport/spawn `completed` only proves delivery lifecycle completion. It cannot
+substitute for a structured Luna `PASS`, Verification/Evidence/changed-path proof,
+or Sol review.
 
 ## 7. Sol review
 
@@ -118,7 +128,22 @@ Verification: <exact regression command or procedure>
 The same owner performs the fix. A second failure, expanded scope, or new owner
 conflict becomes `BLOCKED`; do not retry indefinitely.
 
-## 9. Safety boundary
+The focused correction is a Correction Packet with the original owner and
+unchanged scope. It must include `Failure class` from exactly `runtime`,
+`model_identity`, `permission`, `dependency`, `scope`, `verification`, `conflict`,
+or `none`, plus a `Delta` that changes the same-scope task packet or adds new
+evidence. The `none` class is valid only when no failure occurred; any failure
+uses another allowed class. An identical task packet with no new evidence is
+`BLOCKED` and must not be relaunched.
+
+## 9. Resume packet (long tasks only)
+
+Resume is only for tasks expected to cross context compression, be interrupted,
+or run for a long time. Its minimal packet contains only `goal`, `completed`,
+`in_flight`, `artifact_location`, and `next_action`. Short and Direct tasks do not
+generate a resume packet.
+
+## 10. Safety boundary
 
 The dispatcher cannot widen user authorization or the parent permission
 boundary. Deletion, deployment, production changes, accounts, payment,

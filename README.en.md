@@ -12,12 +12,16 @@ Under the current typical model, Luna Max performs about 70% of the execution
 work at 115% of the delegated token baseline while added Sol planning and review
 costs 8%. The resulting whole-workflow estimate is about **59% lower**.
 
-**Conservative estimate: about 38% · Execution-heavy estimate: about 74%**
+**Conservative estimate: about 38% · Reliability-gated complex estimate: about 65%**
 
 This is a modeled estimate based on the 2026-08-02 pricing snapshot and public
 formula, not a guarantee for every task. Direct tasks claim 0% routing savings;
-repeated context, poor decomposition, retries, or heavy Sol review can reduce or
-erase the benefit. Full pricing, formula, and evidence boundaries appear below.
+after the typical 59%, 41% of cost remains, and avoiding invalid rework equal to
+15% of that remainder gives 41%*85%=34.85%, equivalent to about 65% savings
+(estimated, not measured). This conditioned case is separate from execution-heavy
+74%, not the same claim; repeated context, poor decomposition, retries, or heavy
+Sol review can reduce or erase the benefit. Full pricing, formula, and evidence
+boundaries appear below.
 
 ![Sol Luna hero: Sol controls the loop and Luna Max executes bounded work](docs/assets/sol-luna-hero.svg)
 
@@ -137,6 +141,9 @@ Windows lifecycle tests. A Windows Server CI pass proves Server behavior only;
 this README does not claim native Windows 11 evidence until a real Windows 11
 run is recorded.
 
+The release-time runtime surface and evidence status are documented in
+[`docs/release/runtime-surface-matrix.md`](docs/release/runtime-surface-matrix.md).
+
 ## Why it is reliable: identity, ownership, evidence, and correction
 
 ### Runtime identities and fail-closed behavior
@@ -189,9 +196,27 @@ Status: PASS | BLOCKED
 Summary: <what happened>
 Changed: <exact files, or None>
 Verification: <commands, exit status, and concise output>
-Evidence: <diff, test, build, log, or artifact location>
+Evidence: <diff, test, build, log, or artifact location bound to the final candidate>
+Failure class: runtime | model_identity | permission | dependency | scope | verification | conflict | none
 Blocker: <None or the concrete blocker>
 ```
+
+Evidence must bind to the final candidate identity using a commit+diff identity or
+an exact changed-file snapshot. If the candidate changes after verification, old
+evidence is stale and affected verification must be rerun; no top-level
+`Candidate` result field is added. Transport/spawn `completed` only proves delivery
+lifecycle completion and cannot substitute for a structured Luna `PASS`,
+Verification/Evidence/changed-path proof, or Sol review.
+
+A Correction Packet keeps the original owner and scope and is limited to one
+focused correction. It includes `Failure class` and a `Delta`; the Delta must be a
+same-scope task-packet change or new evidence. An identical packet with no new
+evidence is `BLOCKED` and must not be relaunched.
+
+A Resume packet is only for tasks expected to cross context compression, be
+interrupted, or run for a long time. It contains only `goal`, `completed`,
+`in_flight`, `artifact_location`, and `next_action`. Short and Direct tasks never
+generate a resume packet.
 
 ### Install, validate, uninstall, backup, and rollback
 
@@ -293,7 +318,7 @@ Here:
 | --- | ---: | ---: | ---: | ---: |
 | Conservative | 50% | 125% | 10% | about 38% |
 | Typical | 70% | 115% | 8% | about 59% |
-| Execution-heavy | 85% | 110% | 7% | about 74% |
+| Reliability-gated complex | condition-based | 15% avoided invalid rework | 41% after typical | about 65% (estimated) |
 
 For a simple reference point, an all-Sol short-context workload with 1M input
 and 0.1M output costs about **$8.00** or **200 ChatGPT credits**. Under the

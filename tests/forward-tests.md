@@ -1,18 +1,20 @@
-# v0.2.0 Forward Tests
+# v0.4 Forward Tests
 
-Date: 2026-08-01
+Date: 2026-08-03
 
 Scope: routing-contract fixtures plus isolated installer roots. No business
 repository, global agent file, or live production system is read or modified.
 
 ## Method
 
-- The ten scenarios are defined in `tests/fixtures/forward-cases.json`.
+- The fourteen scenarios are defined in `tests/fixtures/forward-cases.json`.
 - Each case describes the expected route without exposing internal runtime
   mechanics as a public mode or fixed worker-count promise.
 - Contract tests check explicit invocation, direct handling of ordinary simple
   work, Sol-only planning, complete Luna packets/results, ownership, dynamic
   live-capacity batching, exact selection proof, and focused review fixes.
+- Four reliability cases add final-candidate evidence binding, transport/spawn
+  completion separation, no-delta retry blocking, and long-task-only resume.
 - Installer tests use a temporary `ORCHESTRATE_HOME`, synthesize a v0.1
   installation with checksums, and exercise migration, modified-target
   preservation, rollback, uninstall, restore, unrelated files, and
@@ -32,14 +34,17 @@ repository, global agent file, or live production system is read or modified.
 | Unprovable exact selection | `blocked` | BLOCKED | BLOCKED |
 | One missed criterion | `sol_then_luna` | one focused fix at most | FIX |
 | Dirty worktree | `sol_then_luna` | scoped writes only | PASS |
+| Stale evidence after candidate change | `sol_then_luna` | BLOCKED until affected verification reruns | BLOCKED |
+| Transport/spawn `completed` | `sol_then_luna` | delivery only; structured result required | BLOCKED |
+| Identical retry with no Delta | `sol_then_luna` | no relaunch without new evidence | BLOCKED |
+| Long-task resume | `sol_then_luna` | minimal resume packet required | PASS |
 
-## RED status
+## Reliability guard status
 
-Against the current v0.1 production files, the updated suite exited non-zero:
-21 tests ran with 14 assertion failures and 0 errors. The failures identify
-the missing new skill, Sol controller, simplified routing contract, and
-v0.1-to-v0.2 installer migration; they are not import, parsing, or
-temporary-root setup errors.
+The v0.4 focused contract, README, and benchmark suite now runs 41 tests with
+zero failures or errors. The full repository test entrypoint runs 62 tests and
+also passes. The anonymous pre-implementation RED evidence is retained in
+`tests/fixtures/v040-baseline-red.md`.
 
 No public runtime-mode enumeration or fixed worker-count taxonomy is part of
 this forward contract.

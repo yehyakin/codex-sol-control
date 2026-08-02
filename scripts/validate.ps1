@@ -285,6 +285,7 @@ $requiredFiles = @(
     ".codex/agents/luna-max-worker.toml",
     "scripts/install.sh",
     "scripts/validate.sh",
+    "scripts/test.sh",
     "scripts/uninstall.sh",
     "scripts/install.ps1",
     "scripts/validate.ps1",
@@ -294,7 +295,9 @@ $requiredFiles = @(
     "docs/assets/sol-luna-hero.svg",
     "docs/assets/sol-luna-architecture.svg",
     "tests/windows-lifecycle.ps1",
+    "tests/test_release_engineering.py",
     ".github/workflows/windows-validation.yml",
+    ".github/workflows/posix-validation.yml",
     "NOTICE",
     "LICENSE"
 )
@@ -358,6 +361,21 @@ foreach ($marker in @(
 )) {
     if ($workflowText.IndexOf($marker, [System.StringComparison]::Ordinal) -lt 0) {
         throw "Validation: Windows workflow is missing $marker"
+    }
+}
+
+$posixWorkflowPath = Join-Path $repoRoot ".github/workflows/posix-validation.yml"
+$posixWorkflowText = Read-Utf8Text $posixWorkflowPath
+foreach ($marker in @(
+    "macos-latest",
+    "ubuntu-latest",
+    "3.11",
+    "3.13",
+    "scripts/test.sh",
+    "install.sh --check"
+)) {
+    if ($posixWorkflowText.IndexOf($marker, [System.StringComparison]::Ordinal) -lt 0) {
+        throw "Validation: POSIX workflow is missing $marker"
     }
 }
 

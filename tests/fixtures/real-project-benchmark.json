@@ -1,5 +1,5 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "run_date": "2026-08-02",
   "method": "existing_evidence_then_read_only_gap_probes",
   "privacy": "anonymous_aggregate_only",
@@ -43,6 +43,10 @@
   ],
   "cost": {
     "typical_workflow_saving_percent": {"value": 59, "evidence": "estimated"},
+    "reliability_gated_complex_saving_percent": {"value": 65, "evidence": "estimated"},
+    "remaining_cost_after_typical_saving_percent": {"value": 41, "evidence": "estimated"},
+    "avoided_invalid_rework_percent": {"value": 15, "evidence": "estimated"},
+    "post_gate_cost_percent": {"value": 34.85, "evidence": "estimated"},
     "measured_workflow_saving_percent": {"value": null, "evidence": "unavailable"},
     "exact_per_model_usage_available": {"value": false, "evidence": "measured"}
   }
