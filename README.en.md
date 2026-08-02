@@ -1,194 +1,121 @@
 [简体中文](README.md) · [English](README.en.md)
 
+![Sol blueprint architect sends bounded work orders to Luna work cells and receives evidence for review](docs/assets/sol-luna-hero.svg)
+
 # Sol Luna
 
-`codex-sol-luna` is a deliberately small Codex orchestration Skill: Sol is the
-single controller that understands, plans, splits, assigns, and reviews; Luna
-Max executes bounded tasks, verifies the work, and returns evidence.
+**One Sol controller. Bounded Luna Max execution. Delivery only after real files and evidence pass review.**
 
-## Estimated cost saving: about 59%
+`codex-sol-luna` is a small, general-purpose Codex orchestration Skill. Simple
+tasks stay with the current Codex; complex work is understood, planned, assigned,
+and reviewed by Sol while Luna Max executes clearly bounded sub-tasks.
 
-Under the current typical model, Luna Max performs about 70% of the execution
-work at 115% of the delegated token baseline while added Sol planning and review
-costs 8%. The resulting whole-workflow estimate is about **59% lower**.
+| Typical condition | Conditional condition |
+| --- | --- |
+| **Typical work suitable for bounded delegation — about 59% saving** | **Complex, rework-prone work — about 65% saved under estimated conditions** |
 
-**Conservative estimate: about 38% · Reliability-gated complex estimate: about 65%**
-
-This is a modeled estimate based on the 2026-08-02 pricing snapshot and public
-formula, not a guarantee for every task. Direct tasks claim 0% routing savings;
-after the typical 59%, 41% of cost remains, and avoiding invalid rework equal to
-15% of that remainder gives 41%*85%=34.85%, equivalent to about 65% savings
-(estimated, not measured). This conditioned case is separate from execution-heavy
-74%, not the same claim; repeated context, poor decomposition, retries, or heavy
-Sol review can reduce or erase the benefit. Full pricing, formula, and evidence
-boundaries appear below.
-
-![Sol Luna hero: Sol controls the loop and Luna Max executes bounded work](docs/assets/sol-luna-hero.svg)
-
-> One controller. Bounded execution. Reviewable evidence.
+Both figures are estimated, not a guarantee. The 59% scenario is typical only for
+work suitable for bounded delegation. Simple Direct tasks use zero delegation and
+claim **0%** routing savings. The conditional 65% scenario applies only when some
+invalid rework is avoided after the typical estimate; it is not a universal result.
 
 The canonical repository is [yehyakin/codex-sol-luna](https://github.com/yehyakin/codex-sol-luna).
-Invoke the Skill explicitly with `$sol-luna` when the work is complex,
-parallelizable, or high consequence.
+Invoke `$sol-luna` explicitly when the work is complex, parallelizable, or high consequence.
 
-## Architecture
+## 60-second quickstart
 
-![Sol Luna architecture: a user goal flows through Sol, parallel Luna workers, Sol review, and delivery](docs/assets/sol-luna-architecture.svg)
-
-Sol is the single controller: it understands the goal, defines observable
-completion criteria, plans the stages, assigns ownership, routes work, and makes
-the final review decision. Luna Max workers execute only the bounded packets
-they receive, verify their own changes, and return evidence. Luna may not create
-subagents, and the worker count is dynamic rather than a promised fixed maximum.
-
-```text
-User goal → Sol plans and routes → Luna Max executes bounded tasks
-          → Sol reviews files, diffs, and evidence → delivery
-```
-
-The public surface stays intentionally small:
-
-| Role | Responsibility | Boundary |
-| --- | --- | --- |
-| Sol | Controller, planner, router, and reviewer | Read-only orchestration and final decision |
-| Luna Max | Bounded implementation and self-verification | Assigned files only; no recursive delegation |
-
-## When to use — and when to stay direct
-
-Use `$sol-luna` for:
-
-- a multi-part change with clear seams and independent work;
-- parallelizable implementation where every file can have one owner;
-- high-consequence work where a second review of the real diff and evidence is valuable;
-- a plan that needs explicit stages, dependencies, and a falsifiable `done_when`.
-
-Stay direct when:
-
-- the task is a small, self-contained edit or a quick explanation;
-- the goal is still too ambiguous to split into bounded packets;
-- delegation, repeated context, or a review pass would cost more than it helps;
-- planning or review is the only work required. Planning-only work may use zero
-  Luna workers, and direct tasks claim 0% routing savings.
-
-An explicit `$sol-luna` invocation always starts with Sol. Ordinary simple work
-remains direct unless the Skill is explicitly selected.
-
-Runtime output defaults to Simplified Chinese for Sol plans and reviews, Luna
-task results, and status updates. An explicit user request for another language
-overrides this default. Code, commands, paths, identifiers, and original
-evidence may retain their source language.
-
-## Platform support and quickstart
-
-The lifecycle has two supported command families:
-
-| Target | Shells | Status boundary |
-| --- | --- | --- |
-| macOS | POSIX shell | Supported by the `bash` lifecycle scripts |
-| Linux | POSIX shell | Supported by the `bash` lifecycle scripts |
-| Windows 11 | Windows PowerShell 5.1 and PowerShell 7.x | Supported target; native Windows 11 evidence is a separate release gate |
-| Windows Server 2022 | Windows PowerShell 5.1 and PowerShell 7.x | Supported target; GitHub-hosted CI is Server evidence |
-
-GitHub Actions uses `windows-latest` and pinned `windows-2022` for the Windows
-matrix. Those hosted runners provide Windows Server evidence; they must not be
-described as native Windows 11 evidence.
-
-### macOS and Linux
-
-From a checkout of [codex-sol-luna](https://github.com/yehyakin/codex-sol-luna):
+From a [codex-sol-luna](https://github.com/yehyakin/codex-sol-luna) checkout, validate
+before installing:
 
 ```sh
 bash scripts/validate.sh
 bash scripts/install.sh
 ```
 
-To remove the installation or restore the latest valid backup:
+Describe the goal, `done_when`, file ownership, and verification commands to Codex,
+then invoke `$sol-luna`. Small, independent, or explanation-only work stays Direct;
+the complete platform commands and uninstall/rollback path are in
+[Platforms and lifecycle](#platforms-and-lifecycle).
 
-```sh
-bash scripts/uninstall.sh
-bash scripts/uninstall.sh --restore-latest
+## One controller, one execution workshop
+
+![Sol planning room above three Luna work cells with evidence returning through a lift](docs/assets/sol-luna-architecture.svg)
+
+Sol is the single controller: it controls goal understanding, completion criteria,
+stage planning, file ownership, routing, and the final review. Luna Max workers only
+execute bounded work, verify their changes, and return evidence. Parallel work is
+allowed only across disjoint owner scopes; live capacity determines the worker count,
+not a promised fixed maximum.
+
+Runtime output defaults to Simplified Chinese; when the user explicitly requests
+another language, use the requested language. Code, commands, paths, identifiers,
+and original evidence may retain their source form.
+
+```text
+User goal → Sol plans and routes → Luna Max executes bounded work
+          → Sol reviews files, diffs, and evidence → delivery
 ```
 
-For an isolated test home, set `ORCHESTRATE_HOME` to a unique temporary
-directory before running the commands. The installer backs up exact existing
-targets, installs atomically, and leaves unrelated agents and
-`~/.codex/config.toml` alone.
+| Role | Responsibility | Boundary |
+| --- | --- | --- |
+| Sol | Controller, planner, router, and reviewer | Orchestration and final decision only |
+| Luna Max | Bounded implementation and self-verification | Assigned files only; no recursive delegation |
 
-### Windows 11 and Windows Server 2022
+## Choose the route
 
-The Windows lifecycle is native PowerShell and is written to remain compatible
-with both PowerShell 5.1 and PowerShell 7.x. Use `powershell.exe` for Windows
-PowerShell 5.1 or `pwsh` for PowerShell 7:
+![Direct, Sol-only, and Sol-to-Luna routing tracks on a workshop board](docs/assets/sol-luna-routing.svg)
 
-```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/validate.ps1
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/install.ps1
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/uninstall.ps1
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/uninstall.ps1 -RestoreLatest
-```
+The Skill does not delegate every task. First weigh the cost of planning, execution,
+and review against the work itself:
 
-The equivalent PowerShell 7 commands are:
+| Route | Use it when | Delegation and result |
+| --- | --- | --- |
+| **Direct** | The task is small, independent, and clear | Zero delegation, **0%** routing savings, current Codex completes it |
+| **Sol-only** | Clarification, planning, or review is needed without file edits | Sol plans and reviews, stopping before the workshop |
+| **Sol → Luna** | Complex work has clear seams and real changes to make | Luna works inside an independent owner scope and returns evidence to Sol |
 
-```powershell
-pwsh -NoProfile -File scripts/validate.ps1
-pwsh -NoProfile -File scripts/install.ps1
-pwsh -NoProfile -File scripts/uninstall.ps1
-pwsh -NoProfile -File scripts/uninstall.ps1 -RestoreLatest
-```
+Good `$sol-luna` candidates have a clear `write_scope`, paths not to touch, an observable
+`done_when`, and reproducible verification commands. If the goal is ambiguous, repeated
+context is too expensive, or review adds little value, staying Direct is more reliable.
 
-Set `$env:ORCHESTRATE_HOME` to a unique temporary home when running isolated
-Windows lifecycle tests. A Windows Server CI pass proves Server behavior only;
-this README does not claim native Windows 11 evidence until a real Windows 11
-run is recorded.
+## Workflow
 
-The release-time runtime surface and evidence status are documented in
-[`docs/release/runtime-surface-matrix.md`](docs/release/runtime-surface-matrix.md).
+![FILES, DIFF, and TEST trays enter Sol's inspection lightbox for PASS, FIX, or BLOCKED](docs/assets/sol-luna-review.svg)
 
-## Why it is reliable: identity, ownership, evidence, and correction
+Every delegated task follows a reviewable loop:
 
-### Runtime identities and fail-closed behavior
+1. **Plan.** Sol records `goal`, `done_when`, dependencies, the exact `write_scope`, exclusions, and verification.
+2. **Execute.** Luna receives a packet with `Task ID`, `Task`, `Context`, `Write scope`, `Do not touch`, `Expected result`, and `Verification`, and edits only its assigned scope.
+3. **Self-check.** Luna runs the specified checks and returns exact changed paths, diff, test, and build evidence.
+4. **Review.** Sol inspects the real files and fresh evidence, then chooses `PASS`, one focused `FIX`, or `BLOCKED`.
 
-The runtime identities are exact and intentionally boring:
+Worker completion is not final approval; delivery follows only after Sol reviews the
+real diff. One file has one owner for the entire run. Disjoint scopes may run in
+parallel; uncertain or overlapping scopes wait.
+
+## Reliability comes from boundaries
+
+Reliability comes from provable identity, ownership, evidence freshness, and bounded
+correction rather than from a label in configuration.
+
+### Runtime identity and fail-closed behavior
 
 | Agent | Model | Reasoning effort | Effective sandbox |
 | --- | --- | --- | --- |
 | `sol-controller` | `gpt-5.6-sol` | `high` | `read-only` |
 | `luna-max-worker` | `gpt-5.6-luna` | `max` | `workspace-write`, bounded by the parent |
 
-Sol is the single controller; Luna Max workers execute bounded tasks and return
-evidence. The runtime must prove the selected custom agent, exact model,
-reasoning effort, and effective permission boundary at launch. Configuration
-text or an agent label is not proof. If any identity or permission cannot be
-proved, the runtime **fails closed** instead of silently substituting a nearby
-model, role, effort, or sandbox.
-
-Luna Max may not spawn or create subagents. It also may not widen its write
-scope, redesign Sol's plan, approve the overall task, or treat a partial result
-as delivery.
+At launch, the runtime must prove the selected custom agent, exact model, reasoning
+effort, and effective permission boundary. Configuration text or an agent label is
+not proof. If any identity or permission cannot be proved, the runtime **fails
+closed** instead of silently substituting a nearby model, role, effort, or sandbox.
+Luna Max may not spawn or create subagents, widen its write scope, redesign Sol's
+plan, approve the overall task, or treat a partial result as delivery.
 
 ### Stages, ownership, evidence, and correction
 
-Sol's plan has four small responsibilities:
-
-1. **Plan and route.** Sol records the concrete `goal`, observable `done_when`
-   criteria, bounded tasks, exact `write_scope`, exclusions, dependencies, and
-   verification commands.
-2. **Execute.** Luna receives one packet with a stable `Task ID`, `Task`,
-   optional `Context`, `Write scope`, `Do not touch`, `Expected result`, and
-   `Verification`. One file has one owner for the entire run. Independent
-   disjoint scopes may run in parallel; uncertain or overlapping scopes wait.
-3. **Review.** Sol inspects the real files, complete diff, test output, and
-   returned evidence. A worker's result is not a substitute for Sol's review.
-4. **Correct or deliver.** Sol may issue at most one focused correction to the
-   original owner inside the original scope. A second failure, a missing
-   dependency, or an expanded scope is `BLOCKED`; only Sol decides `PASS` for
-   the overall task.
-
-Live capacity controls batching, not the architecture. If fewer workers are
-available, ready tasks remain queued; the plan never assumes a fixed Luna
-maximum.
-
-A worker result is deliberately falsifiable:
+The workflow has four stages: Sol plans and routes; Sol assigns and Luna executes; Luna self-checks and returns evidence; Sol reviews and delivers. The result packet remains machine-
+readable and falsifiable:
 
 ```text
 Task ID: <stable task id>
@@ -203,63 +130,27 @@ Blocker: <None or the concrete blocker>
 
 Evidence must bind to the final candidate identity using a commit+diff identity or
 an exact changed-file snapshot. If the candidate changes after verification, old
-evidence is stale and affected verification must be rerun; no top-level
-`Candidate` result field is added. Transport/spawn `completed` only proves delivery
-lifecycle completion and cannot substitute for a structured Luna `PASS`,
-Verification/Evidence/changed-path proof, or Sol review.
+evidence is stale and affected verification must be rerun; transport/spawn
+`completed` only proves delivery lifecycle completion and cannot substitute for a
+structured Luna `PASS`, Verification/Evidence/changed-path proof, or Sol review.
 
-A Correction Packet keeps the original owner and scope and is limited to one
-focused correction. It includes `Failure class` and a `Delta`; the Delta must be a
-same-scope task-packet change or new evidence. An identical packet with no new
-evidence is `BLOCKED` and must not be relaunched.
+Sol may issue at most one focused correction to the original owner inside the
+original scope. A second failure, missing dependency, or expanded scope is
+`BLOCKED`. A Correction Packet keeps the original owner and scope and includes
+`Failure class` and a `Delta`; an identical packet with no new evidence must not be
+relaunched.
 
-A Resume packet is only for tasks expected to cross context compression, be
+A Resume packet is only for a task expected to cross context compression, be
 interrupted, or run for a long time. It contains only `goal`, `completed`,
 `in_flight`, `artifact_location`, and `next_action`. Short and Direct tasks never
-generate a resume packet.
+generate a Resume packet. Live capacity controls batching; the plan never assumes a
+fixed Luna maximum.
 
-### Install, validate, uninstall, backup, and rollback
+## Real-project routing samples
 
-The installers validate source files before the first mutation, resolve exact
-literal paths, reject unsafe roots and reparse points, and use checksums to
-protect owned targets. Existing targets are backed up before replacement;
-staging and rollback keep a failed install from becoming a half-installed one.
-
-The lifecycle preserves `~/.codex/config.toml` and unrelated agents. An
-unmodified legacy v0.1 installation may be migrated, while a modified legacy
-target is retained rather than silently deleted. Uninstall removes only owned
-targets whose recorded `SHA256` still matches. A changed target is refused, not
-overwritten. `-RestoreLatest` / `--restore-latest` restores the latest valid
-recorded backup after the owned installation has been removed.
-
-The macOS/Linux commands are:
-
-```sh
-bash scripts/validate.sh
-bash scripts/install.sh
-bash scripts/uninstall.sh
-bash scripts/uninstall.sh --restore-latest
-```
-
-The Windows commands are:
-
-```powershell
-pwsh -NoProfile -File scripts/validate.ps1
-pwsh -NoProfile -File scripts/install.ps1
-pwsh -NoProfile -File scripts/uninstall.ps1
-pwsh -NoProfile -File scripts/uninstall.ps1 -RestoreLatest
-```
-
-The PowerShell validation and lifecycle files are owned by the Windows work
-stream. Their supported targets and commands are documented here independently
-of native Windows 11 evidence.
-
-## Real-project benchmark
-
-We reused completed Sol Luna task evidence first and allowed only the minimum
-read-only probes needed for material gaps. Existing records covered all three
-routing categories, so no additional model call was required and no business
-project was modified. Public results retain anonymous aggregate categories only.
+These are anonymous real-project routing samples, not a measured cost benchmark. We
+reused completed Sol Luna task evidence and allowed only the minimum read-only probes
+needed to fill material gaps; no business project was modified.
 
 | Anonymous category | Route | Luna workers | Waves | Verification | Sol review | Elapsed |
 | --- | --- | ---: | ---: | --- | --- | ---: |
@@ -267,20 +158,19 @@ project was modified. Public results retain anonymous aggregate categories only.
 | Documentation | `sol_then_luna` (`measured`) | `unavailable` | `unavailable` | evidence present (`measured`) | `PASS` (`measured`) | 379 s (`measured`) |
 | Infrastructure | `direct` (`measured`) | 0 (`measured`) | 0 (`measured`) | evidence present (`measured`) | not applicable (`measured`) | 859 s (`measured`) |
 
-Evidence is labeled `measured`, `estimated`, or `unavailable`. The current
-**59%** remains `estimated`; because comparable exact per-model usage was not
-exposed, a real-project `measured` cost saving remains `unavailable`.
+Evidence is labeled `measured`, `estimated`, or `unavailable`. The current **59%**
+remains `estimated`; because comparable exact per-model usage was not exposed, a
+real-project `measured` cost saving remains `unavailable`. See
+[`tests/real-project-benchmark.md`](tests/real-project-benchmark.md) for the complete
+method, anonymous results, and limitations.
 
-See [`tests/real-project-benchmark.md`](tests/real-project-benchmark.md) for the
-complete method, anonymous result, and limitations.
+## Cost model and evidence boundaries
 
-## Cost model and pricing snapshot
-
-This model separates the price of an API token from the capacity represented by
-a subscription credit. The official sources are the [OpenAI API pricing
+This model separates API token prices in dollars from the capacity represented by a
+subscription credit. The official sources are the [OpenAI API pricing
 page](https://developers.openai.com/api/docs/pricing) and the official
-[Codex/ChatGPT rate card](https://learn.chatgpt.com/docs/pricing). This snapshot
-is dated **2026-08-02**; recheck both sources on release day.
+[Codex/ChatGPT rate card](https://learn.chatgpt.com/docs/pricing). This snapshot is
+dated **2026-08-02**; recheck both sources on release day.
 
 ### Standard short-context API prices per 1M tokens
 
@@ -297,22 +187,18 @@ is dated **2026-08-02**; recheck both sources on release day.
 | GPT-5.6 Luna | 5 | 0.5 | 30 |
 
 Across these token categories, Luna costs `1/25` of Sol. Moving an otherwise
-identical worker-token segment from Sol to Luna therefore reduces that segment
-by **96%**. That is a segment comparison, not a promise about an entire task.
+identical worker-token segment from Sol to Luna reduces that segment by **96%**;
+this is a segment comparison, not a promise about an entire task.
 
-The whole workflow still spends Sol tokens on planning and review, and Luna may
-read repeated context. The transparent estimate is:
+The transparent estimate is:
 
 ```text
 savings = delegated_share * (1 - luna_duplication / 25) - sol_overhead
 ```
 
-Here:
-
-- `delegated_share` is the share of an all-Sol run that Luna performs instead;
-- `luna_duplication` is Luna's token volume relative to that delegated baseline;
-- `sol_overhead` is additional Sol planning and review beyond the all-Sol
-  baseline.
+Here, `delegated_share` is the share of an all-Sol run that Luna performs instead,
+`luna_duplication` is Luna's token volume relative to that delegated baseline, and
+`sol_overhead` is additional Sol planning and review beyond the all-Sol baseline.
 
 | Scenario | Delegated share | Luna duplication | Added Sol overhead | Estimated saving |
 | --- | ---: | ---: | ---: | ---: |
@@ -320,20 +206,80 @@ Here:
 | Typical | 70% | 115% | 8% | about 59% |
 | Reliability-gated complex | condition-based | 15% avoided invalid rework | 41% after typical | about 65% (estimated) |
 
-For a simple reference point, an all-Sol short-context workload with 1M input
-and 0.1M output costs about **$8.00** or **200 ChatGPT credits**. Under the
-typical assumptions, the routed equivalent is about **$3.30** or **82.4
-credits**, a reduction of about **59%**.
+After the typical estimate, avoiding invalid rework equal to 15% of the remainder leaves
+41% * 85% = 34.85%, therefore about 65% saved (estimated, not measured). This is a
+conditioned estimate, not a universal result.
 
-These estimates are a model, not a benchmark or a guarantee. Direct tasks claim
-**0%** routing savings. Poor decomposition, repeated retries, unusually large
-Sol reviews, or low delegation can reduce or reverse the benefit; retries can
-erase savings entirely. API users may see monetary dollar savings. Subscription
-users primarily receive more usable capacity or credits, unless routing also
-avoids buying extra credits or moving to a higher plan. API dollar savings and
-subscription capacity are different claims.
+For a simple reference point, an all-Sol short-context workload with 1M input and
+0.1M output costs about **$8.00** or **200 ChatGPT credits**. Under the typical
+assumptions, the routed equivalent is about **$3.30** or **82.4 credits**, a
+reduction of about **59%**. Direct tasks use zero delegation and claim **0%** routing
+savings.
 
-## Repository layout, testing, limitations, prior art, and license
+These estimates are a model, not a benchmark or a guarantee. Poor decomposition,
+repeated context, unusually large Sol reviews, low delegation, or retries can reduce,
+reverse, or erase the benefit; retries can erase savings entirely. API users may see
+monetary dollar savings. Subscription users primarily receive more usable capacity or
+credits, unless routing also avoids buying extra credits or moving to a higher plan.
+API dollar savings and subscription capacity are different claims.
+
+## Platforms and lifecycle
+
+| Target | Shell | Status boundary |
+| --- | --- | --- |
+| macOS | POSIX shell | Supported by the `bash` lifecycle scripts |
+| Linux | POSIX shell | Supported by the `bash` lifecycle scripts |
+| Windows 11 | Windows PowerShell 5.1 and PowerShell 7.x | Supported target; native Windows 11 evidence is a separate release gate |
+| Windows Server 2022 | Windows PowerShell 5.1 and PowerShell 7.x | Supported target; GitHub-hosted CI is Server evidence only |
+
+GitHub Actions uses `windows-latest` and pinned `windows-2022` in the Windows
+matrix. Those hosted runners provide Windows Server evidence and must not be
+described as native Windows 11 evidence.
+
+### macOS and Linux
+
+```sh
+bash scripts/validate.sh
+bash scripts/install.sh
+bash scripts/uninstall.sh
+bash scripts/uninstall.sh --restore-latest
+```
+
+For an isolated test home, set `ORCHESTRATE_HOME` to a unique temporary directory.
+The installer validates source files before the first mutation, backs up exact
+targets, installs atomically, and leaves unrelated agents and
+`~/.codex/config.toml` alone.
+
+### Windows 11 and Windows Server 2022
+
+The Windows lifecycle is native PowerShell and remains compatible with PowerShell
+5.1 and PowerShell 7.x. Windows PowerShell 5.1 uses `powershell.exe`; PowerShell 7
+uses `pwsh`:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/validate.ps1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/install.ps1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/uninstall.ps1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/uninstall.ps1 -RestoreLatest
+pwsh -NoProfile -File scripts/validate.ps1
+pwsh -NoProfile -File scripts/install.ps1
+pwsh -NoProfile -File scripts/uninstall.ps1
+pwsh -NoProfile -File scripts/uninstall.ps1 -RestoreLatest
+```
+
+Set `$env:ORCHESTRATE_HOME` to a unique temporary home for isolated Windows
+lifecycle tests. Windows Server CI proves Server behavior only; until a real
+Windows 11 run is recorded, this README does not claim native Windows 11 evidence.
+
+The lifecycle preserves `~/.codex/config.toml` and unrelated agents. An unmodified
+legacy v0.1 installation may be migrated; a modified legacy target is retained
+rather than silently deleted. Uninstall removes only owned targets whose recorded
+`SHA256` still matches. `-RestoreLatest` / `--restore-latest` restores the latest
+valid recorded backup after owned installation removal. The release-time runtime
+surface and evidence status are documented in
+[`docs/release/runtime-surface-matrix.md`](docs/release/runtime-surface-matrix.md).
+
+## Repository and development
 
 ### Repository layout
 
@@ -342,50 +288,49 @@ subscription capacity are different claims.
 .codex/agents/                 exact Sol and Luna custom-agent definitions
 scripts/                       macOS/Linux lifecycle and validation scripts
 tests/                         contract, forward-case, and lifecycle tests
-docs/assets/                   repository-owned hero and architecture SVGs
+docs/assets/                   repository-owned hero, architecture, routing, and review SVGs
 README.md                      canonical Simplified Chinese guide
 README.en.md                   complete English peer
 ```
 
-The public Skill is [`$sol-luna`](.agents/skills/sol-luna/SKILL.md). The exact
-agent definitions are [`sol-controller.toml`](.codex/agents/sol-controller.toml)
-and [`luna-max-worker.toml`](.codex/agents/luna-max-worker.toml). Global Skill
-and agent directories are installed copies; GitHub is the source of truth.
+The public Skill is [`$sol-luna`](.agents/skills/sol-luna/SKILL.md). Exact agent
+definitions are [`sol-controller.toml`](.codex/agents/sol-controller.toml) and
+[`luna-max-worker.toml`](.codex/agents/luna-max-worker.toml). Global Skill and
+agent directories are installed copies; GitHub is the source of truth.
 
 ### Testing
 
-Run the focused documentation contract and the repository URL contract with
-Python 3.11 or newer:
+Use Python 3.11 or newer for the documentation testing contract, repository URL
+contract, and benchmark:
 
 ```sh
 python -m unittest tests/test_readme.py
 python -m unittest tests/test_contract.py
+python -m unittest tests/test_benchmark.py
 ```
 
 The documentation contract checks bilingual language switches and parity,
 canonical links, local image targets, accessible SVG metadata, section order,
 pricing rows, formula assumptions, scenario estimates, and disclaimers. The
-repository contract checks the runtime names and Windows contract artifacts.
-When PowerShell is available, the lifecycle tests also exercise isolated homes
-with `ORCHESTRATE_HOME` and verify that `config.toml` and unrelated agents keep
-their hashes.
+benchmark report preserves the `measured`, `estimated`, and `unavailable` evidence
+boundary. When PowerShell is available, lifecycle tests also exercise isolated
+homes with `ORCHESTRATE_HOME` and verify that `config.toml` and unrelated agents
+keep their hashes.
 
-### Limitations
+## Limitations
 
-- The estimates above are assumptions, not benchmarks, guarantees, or a claim
-  that every routed task is cheaper.
-- Delegation adds planning, context, review, and possible retry tokens.
-- GitHub-hosted Windows runners establish Windows Server behavior, not native
-  Windows 11 behavior.
-- The Skill is intentionally two-role: Sol controls, and Luna Max executes. It
-  is not a general-purpose multi-agent team framework.
-- A clean final decision still depends on real files and fresh verification;
-  configuration labels alone cannot prove runtime identity.
+- The costs above are conditional estimates, not benchmarks or guarantees, and do not claim every routed task is cheaper.
+- Delegation adds planning, context, review, and possible retry tokens; retries may completely erase savings.
+- GitHub-hosted Windows runners establish Windows Server behavior, not native Windows 11 behavior.
+- The Skill intentionally keeps two roles: Sol controls and Luna Max executes; it is not a general-purpose multi-agent team framework.
+- Final decisions depend on real files and fresh verification; configuration labels alone cannot prove runtime identity.
+
+## Prior art and license
 
 ### Prior art
 
 The design was informed by reviewed snapshots of projects exploring routing,
-bounded delegation, parallel scheduling, and evidence-based review. No prose or
+bounded delegation, parallel scheduling, and evidence-based review; no prose or
 code was copied from them:
 
 - [orchestrate-sol-luna](https://github.com/joeke80215/orchestrate-sol-luna/tree/eba163a9d48f023aeb3638b6809f0f8fb343f472) — Apache-2.0.
@@ -399,7 +344,7 @@ code was copied from them:
 This repository is licensed under [Apache License 2.0](LICENSE). Attribution
 context for reviewed prior art is recorded in [NOTICE](NOTICE).
 
-**Thanks / 致谢**
+**致谢 / Thanks**
 
 Thank you to the [LINUX DO forum](https://linux.do/) community for its attention,
 feedback, and support.
