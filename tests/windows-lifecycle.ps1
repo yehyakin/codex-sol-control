@@ -209,7 +209,7 @@ function Seed-V020Install {
     Copy-Item -LiteralPath $sol -Destination (Join-Path $backup "v020/sol-controller.toml") -Force
     Copy-Item -LiteralPath $luna -Destination (Join-Path $backup "v020/luna-max-worker.toml") -Force
     Copy-Item -LiteralPath $terra -Destination (Join-Path $backup "v020/terra-high-worker.toml") -Force
-    Write-TestText (Join-Path $backup "manifest") (@(
+    Write-TestText (Join-Path $backup "manifest") ((@(
         "version=2",
         "legacy_skill_presence=absent",
         "legacy_skill_sha256=",
@@ -227,7 +227,7 @@ function Seed-V020Install {
         "v020_terra_sha256=$(Get-FileDigest $terra)",
         "config_presence=absent",
         "config_sha256="
-    ) -join "`n") + "`n"
+    ) -join "`n") + "`n")
 }
 
 function Seed-V01Install {
