@@ -1,21 +1,22 @@
 # Sol Luna v0.3.0 Implementation Report
 
-Date: 2026-08-03
+Date: 2026-08-04
 
 Repository: https://github.com/yehyakin/codex-sol-luna
 
-Branch context: `codex/terra-tiered-routing` (documentation/assets scope; baseline
-`2758af0`)
+Branch context: `codex/terra-tiered-routing`
+
+Release candidate commits: `fcd704b` (tiered routing) and `e1aa306` (native
+Windows lifecycle correction)
 
 ## 1. Scope and status
 
-This report records the public architecture and contract correction for the Sol single-controller
-model with Luna Max and Terra High execution tiers. The Luna-to-Terra ownership-transfer rule is
-kept synchronized across the public Skill and references, Sol agent policy, both READMEs, this
-report, the forward fixtures, and their focused contract tests. Lifecycle scripts and README SVG
-assets remain separate staged work streams and are not reclassified by this correction. This
-report does not turn a local contract check into a runtime, installation, deployment, CI, or
-production claim.
+This report records the completed v0.3.0 release candidate for the Sol single-controller model
+with Luna Max and Terra High execution tiers. The routing contract, lifecycle scripts, bilingual
+README, local artwork, forward fixtures, installation state migration, and platform tests are
+integrated and pushed to the release branch. Repository checks, the macOS installation, and hosted
+Windows CI are verified below. Production behavior and elapsed-time savings are not inferred from
+those checks.
 
 ## 2. Final public architecture
 
@@ -167,44 +168,129 @@ The public structure now names:
   terra-high-worker.toml
 ```
 
-Lifecycle behavior, backup manifests, checksums, restore paths, and user-owned configuration remain
-defined by the installer/validator work stream. The README documents the new Terra agent alongside
-the existing targets; it does not claim that this documentation change itself installed or exercised
-the agent.
+The stable source was installed on the iMac only after repository validation. The installer now
+owns only the project Skill, its three agent files, and its own versioned state. It does not rewrite
+the complete Codex configuration or other agents.
 
-## 9. Verification status for this contract candidate
+Verified installation results:
 
-The evidence surface for this correction is:
+- global Skill: `~/.agents/skills/sol-luna`;
+- agents: `sol-controller.toml`, `luna-max-worker.toml`, and `terra-high-worker.toml` under
+  `~/.codex/agents`;
+- external pre-install backup: `/tmp/sol-luna-global-backup.BN0SEL`;
+- latest installer backup used for convergence verification:
+  `~/.codex/sol-luna/backups/20260803T220449Z-28655`;
+- the pre-existing global Skill and agent files were moved to the external quarantine rather than
+  deleted;
+- `bash scripts/install.sh --check`: exit 0, installation consistent;
+- source/global byte comparison: Skill, Sol, Luna, and Terra all match;
+- the full `~/.codex/config.toml` is byte-identical to its pre-install backup.
+
+The installer also converges the state-only v0.1 layout transactionally, records the exact old
+state in the backup manifest, and permits `--restore-latest` only when restoring cannot overwrite a
+new user-owned target.
+
+## 9. Forward tests and static verification
+
+The final local evidence surface is:
 
 - `PYTHONDONTWRITEBYTECODE=1 /opt/homebrew/bin/python3.13 -B -m unittest tests.test_hybrid_routing -v`;
 - `PYTHONDONTWRITEBYTECODE=1 /opt/homebrew/bin/python3.13 -B -m unittest tests.test_contract -v`;
 - `bash scripts/validate.sh`;
-- `git diff --check` limited to the eleven owned paths;
-- an exact changed-path snapshot and SHA-256 listing for those eleven paths, with all other staged
-  candidate paths preserved.
+- `bash -n scripts/install.sh scripts/validate.sh scripts/uninstall.sh scripts/test.sh`;
+- `git diff --check`.
 
-Observed on the final candidate after the correction:
+Observed on the final candidate:
 
-- Focused RED evidence before the correction: **5 tests, 4 assertion failures, exit 1**; failures
-  identified the old Terra-write gate, missing Luna-before-write wording, and missing independent
-  fixture cases.
-- `tests.test_hybrid_routing`: **13 tests, 13 PASS, exit 0**.
-- `tests.test_contract`: **29 tests, 29 PASS, exit 0**.
+- Skill Creator `quick_validate.py`: **PASS**.
+- Python discovery: **106 tests, 106 PASS, exit 0**.
 - `bash scripts/validate.sh`: **exit 0**, structural validation PASS; PowerShell is unavailable in
   this environment and the script used deterministic structural checks.
-- `git diff --check` over the eleven owned paths: **exit 0**.
-- Final worktree changed-path snapshot for this correction: `.agents/skills/sol-luna/SKILL.md`,
-  `.agents/skills/sol-luna/references/orchestration.md`,
-  `.agents/skills/sol-luna/references/runtime-notes.md`,
-  `.codex/agents/sol-controller.toml`, `README.md`, `README.en.md`,
-  `ORCHESTRATE_SOL_LUNA_V2_IMPLEMENTATION_REPORT.md`, `tests/fixtures/forward-cases.json`,
-  `tests/forward-tests.md`, `tests/test_hybrid_routing.py`, and `tests/test_contract.py`.
+- Shell parsing and `git diff --check`: **PASS**.
+- Forward fixtures cover Direct, Sol-only, independent parallel work, shared-file conflict,
+  dependency Waves, missing evidence, timeout, result conflict, omitted requirements, unavailable
+  model identity, Native Nested, Compatibility, and preservation of user modifications.
+- The v0.1/v0.2/v0.3 lifecycle tests cover fresh install, repeat install, read-only check, rollback,
+  safe uninstall, backup restore, legacy-state convergence, modified-target refusal, and Terra
+  ownership.
 
-These checks prove the contract surfaces and fixture regression only. Real model calls, global
-installation/restore, Windows lifecycle runs, GitHub Actions, deployment, and production behavior
-remain unclaimed here unless independently evidenced by their owner.
+## 10. Native Windows verification
 
-## 10. Known boundaries
+GitHub Actions run
+[`30858280404`](https://github.com/yehyakin/codex-sol-luna/actions/runs/30858280404)
+passed all four combinations for commit `e1aa306`:
+
+- Windows Server 2022 + Windows PowerShell 5.1;
+- Windows Server 2022 + PowerShell 7;
+- `windows-latest` + Windows PowerShell 5.1;
+- `windows-latest` + PowerShell 7.
+
+Every job passed native parsing, `scripts/validate.ps1`, `tests/windows-lifecycle.ps1`, and the full
+106-test Python discovery. The paired POSIX workflow run
+[`30858280421`](https://github.com/yehyakin/codex-sol-luna/actions/runs/30858280421)
+also passed. Hosted Windows Server evidence does not establish native Windows 11 behavior.
+
+## 11. Actual agent calls and execution modes
+
+This implementation run exercised all three configured custom agents in the Codex desktop
+orchestration surface:
+
+- Sol controlled planning, Correction Packets, conflict arbitration, and final read-only review;
+- Luna Max completed bounded repository, documentation, and Windows-contract work;
+- Terra High completed the cross-file legacy-state lifecycle correction and returned exact changed
+  paths plus verification evidence.
+
+Compatibility mode is therefore the verified orchestration path for this release: the main Codex
+launches Sol, launches the selected worker from Sol's execution graph, and returns the real result
+to Sol for review. Native Nested remains unclaimed because this release did not capture durable
+evidence that Sol itself launched a worker and retrieved its result with exact runtime identity.
+
+## 12. Parallelism, ownership, and failure behavior
+
+Independent work streams used disjoint scopes; shared lifecycle files remained serialized. The
+contract tests reject concurrent ownership of one file and hold dependency chains for Wave
+execution. A worker result without minimum verification cannot become PASS.
+
+The real Windows failure also exercised bounded recovery. The first candidate failed on all four
+Windows jobs because a manifest expression was parsed as an extra positional argument. Sol refused
+an additional correction inside the exhausted run. After explicit user authorization opened a new
+run, the main Codex made the single deterministic fix and reran the complete platform matrix. No
+worker self-approved the release.
+
+## 13. Fresh-session discovery
+
+A new Codex CLI session in a temporary directory discovered the installed `$sol-luna` Skill and
+selected the Sol-only route. It also started the configured `sol-controller`. However, the current
+CLI parent session did not receive child model/reasoning metadata that could be bound to that
+launch. The test correctly returned `BLOCKED (Fail Closed)` with identity, model, and effort marked
+unproven.
+
+This proves global Skill discovery and fail-closed behavior. It does not prove custom-agent runtime
+identity in the fresh CLI surface. The desktop compatibility calls above are the actual-agent
+evidence for this release.
+
+## 14. GitHub delivery and version
+
+- repository: <https://github.com/yehyakin/codex-sol-luna>;
+- release branch: `codex/terra-tiered-routing`;
+- architecture commit: `fcd704b`;
+- Windows correction commit: `e1aa306`;
+- both POSIX and Windows workflows pass on `e1aa306`;
+- public version remains v0.3.0 until the branch is reviewed and merged to `main`.
+
+## 15. Reference projects, licenses, and design choices
+
+The audit in `NOTICE` records exact reviewed commits and licenses. The implementation uses ideas
+from the reviewed orchestration projects without copying prose or code from the two unlicensed
+snapshots. This repository is Apache-2.0.
+
+Absorbed ideas include strict controller/executor separation, Direct/Single/Parallel/Sequential
+routing, Wave dependencies, read/write scopes, one-file ownership, evidence-based review, bounded
+Correction Packets, and fail-closed model identity. Rejected ideas include mandatory delegation for
+small tasks, permanent agent teams, dashboards/ledgers, unrestricted retries, fixed all-serial
+three-role execution, and additional controller models.
+
+## 16. Known boundaries and next recommendations
 
 1. Sol remains the only controller and final reviewer.
 2. Luna Max and Terra High are bounded executors and cannot create subagents.
@@ -215,8 +301,14 @@ remain unclaimed here unless independently evidenced by their owner.
    allowed, otherwise `BLOCKED`. Terra's write state is never the gate.
 6. Budget ranges are not elapsed-time promises and do not establish completed A/B evidence.
 7. Hosted Windows Server evidence is not native Windows 11 evidence.
+8. Fresh CLI custom-agent identity/model/effort remains unproven because the child metadata is not
+   exposed to the parent result surface.
 
-## 11. Sources
+Recommended next work is deliberately small: capture a durable runtime identity receipt when Codex
+exposes one, add a matched A/B benchmark before claiming measured savings, and run the Windows
+lifecycle suite on a physical Windows 11 system when available.
+
+## 17. Sources
 
 - [OpenAI API pricing](https://developers.openai.com/api/docs/pricing)
 - [Codex rate card](https://help.openai.com/en/articles/20001106-codex-rate-card)
