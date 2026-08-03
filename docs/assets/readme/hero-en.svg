@@ -45,29 +45,34 @@
   </g>
 
   <g id="sol-controller">
-    <circle cx="852" cy="166" r="52" fill="#FF6B3D" fill-opacity="0.16" stroke="#FF6B3D" stroke-width="2"/>
-    <circle cx="852" cy="166" r="38" fill="#FF6B3D" stroke="#F7F3E8" stroke-width="3"/>
-    <path d="M852 140V192M826 166H878" stroke="#F7F3E8" stroke-width="4" stroke-linecap="round"/>
-    <text x="852" y="174" text-anchor="middle" fill="#0B1020" font-size="22" font-weight="800">SOL</text>
+    <rect x="800" y="114" width="104" height="104" rx="18" fill="#FF6B3D" fill-opacity="0.16" stroke="#FF6B3D" stroke-width="2"/>
+    <rect x="810" y="124" width="84" height="84" rx="14" fill="#FF6B3D" stroke="#F7F3E8" stroke-width="3"/>
+    <rect x="820" y="140" width="64" height="52" rx="8" fill="#0B1020" stroke="#F7F3E8" stroke-width="2"/>
+    <circle cx="832" cy="150" r="3" fill="#65D6C4"/>
+    <path d="M842 150H872M832 182H872" stroke="#F7F3E8" stroke-width="3" stroke-linecap="round"/>
+    <text x="852" y="174" text-anchor="middle" fill="#F7F3E8" font-size="22" font-weight="800">SOL</text>
   </g>
   <text x="852" y="110" text-anchor="middle" fill="#F7F3E8" font-size="18" font-weight="700">Single controller · evidence review</text>
 
   <g id="luna-worker-1">
-    <circle cx="748" cy="302" r="32" fill="#65D6C4" fill-opacity="0.16" stroke="#65D6C4" stroke-width="2"/>
-    <circle cx="748" cy="302" r="24" fill="#65D6C4" stroke="#F7F3E8" stroke-width="2"/>
-    <path d="M736 302H760M748 290V314" stroke="#0B1020" stroke-width="3" stroke-linecap="round"/>
+    <rect x="716" y="270" width="64" height="64" rx="12" fill="#65D6C4" fill-opacity="0.16" stroke="#65D6C4" stroke-width="2"/>
+    <rect x="724" y="278" width="48" height="48" rx="8" fill="#65D6C4" stroke="#F7F3E8" stroke-width="2"/>
+    <circle cx="734" cy="289" r="3" fill="#0B1020"/>
+    <path d="M742 289H762M734 301H762M734 313H754" stroke="#0B1020" stroke-width="3" stroke-linecap="round"/>
     <text x="748" y="350" text-anchor="middle" fill="#65D6C4" font-size="20" font-weight="700">LUNA 1</text>
   </g>
   <g id="luna-worker-2">
-    <circle cx="884" cy="302" r="32" fill="#65D6C4" fill-opacity="0.16" stroke="#65D6C4" stroke-width="2"/>
-    <circle cx="884" cy="302" r="24" fill="#65D6C4" stroke="#F7F3E8" stroke-width="2"/>
-    <path d="M872 302H896M884 290V314" stroke="#0B1020" stroke-width="3" stroke-linecap="round"/>
+    <rect x="852" y="270" width="64" height="64" rx="12" fill="#65D6C4" fill-opacity="0.16" stroke="#65D6C4" stroke-width="2"/>
+    <rect x="860" y="278" width="48" height="48" rx="8" fill="#65D6C4" stroke="#F7F3E8" stroke-width="2"/>
+    <circle cx="870" cy="289" r="3" fill="#0B1020"/>
+    <path d="M878 289H898M870 301H898M870 313H890" stroke="#0B1020" stroke-width="3" stroke-linecap="round"/>
     <text x="884" y="350" text-anchor="middle" fill="#65D6C4" font-size="20" font-weight="700">LUNA 2</text>
   </g>
   <g id="luna-worker-3">
-    <circle cx="1020" cy="302" r="32" fill="#65D6C4" fill-opacity="0.16" stroke="#65D6C4" stroke-width="2"/>
-    <circle cx="1020" cy="302" r="24" fill="#65D6C4" stroke="#F7F3E8" stroke-width="2"/>
-    <path d="M1008 302H1032M1020 290V314" stroke="#0B1020" stroke-width="3" stroke-linecap="round"/>
+    <rect x="988" y="270" width="64" height="64" rx="12" fill="#65D6C4" fill-opacity="0.16" stroke="#65D6C4" stroke-width="2"/>
+    <rect x="996" y="278" width="48" height="48" rx="8" fill="#65D6C4" stroke="#F7F3E8" stroke-width="2"/>
+    <circle cx="1006" cy="289" r="3" fill="#0B1020"/>
+    <path d="M1014 289H1034M1006 301H1034M1006 313H1026" stroke="#0B1020" stroke-width="3" stroke-linecap="round"/>
     <text x="1020" y="350" text-anchor="middle" fill="#65D6C4" font-size="20" font-weight="700">LUNA 3</text>
   </g>
 </svg>

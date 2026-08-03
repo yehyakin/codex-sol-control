@@ -349,7 +349,10 @@ class InstallerTests(unittest.TestCase):
             "ORCHESTRATE_FAILPOINT",
             "after-replace",
             "README.en.md",
-            "docs/assets/sol-luna-hero.svg",
+            "docs/assets/readme/hero-zh.svg",
+            "docs/assets/readme/hero-en.svg",
+            "docs/assets/readme/control-plane-zh.svg",
+            "docs/assets/readme/control-plane-en.svg",
         ):
             self.assertIn(marker, install, marker)
 

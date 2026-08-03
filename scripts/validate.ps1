@@ -292,8 +292,10 @@ $requiredFiles = @(
     "scripts/uninstall.ps1",
     "README.md",
     "README.en.md",
-    "docs/assets/sol-luna-hero.svg",
-    "docs/assets/sol-luna-architecture.svg",
+    "docs/assets/readme/hero-zh.svg",
+    "docs/assets/readme/hero-en.svg",
+    "docs/assets/readme/control-plane-zh.svg",
+    "docs/assets/readme/control-plane-en.svg",
     "tests/windows-lifecycle.ps1",
     "tests/test_release_engineering.py",
     ".github/workflows/windows-validation.yml",
@@ -346,8 +348,10 @@ foreach ($markdown in @(Get-ChildItem -LiteralPath $repoRoot -Filter "*.md" -Fil
     Assert-MarkdownLinks $repoRoot $markdown.FullName
 }
 
-Assert-Svg (Join-Path $repoRoot "docs/assets/sol-luna-hero.svg")
-Assert-Svg (Join-Path $repoRoot "docs/assets/sol-luna-architecture.svg")
+Assert-Svg (Join-Path $repoRoot "docs/assets/readme/hero-zh.svg")
+Assert-Svg (Join-Path $repoRoot "docs/assets/readme/hero-en.svg")
+Assert-Svg (Join-Path $repoRoot "docs/assets/readme/control-plane-zh.svg")
+Assert-Svg (Join-Path $repoRoot "docs/assets/readme/control-plane-en.svg")
 
 $workflowPath = Join-Path $repoRoot ".github/workflows/windows-validation.yml"
 $workflowText = Read-Utf8Text $workflowPath

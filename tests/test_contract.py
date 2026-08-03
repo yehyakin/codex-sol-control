@@ -24,8 +24,10 @@ RUNTIME_NOTE_CANDIDATES = (
 )
 V030_REQUIRED_FILES = (
     "README.en.md",
-    "docs/assets/sol-luna-hero.svg",
-    "docs/assets/sol-luna-architecture.svg",
+    "docs/assets/readme/hero-zh.svg",
+    "docs/assets/readme/hero-en.svg",
+    "docs/assets/readme/control-plane-zh.svg",
+    "docs/assets/readme/control-plane-en.svg",
     "scripts/validate.ps1",
     "scripts/uninstall.ps1",
     "tests/windows-lifecycle.ps1",
@@ -103,8 +105,10 @@ class RepositoryContractTests(unittest.TestCase):
             "after-replace",
             "orchestrate-sol-luna",
             "README.en.md",
-            "docs/assets/sol-luna-hero.svg",
-            "docs/assets/sol-luna-architecture.svg",
+            "docs/assets/readme/hero-zh.svg",
+            "docs/assets/readme/hero-en.svg",
+            "docs/assets/readme/control-plane-zh.svg",
+            "docs/assets/readme/control-plane-en.svg",
             "scripts/validate.ps1",
             "scripts/uninstall.ps1",
         ):

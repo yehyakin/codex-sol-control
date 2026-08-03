@@ -1,6 +1,6 @@
 [简体中文](README.md) · [English](README.en.md)
 
-![Sol 建筑师向 Luna 执行工坊分配有边界任务，证据返回 Sol 审核](docs/assets/sol-luna-hero.svg)
+![Sol 主控向 Luna Max 工作节点分配有边界任务，FILES、DIFF、TEST 证据返回审核](docs/assets/readme/hero-zh.svg)
 
 # Sol Luna
 
@@ -20,6 +20,8 @@
 规范仓库地址是 [yehyakin/codex-sol-luna](https://github.com/yehyakin/codex-sol-luna)。
 当任务复杂、可并行或高风险时，显式调用 `$sol-luna` 选择这个 Skill。
 
+![Control Orbit 的 Direct、Sol-only、Sol → Luna 路由与 PASS、FIX、BLOCKED 证据闭环](docs/assets/readme/control-plane-zh.svg)
+
 ## 60 秒开始
 
 在 [codex-sol-luna](https://github.com/yehyakin/codex-sol-luna) checkout 中，先
@@ -34,30 +36,7 @@ bash scripts/install.sh
 `$sol-luna`。小型、独立或仅需说明的任务保持 Direct；完整的平台命令和卸载/回滚
 路径见[平台与生命周期](#平台与生命周期)。
 
-## 单一主控，一座执行工坊
-
-![Sol 建筑师在上层规划室统筹三个 Luna 工作单元，证据沿回传井上行](docs/assets/sol-luna-architecture.svg)
-
-Sol 是唯一的 controller，负责控制目标理解、完成条件、阶段计划、文件所有权、
-路由和最终审查。Luna Max worker 只执行收到的有边界任务，验证自己的变更并返回
-证据。并行只发生在互不重叠的 owner 范围内；worker 数量由实时容量决定，而不是
-一个对外承诺的固定上限。
-
-运行时默认使用简体中文；用户明确指定其他语言时，改用用户指定的语言。代码、命令、路径、标识符和原始证据按需保留原文。
-
-```text
-用户目标 → Sol 计划并路由 → Luna Max 执行有边界的任务
-          → Sol 审查文件、diff 与证据 → 交付
-```
-
-| 角色 | 职责 | 边界 |
-| --- | --- | --- |
-| Sol | controller、planner、router 和 reviewer | 只做编排与最终决策 |
-| Luna Max | 有边界的实现与自验证 | 只能修改分配的文件；不得递归委派 |
-
 ## 选择路径
-
-![三条路由：Direct、Sol-only 与 Sol 到 Luna 后返回证据](docs/assets/sol-luna-routing.svg)
 
 Skill 不会把每件事都委派出去。先判断任务是否值得规划、执行和复核的额外成本：
 
@@ -71,9 +50,25 @@ Skill 不会把每件事都委派出去。先判断任务是否值得规划、�
 `done_when` 和可复现的验证命令。目标尚不明确、上下文重复成本过高或复核收益不足
 时，保持 Direct 更可靠。
 
-## 工作流
+Sol 是唯一的 controller，负责目标理解、完成条件、阶段计划、文件所有权、路由和最终审查。
+Luna Max worker 只执行收到的有边界任务，验证自己的变更并返回证据。并行只发生在互不重叠
+的 owner 范围内；worker 数量由实时容量决定，而不是一个对外承诺的固定上限。运行时默认使用简体中文；
+用户明确指定其他语言时，改用用户指定的语言。代码、命令、路径、标识符和原始证据
+按需保留原文。
 
-![FILES、DIFF、TEST 证据托盘进入 Sol 检查灯箱并得到 PASS、FIX 或 BLOCKED](docs/assets/sol-luna-review.svg)
+```text
+用户目标 → Sol 计划并路由 → Luna Max 执行有边界的任务
+          → Sol 审查文件、diff 与证据 → 交付
+```
+
+| 角色 | 职责 | 边界 |
+| --- | --- | --- |
+| Sol | controller、planner、router 和 reviewer | 只做编排与最终决策 |
+| Luna Max | 有边界的实现与自验证 | 只能修改分配的文件；不得递归委派 |
+
+## 可靠性来自边界
+
+可靠性来自可证明的身份、所有权、证据新鲜度和有界修正，而不是来自配置里的一行标签。
 
 每个委派工作走一条可审查的闭环：
 
@@ -85,10 +80,6 @@ Skill 不会把每件事都委派出去。先判断任务是否值得规划、�
 
 worker 交付不是最终批准；只有 Sol 审核过真实 diff 后才算完成。一个文件在整个运行
 期间只有一个 owner。互不重叠的范围可以并行；不确定或重叠的范围必须等待。
-
-## 可靠性来自边界
-
-可靠性来自可证明的身份、所有权、证据新鲜度和有界修正，而不是来自配置里的一行标签。
 
 ### 运行时身份与失败关闭
 
@@ -130,21 +121,6 @@ Sol 最多可以向原 owner、原 scope 发出一次 focused correction。第�
 Resume packet 只用于预计跨上下文压缩、会话中断或长时间运行的任务，只含
 `goal`、`completed`、`in_flight`、`artifact_location`、`next_action`。短任务和 Direct
 任务不生成 resume packet。实时容量决定批次大小，计划从不假设固定的 Luna 最大数量。
-
-## 真实项目路由样本
-
-这些是匿名的本地真实项目测试样本。我们复用了已经完成的 Sol Luna 任务证据，只允许
-最少的只读探针补齐材料；没有修改任何业务项目。
-
-| 匿名类别 | 路由 | Luna 数量 | Wave | 验证 | Sol 终审 | 耗时 |
-| --- | --- | ---: | ---: | --- | --- | ---: |
-| 代码项目 | `sol_then_luna`（实测） | 不可得 | 不可得 | 有证据（实测） | `BLOCKED`（实测） | 2340 秒（实测） |
-| 文档项目 | `sol_then_luna`（实测） | 不可得 | 不可得 | 有证据（实测） | `PASS`（实测） | 379 秒（实测） |
-| 基础设施项目 | `direct`（实测） | 0（实测） | 0（实测） | 有证据（实测） | 不适用（实测） | 859 秒（实测） |
-
-路由、耗时、验证和 Sol 终审来自真实记录；59% 与 65% 使用这些本地项目样本、公开
-模型费率和下方公式进行统一口径测算。完整方法、匿名结果和限制见
-[`tests/real-project-benchmark.md`](tests/real-project-benchmark.md)。
 
 ## 成本测算与测试口径
 
@@ -249,6 +225,21 @@ Windows Server CI 只证明 Server 行为；在记录真实 Windows 11 运行结
 后恢复最近一次有效备份。发布时的运行表面与证据状态见
 [`docs/release/runtime-surface-matrix.md`](docs/release/runtime-surface-matrix.md)。
 
+## 真实项目路由样本
+
+这些是匿名的本地真实项目测试样本。我们复用了已经完成的 Sol Luna 任务证据，只允许
+最少的只读探针补齐材料；没有修改任何业务项目。
+
+| 匿名类别 | 路由 | Luna 数量 | Wave | 验证 | Sol 终审 | 耗时 |
+| --- | --- | ---: | ---: | --- | --- | ---: |
+| 代码项目 | `sol_then_luna`（实测） | 不可得 | 不可得 | 有证据（实测） | `BLOCKED`（实测） | 2340 秒（实测） |
+| 文档项目 | `sol_then_luna`（实测） | 不可得 | 不可得 | 有证据（实测） | `PASS`（实测） | 379 秒（实测） |
+| 基础设施项目 | `direct`（实测） | 0（实测） | 0（实测） | 有证据（实测） | 不适用（实测） | 859 秒（实测） |
+
+路由、耗时、验证和 Sol 终审来自真实记录；59% 与 65% 使用这些本地项目样本、公开
+模型费率和下方公式进行统一口径测算。完整方法、匿名结果和限制见
+[`tests/real-project-benchmark.md`](tests/real-project-benchmark.md)。
+
 ## 仓库与开发验证
 
 ### 仓库布局
@@ -258,7 +249,7 @@ Windows Server CI 只证明 Server 行为；在记录真实 Windows 11 运行结
 .codex/agents/                 精确的 Sol 与 Luna custom-agent 定义
 scripts/                       macOS/Linux 生命周期与验证脚本
 tests/                         contract、forward-case 与生命周期测试
-docs/assets/                   仓库自有 hero、architecture、routing 与 review SVG
+docs/assets/readme/            仓库自有本地化 Control Orbit hero 与 control-plane SVG
 README.md                      默认简体中文指南
 README.en.md                   完整的 English peer
 ```
