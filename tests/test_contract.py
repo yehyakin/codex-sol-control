@@ -18,6 +18,7 @@ ROOT = Path(__file__).resolve().parents[1]
 SKILL_ROOT = ROOT / ".agents" / "skills" / "sol-luna"
 SOL_AGENT = ROOT / ".codex" / "agents" / "sol-controller.toml"
 LUNA_AGENT = ROOT / ".codex" / "agents" / "luna-max-worker.toml"
+TERRA_AGENT = ROOT / ".codex" / "agents" / "terra-high-worker.toml"
 RUNTIME_NOTE_CANDIDATES = (
     SKILL_ROOT / "runtime-notes.md",
     SKILL_ROOT / "references" / "runtime-notes.md",
@@ -62,6 +63,7 @@ class RepositoryContractTests(unittest.TestCase):
             SKILL_ROOT / "agents" / "openai.yaml",
             SOL_AGENT,
             LUNA_AGENT,
+            TERRA_AGENT,
         ]
         self.assertTrue(
             any(path.is_file() for path in RUNTIME_NOTE_CANDIDATES),
@@ -111,6 +113,7 @@ class RepositoryContractTests(unittest.TestCase):
             "docs/assets/readme/control-plane-en.svg",
             "scripts/validate.ps1",
             "scripts/uninstall.ps1",
+            "terra-high-worker.toml",
         ):
             self.assertIn(marker, install, marker)
 
@@ -122,6 +125,7 @@ class RepositoryContractTests(unittest.TestCase):
             "Markdown",
             "SVG",
             "PowerShell syntax",
+            "terra-high-worker.toml",
         ):
             self.assertIn(marker, validate, marker)
 
@@ -132,6 +136,7 @@ class RepositoryContractTests(unittest.TestCase):
             "install-state",
             "-LiteralPath",
             "config.toml",
+            "terra-high-worker.toml",
         ):
             self.assertIn(marker, uninstall, marker)
 
@@ -171,13 +176,21 @@ class RepositoryContractTests(unittest.TestCase):
             self.assertIn("默认使用中文", instructions, path.name)
             self.assertRegex(instructions, r"用户.*明确.*其他语言", path.name)
 
+        with TERRA_AGENT.open("rb") as handle:
+            terra_instructions = tomllib.load(handle)["developer_instructions"]
+        self.assertIn("默认使用中文", terra_instructions, TERRA_AGENT.name)
+        self.assertRegex(terra_instructions, r"用户.*明确.*其他语言", TERRA_AGENT.name)
+
         openai_text = read_if_present(SKILL_ROOT / "agents" / "openai.yaml")
         self.assertIn('default_prompt: "使用 $sol-luna', openai_text)
 
         chinese_readme = read_if_present(ROOT / "README.md")
         english_readme = read_if_present(ROOT / "README.en.md")
-        self.assertIn("运行时默认使用简体中文", chinese_readme)
-        self.assertIn("Runtime output defaults to Simplified Chinese", english_readme)
+        self.assertRegex(chinese_readme, r"运行时默认使用简体中文|默认简体中文")
+        self.assertRegex(
+            english_readme,
+            r"Runtime output defaults to Simplified Chinese|(?:canonical|default).{0,80}Simplified Chinese",
+        )
 
     def test_sol_plan_has_only_the_v020_canonical_fields(self) -> None:
         text = self.contract_text()
@@ -395,6 +408,7 @@ class RepositoryContractTests(unittest.TestCase):
             SKILL_ROOT / "references" / "runtime-notes.md",
             SOL_AGENT,
             LUNA_AGENT,
+            TERRA_AGENT,
         )
         for path in contract_paths:
             text = read_if_present(path)
@@ -427,6 +441,7 @@ class RepositoryContractTests(unittest.TestCase):
         expected = {
             SOL_AGENT: ("sol-controller", "gpt-5.6-sol", "high", "read-only"),
             LUNA_AGENT: ("luna-max-worker", "gpt-5.6-luna", "max", "workspace-write"),
+            TERRA_AGENT: ("terra-high-worker", "gpt-5.6-terra", "high", "workspace-write"),
         }
         for path, values in expected.items():
             self.assertTrue(path.is_file(), path)
@@ -442,6 +457,9 @@ class RepositoryContractTests(unittest.TestCase):
         luna_text = read_if_present(LUNA_AGENT)
         self.assertRegex(luna_text, r"(?i)do not (spawn|create).*subagent")
         self.assertRegex(luna_text, r"(?i)parent permission boundary")
+        terra_text = read_if_present(TERRA_AGENT)
+        self.assertRegex(terra_text, r"(?i)do not (spawn|create).*subagent")
+        self.assertRegex(terra_text, r"(?i)parent permission boundary")
         self.assertRegex(self.contract_text(), r"(?i)Fail Closed")
 
     def test_forward_fixture_covers_v020_routes_and_v040_reliability_cases(self) -> None:
@@ -470,11 +488,18 @@ class RepositoryContractTests(unittest.TestCase):
             "completed-no-result-recovery-blocked",
             "urgency-does-not-lower-evidence",
             "explicit-user-steering-replans",
+            "luna-low-ambiguity-small-context",
+            "terra-cross-module-long-context",
+            "model-identity-unavailable-fail-closed",
+            "luna-classification-error-escalates-terra",
+            "luna-first-failure-before-write-escalates-terra",
+            "luna-first-failure-after-write-keeps-luna-owner",
+            "single-file-unique-owner",
         }
         self.assertEqual(expected_ids, {case["id"] for case in cases})
         self.assertEqual(len(expected_ids), len(cases))
 
-        allowed_routes = {"direct", "sol", "sol_then_luna", "blocked"}
+        allowed_routes = {"direct", "sol", "sol_then_luna", "sol_then_terra", "blocked"}
         allowed_presence = {"none", "optional", "required", "blocked"}
         allowed_reviews = {"not_applicable", "PASS", "FIX", "BLOCKED"}
         allowed_capacity = {"not_applicable", "live"}
@@ -486,6 +511,8 @@ class RepositoryContractTests(unittest.TestCase):
             self.assertIn(expected["route"], allowed_routes)
             self.assertIn(expected["sol"], allowed_presence)
             self.assertIn(expected["luna"], allowed_presence)
+            if "terra" in expected:
+                self.assertIn(expected["terra"], allowed_presence)
             self.assertIn(expected["review"], allowed_reviews)
             self.assertIn(expected["capacity"], allowed_capacity)
             if "resume" in expected:
@@ -496,13 +523,31 @@ class RepositoryContractTests(unittest.TestCase):
         self.assertEqual("forbidden", by_id["ordinary-simple-direct"]["expected"].get("resume"))
         self.assertEqual("required", by_id["long-task-resume"]["expected"].get("resume"))
 
+        ownership_ids = {
+            "luna-first-failure-before-write-escalates-terra",
+            "luna-first-failure-after-write-keeps-luna-owner",
+        }
+        missing = ownership_ids - set(by_id)
+        if missing:
+            self.fail(f"fixture is missing ownership-transfer scenarios: {sorted(missing)}")
+        allow = by_id["luna-first-failure-before-write-escalates-terra"]
+        forbid = by_id["luna-first-failure-after-write-keeps-luna-owner"]
+        self.assertEqual(0, allow["luna_state"]["owned_files_written_before_failure"])
+        self.assertTrue(allow["luna_state"]["failed_before_owned_write"])
+        self.assertEqual("same_task_same_scope_once", allow["expected"]["upgrade"])
+        self.assertEqual(1, forbid["luna_state"]["owned_files_written_before_failure"])
+        self.assertFalse(forbid["luna_state"]["failed_before_owned_write"])
+        self.assertEqual("blocked", forbid["expected"]["terra"])
+        self.assertEqual("luna_retains_scope", forbid["expected"]["ownership"])
+        self.assertEqual("focused_fix_or_blocked", forbid["expected"]["correction"])
+
     def test_public_skill_has_no_unrelated_brand_or_model_contamination(self) -> None:
         combined = "\n".join(
             path.read_text(encoding="utf-8")
             for path in SKILL_ROOT.rglob("*")
             if path.is_file()
         ) if SKILL_ROOT.is_dir() else ""
-        forbidden = ["IPZOR", "Buzz", "DeepSeek", "OpenPencil", "gpt-5.6-terra"]
+        forbidden = ["IPZOR", "Buzz", "DeepSeek", "OpenPencil"]
         hits = [term for term in forbidden if re.search(re.escape(term), combined, re.IGNORECASE)]
         self.assertEqual([], hits)
 

@@ -5,15 +5,15 @@ description: Use when the user explicitly invokes $sol-luna or asks for Sol-cont
 
 # Sol Luna
 
-Sol is the single controller. One or more Luna Max workers execute clear tasks,
+Sol is the single controller. One or more selected workers execute bounded tasks,
 verify their results, and return evidence for Sol to review.
 
 Ordinary simple work stays direct unless the user explicitly invokes
-`$sol-luna`. An explicit invocation always starts with Sol. Planning-only work may use zero Luna workers.
+`$sol-luna`. An explicit invocation always starts with Sol. Planning-only work may use zero workers (and therefore zero Luna workers).
 
 ## Language
 
-默认使用中文编写 Sol 计划、Luna 任务与结果、状态更新和最终审核。用户明确要求
+默认使用中文编写 Sol 计划、worker 任务与结果、状态更新和最终审核。用户明确要求
 其他语言时，使用用户指定的语言。代码、命令、路径、标识符和原始证据可按需保留
 原文。
 
@@ -25,13 +25,35 @@ Ordinary simple work stays direct unless the user explicitly invokes
 - **Luna Max:** execute exactly one assigned task, modify only its write scope,
   run the required verification, and return evidence. Luna does not redesign
   the plan, broaden scope, create subagents, or approve the overall task.
+- **Terra High:** execute exactly one assigned complex task under the same
+  packet, scope, evidence, and authorization rules as Luna. Terra does not
+  plan, schedule, create subagents, or approve the overall task.
+
+## Tiered execution routing
+
+Sol is the **only controller** and final reviewer. This is a routing rule, not
+a permanent agent team.
+
+- Route to **Luna Max** only when the work is clear, low-ambiguity,
+  falsifiable, small context, mechanical, or high-throughput.
+- Route to **Terra High** for cross-module work, long-context investigation,
+  ambiguous debugging, shared interface judgment, or high-risk implementation.
+- Before dispatch, prove the exact model identity, reasoning effort, selected
+  custom agent, and effective inherited permission boundary. If any selection
+  is unprovable, **Fail Closed** and return `BLOCKED`.
+- One file has one owner for the whole run. Only when Luna's first failure
+  happens before Luna writes any owned file may Sol escalate the same task and
+  unchanged scope to Terra once, rather than retrying Luna indefinitely. If
+  Luna has written any owned file before failing, Luna retains all ownership;
+  only the original Luna owner may receive one focused fix, otherwise return
+  `BLOCKED`. Terra's write state is never the escalation gate.
 
 ## Workflow
 
 1. Sol writes the smallest useful plan.
 2. Independent tasks with disjoint write scopes may run in the same stage.
 3. Dependent or overlapping tasks run in later stages.
-4. Luna Max executes and self-checks each assigned task.
+4. Luna Max or Terra High executes and self-checks each assigned task.
 5. Sol reviews real files, the diff, test or build output, and requirement
    coverage before deciding `PASS`, `FIX`, or `BLOCKED`.
 
@@ -80,11 +102,11 @@ stages:
   - [task-a]
 ```
 
-Sol uses the minimum number of Luna workers needed. A stage may launch only as
+Sol uses the minimum number of selected workers needed. A stage may launch only as
 many ready tasks as live capacity allows; excess tasks wait in the next batch.
 No fixed worker maximum is promised by this Skill.
 
-## Luna task
+## Shared execution task
 
 Every delegated task uses this complete packet. `Context` is optional; every
 other field is required.
@@ -99,10 +121,10 @@ Expected result: <observable acceptance condition>
 Verification: <exact command or procedure and passing condition>
 ```
 
-An incomplete, contradictory, or unauthorized packet is `BLOCKED`; Luna must
+An incomplete, contradictory, or unauthorized packet is `BLOCKED`; the worker must
 not guess the missing scope.
 
-## Luna result
+## Shared execution result
 
 ```text
 Task ID: <task id>
@@ -120,7 +142,7 @@ identity or an exact changed-file snapshot. If the candidate changes after
 verification, prior evidence is stale and affected verification must be rerun
 before `PASS`. A top-level `Candidate` result field is not added.
 
-transport/spawn `completed` only proves delivery lifecycle completion; it cannot substitute for a structured Luna `PASS`, Verification/Evidence/changed-path proof, or Sol review.
+transport/spawn `completed` only proves delivery lifecycle completion; it cannot substitute for a structured Luna `PASS` or Terra `PASS` (that is, a structured worker `PASS`), Verification/Evidence/changed-path proof, or Sol review.
 
 If transport/spawn reports `completed` without a structured result, allow
 exactly one result-only follow-up to the same worker. This result-only follow-up
@@ -128,15 +150,15 @@ authorizes no new write and no re-execution. If it still cannot retrieve a
 structured result bound to the final candidate, return `BLOCKED`; do not launch
 another retrieval.
 
-Luna may return `PASS` for its assigned task only. Sol decides whether the
+The worker may return `PASS` for its assigned task only. Sol decides whether the
 overall work is complete.
 
 ## Scheduling and ownership
 
 - One file has one owner for the entire run.
-- Multiple Luna workers may read the same file, but they must not write it
+- Multiple workers may read the same file, but they must not write it
   concurrently.
-- A shared integration file has one Luna owner.
+- A shared integration file has one worker owner.
 - If write scopes overlap or the overlap is uncertain, merge the tasks or
   schedule them sequentially.
 - Preserve unrelated uncommitted user changes and verify the final real diff.

@@ -83,7 +83,7 @@ GEOMETRY_ATTRIBUTES = {
 }
 KEY_LABELS = (
     "SOL / LUNA",
-    "59%",
+    "72%",
     "FILES",
     "DIFF",
     "TEST",
@@ -333,17 +333,21 @@ class ControlOrbitAssetContractTests(unittest.TestCase):
                 elif name == "hero-en.svg":
                     self.assertIn("Sol", text, name)
                     self.assertIn("Luna", text, name)
-                    self.assertIn("sample-validated", text.casefold(), name)
+                    self.assertRegex(
+                        text,
+                        r"(?i)(?:estimated|budget|projection|sample[- ]validated)",
+                        name,
+                    )
                 else:
                     self.assertIn("Sol", text, name)
                     self.assertIn("Luna", text, name)
                 if name.startswith("hero-"):
-                    self.assertIn("59%", text, name)
+                    self.assertIn("72%", text, name)
                     self.assertIn("FILES", text, name)
                     self.assertIn("DIFF", text, name)
                     self.assertIn("TEST", text, name)
                     if name.endswith("-zh.svg"):
-                        self.assertIn("本地项目测试样本验证", text, name)
+                        self.assertRegex(text, r"(?:估算|预算|比例|路由开销)", name)
                 else:
                     for token in ("PASS", "FIX", "BLOCKED"):
                         self.assertIn(token, text, f"{name}: missing {token}")
@@ -359,6 +363,18 @@ class ControlOrbitAssetContractTests(unittest.TestCase):
                             "overlapping scopes never run concurrently",
                             folded_text,
                             name,
+                        )
+
+                if "Terra" in text:
+                    if name.endswith("-zh.svg"):
+                        self.assertIn("有界复杂执行", text, name)
+                    else:
+                        self.assertIn("bounded complex execution", text.casefold(), name)
+                    if re.search(r"(?i)(?:terra.{0,80}(?:escalat|升级)|(?:escalat|升级).{0,80}terra)", text):
+                        self.assertRegex(
+                            text,
+                            r"(?i)(?:first failure|首次失败).{0,140}(?:zero|0|零).{0,140}(?:owned[- ]?file|owned file|写入)",
+                            f"{name}: escalation must be limited to Luna's zero-owned-file failure exception",
                         )
 
                 ids = [element.attrib["id"] for element in root.iter() if "id" in element.attrib]

@@ -257,6 +257,7 @@ Assert-PathChain $baseDir
 $newSkillTarget = Join-Path $baseDir ".agents/skills/sol-luna"
 $newSolTarget = Join-Path $baseDir ".codex/agents/sol-controller.toml"
 $lunaTarget = Join-Path $baseDir ".codex/agents/luna-max-worker.toml"
+$terraTarget = Join-Path $baseDir ".codex/agents/terra-high-worker.toml"
 $legacySkillTarget = Join-Path $baseDir ".agents/skills/orchestrate-sol-luna"
 $legacySolTarget = Join-Path $baseDir ".codex/agents/sol-planner.toml"
 $codexDir = Join-Path $baseDir ".codex"
@@ -265,6 +266,8 @@ $configTarget = Join-Path $codexDir "config.toml"
 $stateRoot = Join-Path $codexDir "sol-luna"
 $stateFile = Join-Path $stateRoot "install-state"
 $backupRoot = Join-Path $stateRoot "backups"
+$legacyStateRoot = Join-Path $codexDir "orchestrate-sol-luna"
+$legacyStateFile = Join-Path $legacyStateRoot "install-state"
 
 foreach ($directory in @(
     (Join-Path $baseDir ".agents"),
@@ -272,7 +275,8 @@ foreach ($directory in @(
     $codexDir,
     $agentsDir,
     $stateRoot,
-    $backupRoot
+    $backupRoot,
+    $legacyStateRoot
 )) {
     if (Test-PathExists $directory) {
         Assert-Target $directory "Directory"
@@ -295,8 +299,10 @@ if (Test-PathExists $configTarget) {
 Assert-Target $newSkillTarget "Directory"
 Assert-Target $newSolTarget "File"
 Assert-Target $lunaTarget "File"
+Assert-Target $terraTarget "File"
 Assert-Target $legacySkillTarget "Directory"
 Assert-Target $legacySolTarget "File"
+if (Test-PathExists $legacyStateFile) { Assert-Target $legacyStateFile "File" }
 
 $state = Get-StateMap $stateFile
 if ((Get-StateValue $state "version") -ne "2") {
@@ -312,9 +318,11 @@ Assert-Target $manifestPath "File"
 $recordedSkill = Get-StateValue $state "skill_sha256"
 $recordedSol = Get-StateValue $state "sol_sha256"
 $recordedLuna = Get-StateValue $state "luna_sha256"
+$recordedTerra = if ($state.ContainsKey("terra_sha256")) { [string]$state["terra_sha256"] } else { "" }
 Assert-Hash $recordedSkill
 Assert-Hash $recordedSol
 Assert-Hash $recordedLuna
+if ($recordedTerra) { Assert-Hash $recordedTerra }
 if ((Get-TreeDigest $newSkillTarget) -ne $recordedSkill) {
     throw "installed v0.2 skill was modified; refusing to remove it"
 }
@@ -324,6 +332,9 @@ if ((Get-FileDigest $newSolTarget) -ne $recordedSol) {
 if ((Get-FileDigest $lunaTarget) -ne $recordedLuna) {
     throw "installed v0.2 Luna agent was modified; refusing to remove it"
 }
+if ($recordedTerra -and ((-not (Test-Path -LiteralPath $terraTarget -PathType Leaf)) -or (Get-FileDigest $terraTarget) -ne $recordedTerra)) {
+    throw "installed v0.2 Terra agent was modified; refusing to remove it"
+}
 
 $manifest = Get-StateMap $manifestPath
 if ((Get-StateValue $manifest "version") -ne "2") {
@@ -332,9 +343,23 @@ if ((Get-StateValue $manifest "version") -ne "2") {
 Assert-BackupEntry $manifest "legacy skill" "legacy_skill_presence" "legacy_skill_sha256" (Join-Path $backupDir "legacy/skill") "Directory"
 Assert-BackupEntry $manifest "legacy Sol" "legacy_sol_presence" "legacy_sol_sha256" (Join-Path $backupDir "legacy/sol-planner.toml") "File"
 Assert-BackupEntry $manifest "legacy Luna" "legacy_luna_presence" "legacy_luna_sha256" (Join-Path $backupDir "legacy/luna-max-worker.toml") "File"
+if ($manifest.ContainsKey("legacy_state_presence") -or $manifest.ContainsKey("legacy_state_sha256")) {
+    if (-not $manifest.ContainsKey("legacy_state_presence") -or -not $manifest.ContainsKey("legacy_state_sha256")) {
+        throw "backup manifest is incomplete"
+    }
+    Assert-BackupEntry $manifest "legacy install state" "legacy_state_presence" "legacy_state_sha256" (Join-Path $backupDir "legacy/install-state") "File"
+    $legacyStatePresence = Get-StateValue $manifest "legacy_state_presence"
+}
+else {
+    # Older v0.2 manifests predate legacy install-state archival.
+    $legacyStatePresence = "absent"
+}
 Assert-BackupEntry $manifest "v020 skill" "v020_skill_presence" "v020_skill_sha256" (Join-Path $backupDir "v020/skill") "Directory"
 Assert-BackupEntry $manifest "v020 Sol" "v020_sol_presence" "v020_sol_sha256" (Join-Path $backupDir "v020/sol-controller.toml") "File"
 Assert-BackupEntry $manifest "v020 Luna" "v020_luna_presence" "v020_luna_sha256" (Join-Path $backupDir "v020/luna-max-worker.toml") "File"
+if ($recordedTerra) {
+    Assert-BackupEntry $manifest "v020 Terra" "v020_terra_presence" "v020_terra_sha256" (Join-Path $backupDir "v020/terra-high-worker.toml") "File"
+}
 
 $configPresence = Get-StateValue $manifest "config_presence"
 $configChecksum = Get-StateValue $manifest "config_sha256"
@@ -354,14 +379,23 @@ $legacyLunaPresence = Get-StateValue $manifest "legacy_luna_presence"
 $v020SkillPresence = Get-StateValue $manifest "v020_skill_presence"
 $v020SolPresence = Get-StateValue $manifest "v020_sol_presence"
 $v020LunaPresence = Get-StateValue $manifest "v020_luna_presence"
+$v020TerraPresence = if ($recordedTerra) { Get-StateValue $manifest "v020_terra_presence" } else { "absent" }
 
 $restoreLegacySkill = $false
 $restoreLegacySol = $false
+$restoreLegacyState = $false
 $restoreV020Skill = $false
 $restoreV020Sol = $false
 $restoreLuna = $false
+$restoreTerra = $false
 $lunaRestoreSource = ""
 if ($RestoreLatest) {
+    if ($legacyStatePresence -eq "present") {
+        if (Test-PathExists $legacyStateFile) {
+            throw "legacy install state already exists; refusing to overwrite it"
+        }
+        $restoreLegacyState = $true
+    }
     if ($legacySkillPresence -eq "present" -and -not (Test-PathExists $legacySkillTarget)) {
         $restoreLegacySkill = $true
     }
@@ -382,6 +416,7 @@ if ($RestoreLatest) {
         $restoreLuna = $true
         $lunaRestoreSource = Join-Path $backupDir "v020/luna-max-worker.toml"
     }
+    if ($v020TerraPresence -eq "present") { $restoreTerra = $true }
 }
 
 $transactionDir = Join-Path $stateRoot (".uninstall-" + [Guid]::NewGuid().ToString("N"))
@@ -389,11 +424,15 @@ $stateOld = $false
 $skillOld = $false
 $solOld = $false
 $lunaOld = $false
+$terraOld = $false
 $legacySkillNew = $false
 $legacySolNew = $false
+$legacyStateNew = $false
+$legacyStateRootNew = $false
 $v020SkillNew = $false
 $v020SolNew = $false
 $lunaNew = $false
+$terraNew = $false
 
 try {
     [System.IO.Directory]::CreateDirectory((Join-Path $transactionDir "stage")) | Out-Null
@@ -406,6 +445,9 @@ try {
     if ($restoreLegacySol) {
         Copy-Exact (Join-Path $backupDir "legacy/sol-planner.toml") (Join-Path $transactionDir "stage/legacy-sol.toml")
     }
+    if ($restoreLegacyState) {
+        Copy-Exact (Join-Path $backupDir "legacy/install-state") (Join-Path $transactionDir "stage/legacy-install-state")
+    }
     if ($restoreV020Skill) {
         Copy-Exact (Join-Path $backupDir "v020/skill") (Join-Path $transactionDir "stage/v020-skill")
     }
@@ -414,6 +456,9 @@ try {
     }
     if ($restoreLuna) {
         Copy-Exact $lunaRestoreSource (Join-Path $transactionDir "stage/luna.toml")
+    }
+    if ($restoreTerra) {
+        Copy-Exact (Join-Path $backupDir "v020/terra-high-worker.toml") (Join-Path $transactionDir "stage/terra.toml")
     }
 
     Move-Item -LiteralPath $stateFile -Destination (Join-Path $transactionDir "old-state")
@@ -440,6 +485,15 @@ try {
         $lunaNew = $true
     }
 
+    if ($recordedTerra) {
+        Move-Item -LiteralPath $terraTarget -Destination (Join-Path $transactionDir "old-terra")
+        $terraOld = $true
+        if ($restoreTerra) {
+            Move-Item -LiteralPath (Join-Path $transactionDir "stage/terra.toml") -Destination $terraTarget
+            $terraNew = $true
+        }
+    }
+
     if ($restoreLegacySkill) {
         Move-Item -LiteralPath (Join-Path $transactionDir "stage/legacy-skill") -Destination $legacySkillTarget
         $legacySkillNew = $true
@@ -447,6 +501,14 @@ try {
     if ($restoreLegacySol) {
         Move-Item -LiteralPath (Join-Path $transactionDir "stage/legacy-sol.toml") -Destination $legacySolTarget
         $legacySolNew = $true
+    }
+    if ($restoreLegacyState) {
+        if (-not (Test-PathExists $legacyStateRoot)) {
+            [System.IO.Directory]::CreateDirectory($legacyStateRoot) | Out-Null
+            $legacyStateRootNew = $true
+        }
+        Move-Item -LiteralPath (Join-Path $transactionDir "stage/legacy-install-state") -Destination $legacyStateFile
+        $legacyStateNew = $true
     }
 
     Remove-Exact $backupDir
@@ -458,6 +520,10 @@ catch {
     if ($lunaOld -and (Test-PathExists (Join-Path $transactionDir "old-luna"))) {
         Move-Item -LiteralPath (Join-Path $transactionDir "old-luna") -Destination $lunaTarget
     }
+    if ($terraNew -and (Test-PathExists $terraTarget)) { Remove-Exact $terraTarget }
+    if ($terraOld -and (Test-PathExists (Join-Path $transactionDir "old-terra"))) {
+        Move-Item -LiteralPath (Join-Path $transactionDir "old-terra") -Destination $terraTarget
+    }
     if ($v020SolNew -and (Test-PathExists $newSolTarget)) { Remove-Exact $newSolTarget }
     if ($solOld -and (Test-PathExists (Join-Path $transactionDir "old-v020-sol"))) {
         Move-Item -LiteralPath (Join-Path $transactionDir "old-v020-sol") -Destination $newSolTarget
@@ -468,6 +534,8 @@ catch {
     }
     if ($legacySolNew -and (Test-PathExists $legacySolTarget)) { Remove-Exact $legacySolTarget }
     if ($legacySkillNew -and (Test-PathExists $legacySkillTarget)) { Remove-Exact $legacySkillTarget }
+    if ($legacyStateNew -and (Test-PathExists $legacyStateFile)) { Remove-Exact $legacyStateFile }
+    if ($legacyStateRootNew) { Remove-EmptyDirectory $legacyStateRoot }
     if ($stateOld -and (Test-PathExists (Join-Path $transactionDir "old-state"))) {
         Move-Item -LiteralPath (Join-Path $transactionDir "old-state") -Destination $stateFile
     }
@@ -481,7 +549,9 @@ Remove-EmptyDirectory $stateRoot
 Write-Output "Uninstall path: $newSkillTarget"
 Write-Output "Uninstall path: $newSolTarget"
 Write-Output "Uninstall path: $lunaTarget"
+if ($recordedTerra) { Write-Output "Uninstall path: $terraTarget" }
 if ($RestoreLatest) {
     Write-Output "Restore path: $legacySkillTarget"
     Write-Output "Restore path: $legacySolTarget"
+    if ($restoreLegacyState) { Write-Output "Restore path: $legacyStateFile" }
 }

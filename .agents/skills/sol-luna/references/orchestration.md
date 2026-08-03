@@ -1,14 +1,24 @@
 # Sol Luna orchestration contract
 
 This reference defines the operating contract. Sol owns every scheduling and
-completion decision; Luna Max owns bounded execution.
+completion decision; Luna Max or Terra High owns bounded execution.
 
 ## 1. Start and route
 
 - Explicit `$sol-luna` invocation starts Sol.
 - Ordinary simple work without explicit invocation remains direct.
-- Planning-only or review-only work may stop after Sol and use zero Luna.
-- Execution work uses the minimum useful number of Luna workers.
+- Planning-only or review-only work may stop after Sol and use zero workers (and therefore zero Luna workers).
+- Execution work uses the minimum useful number of workers selected by Sol.
+
+Sol is the only controller and final reviewer; this is not a permanent agent
+team. Route Luna Max only to clear, low-ambiguity, falsifiable, small context,
+mechanical, or high-throughput work. Route Terra High to cross-module work,
+long-context investigation, ambiguous debugging, shared interface judgment, or
+high-risk implementation. Terra never plans or approves the overall task.
+
+Before dispatch, prove exact model identity, reasoning effort, selected custom
+agent, and effective inherited permission boundary. If that proof is unavailable,
+**Fail Closed** and return `BLOCKED` rather than substituting a nearby model.
 
 For authorized execution, a plan is not a stop point. Stop or pause only for a
 new permission request, an irreversible choice requiring confirmation, or a
@@ -69,15 +79,15 @@ If dependency order or write overlap is uncertain, schedule sequentially.
 ## 4. One file, one owner
 
 Every writable file has one owner for the entire run. Read-only analysis may be
-parallel, but two Luna workers never modify the same file. A shared integration
+parallel, but two workers never modify the same file. A shared integration
 file also has one owner. Alternative proposals may be collected read-only;
-after Sol selects a proposal, one Luna performs the write.
+after Sol selects a proposal, one worker performs the write.
 
 Before launch, reject a stage that contains overlapping write scopes. Before
 integration, compare the real changed paths with every assigned scope and
 preserve unrelated dirty-worktree changes.
 
-## 5. Luna task
+## 5. Shared execution task
 
 ```text
 Task ID: <stable task id>
@@ -89,10 +99,10 @@ Expected result: <observable acceptance condition>
 Verification: <exact command or procedure and passing condition>
 ```
 
-Luna returns `BLOCKED` without writing if a required field is missing, scope is
+Luna or Terra returns `BLOCKED` without writing if a required field is missing, scope is
 contradictory, a dependency is absent, or authorization cannot be proved.
 
-## 6. Luna result
+## 6. Shared execution result
 
 ```text
 Task ID: <task id>
@@ -106,16 +116,16 @@ Blocker: <None or the concrete blocker>
 ```
 
 `PASS` requires every assigned acceptance condition and verification to be
-evidenced. Luna approves only its bounded task; it never approves the overall
-project.
+evidenced. Luna or Terra approves only its bounded task; neither approves the
+overall project.
 
 Evidence must bind to the final candidate identity using either a commit+diff
 identity or an exact changed-file snapshot. If the candidate changes after
 verification, the old evidence is stale and affected verification must be rerun.
-Do not add a top-level `Candidate` field to the Luna result.
+Do not add a top-level `Candidate` field to the worker result.
 
 Transport/spawn `completed` only proves delivery lifecycle completion. It cannot
-substitute for a structured Luna `PASS`, Verification/Evidence/changed-path proof,
+substitute for a structured Luna `PASS` or Terra `PASS` (that is, a structured worker `PASS`), Verification/Evidence/changed-path proof,
 or Sol review.
 
 If transport/spawn reports `completed` without a structured result, allow exactly
@@ -127,7 +137,7 @@ retrieval.
 ## 7. Sol review
 
 Sol inspects the original request, `done_when`, real files, complete diff,
-verification output, build or artifact results, and every Luna result. It also
+verification output, build or artifact results, and every worker result. It also
 checks that tasks integrate cleanly and unrelated user edits remain intact.
 
 Sol returns exactly one verdict:
@@ -138,8 +148,16 @@ Sol returns exactly one verdict:
 - `BLOCKED`: permissions, dependencies, runtime selection, scope, conflicts,
   or verification prevent a defensible completion claim.
 
-Sol must reject an evidence-free Luna `PASS`, an out-of-scope write, an omitted
+Sol must reject an evidence-free worker `PASS`, an out-of-scope write, an omitted
 criterion, or a failed command.
+
+Only when Luna's first failure happens before Luna writes any owned file may Sol
+perform one bounded escalation of the same task and unchanged scope to Terra
+instead of unbounded Luna retries. If Luna has written any owned file before
+failing, Luna retains all ownership; only the original Luna owner may receive
+one focused fix, otherwise return `BLOCKED`. Terra's write state is never the
+escalation gate. The packet, authorization boundary, evidence freshness,
+correction rules, and scope remain unchanged.
 
 ## 8. Focused fix
 

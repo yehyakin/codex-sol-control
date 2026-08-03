@@ -12,13 +12,13 @@ business repository was modified.
 Runtime activity, completed-task timestamps, verification-bearing results, and
 final review states were accepted as `measured`. A value that could not be
 proved from those records remained `unavailable`; it was not inferred from a
-summary. Cost results use `sample_validated_projection`: published prices and a
-reproducible formula applied to the completed local project samples.
+summary. Cost results use `scenario_model_projection`: official rates and a
+reproducible formula for declared routing scenarios, not completed local samples.
 
 ## Evidence classes
 
 - `measured`: directly observable runtime, timestamp, diff, or verification evidence.
-- `sample_validated_projection`: a reproducible cost projection grounded in the tested samples.
+- `scenario_model_projection`: a reproducible budget projection from official rates and declared scenario shares.
 - `unavailable`: evidence was insufficient, incomparable, or not exposed.
 
 ## Anonymous categories
@@ -35,24 +35,30 @@ sample reached `PASS` with verification evidence. The infrastructure sample
 remained Direct and created zero Luna work, demonstrating that the benchmark
 does not assume every real task should be delegated.
 
-## Cost result
+## Current cost result
 
-The typical tested scenario produces a `sample_validated_projection` of about
-**59%** saving. With the public rates and the documented typical assumptions,
-an all-Sol reference workload of 1M input plus 0.1M output is **$8.00** or
-**200 credits**; the routed equivalent is about **$3.30** or **82.4 credits**.
+The current public model uses relative subscription-credit weights rather than
+claiming a measured A/B saving: Sol = **1**, Terra High = **0.4**, and Luna Max
+= **0.04**. API dollars and subscription credits are separate accounting units;
+the exact API and credit rows remain documented in the bilingual README.
 
-The complex, rework-prone tested scenario produces a `sample_validated_projection`
-of about **65%**. After the typical saving, 41% of cost remains; avoiding invalid
-rework equal to 15% of that remainder leaves 41%*85%=34.85%, which is approximately
-65% saved. The tested failure-closed, verification, and bounded-correction paths
-provide the workflow basis for this projection.
+The scenario/model projection is published as ranges, not as a single direct
+task promise:
+
+- ordinary bounded work: **72%-76%**;
+- mixed Sol/Terra/Luna routing: **50%-60%**;
+- complex work kept Direct: **33%-43%**;
+- composite center: approximately **56%**.
+
+These are scenario/model projections from official rates and declared routing assumptions,
+not a newly measured matched A/B experiment. No complex **65%** direct
+saving or Luna=Sol **1/25** ratio is treated as the current public contract.
 
 ## Privacy and limitations
 
 The public result contains anonymous aggregate categories only. It excludes
 project names, paths, repository URLs, prompts, source content, secrets,
 credentials, private task details, and runtime identifiers. A measured routing
-or review result and a sample-validated cost projection are reported as distinct
+or review result and a scenario/model cost projection are reported as distinct
 evidence types. The three samples demonstrate routing and evidence behavior and
 are coverage-oriented rather than a population-wide statistical study.

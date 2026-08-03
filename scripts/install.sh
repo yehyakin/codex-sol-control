@@ -81,6 +81,12 @@ state_value_file() {
   awk -F= -v wanted="$key" '$1 == wanted { print substr($0, length(wanted) + 2); found = 1 } END { if (!found) exit 1 }' "$file"
 }
 
+state_optional_value_file() {
+  local file="$1"
+  local key="$2"
+  awk -F= -v wanted="$key" '$1 == wanted { print substr($0, length(wanted) + 2); found = 1 } END { if (!found) exit 0 }' "$file"
+}
+
 assert_plain_tree() {
   local path="$1"
   local link
@@ -175,13 +181,16 @@ fi
 skill_source="$REPO_ROOT/.agents/skills/sol-luna"
 sol_source="$REPO_ROOT/.codex/agents/sol-controller.toml"
 luna_source="$REPO_ROOT/.codex/agents/luna-max-worker.toml"
+terra_source="$REPO_ROOT/.codex/agents/terra-high-worker.toml"
 
 [[ -d "$skill_source" && ! -L "$skill_source" ]] || die 'source skill directory is missing'
 [[ -f "$sol_source" && ! -L "$sol_source" ]] || die 'source Sol controller is missing'
 [[ -f "$luna_source" && ! -L "$luna_source" ]] || die 'source Luna agent is missing'
+[[ -f "$terra_source" && ! -L "$terra_source" ]] || die 'source Terra agent is missing'
 assert_plain_tree "$skill_source"
 assert_plain_tree "$sol_source"
 assert_plain_tree "$luna_source"
+assert_plain_tree "$terra_source"
 
 if (( check_mode )); then
   bash "$SCRIPT_DIR/validate.sh" || die 'source validation failed'
@@ -218,6 +227,7 @@ fi
 new_skill_target="$base_dir/.agents/skills/sol-luna"
 new_sol_target="$base_dir/.codex/agents/sol-controller.toml"
 luna_target="$base_dir/.codex/agents/luna-max-worker.toml"
+terra_target="$base_dir/.codex/agents/terra-high-worker.toml"
 legacy_skill_target="$base_dir/.agents/skills/orchestrate-sol-luna"
 legacy_sol_target="$base_dir/.codex/agents/sol-planner.toml"
 codex_dir="$base_dir/.codex"
@@ -258,6 +268,7 @@ fi
 assert_target "$new_skill_target" directory
 assert_target "$new_sol_target" file
 assert_target "$luna_target" file
+assert_target "$terra_target" file
 assert_target "$legacy_skill_target" directory
 assert_target "$legacy_sol_target" file
 if path_exists "$config_target"; then
@@ -274,6 +285,7 @@ v2_state_present=0
 v2_skill_sha256=
 v2_sol_sha256=
 v2_luna_sha256=
+v2_terra_sha256=
 if path_exists "$state_file"; then
   [[ "$(state_value_file "$state_file" version)" == 2 ]] || die 'existing v0.2 state has an unsupported version'
   v2_backup_id=$(state_value_file "$state_file" backup_id) || die 'existing v0.2 state is incomplete'
@@ -281,17 +293,29 @@ if path_exists "$state_file"; then
   v2_skill_sha256=$(state_value_file "$state_file" skill_sha256) || die 'existing v0.2 state is incomplete'
   v2_sol_sha256=$(state_value_file "$state_file" sol_sha256) || die 'existing v0.2 state is incomplete'
   v2_luna_sha256=$(state_value_file "$state_file" luna_sha256) || die 'existing v0.2 state is incomplete'
+  v2_terra_sha256=$(state_optional_value_file "$state_file" terra_sha256)
   valid_hash "$v2_skill_sha256" || die 'existing v0.2 state has an invalid skill checksum'
   valid_hash "$v2_sol_sha256" || die 'existing v0.2 state has an invalid Sol checksum'
   valid_hash "$v2_luna_sha256" || die 'existing v0.2 state has an invalid Luna checksum'
+  if [[ -n "$v2_terra_sha256" ]]; then valid_hash "$v2_terra_sha256" || die 'existing v0.2 state has an invalid Terra checksum'; fi
   [[ -d "$new_skill_target" && ! -L "$new_skill_target" ]] || die 'existing v0.2 skill is missing or unsafe'
   [[ -f "$new_sol_target" && ! -L "$new_sol_target" ]] || die 'existing v0.2 Sol controller is missing or unsafe'
   [[ -f "$luna_target" && ! -L "$luna_target" ]] || die 'existing v0.2 Luna agent is missing or unsafe'
   [[ "$(sha256_tree "$new_skill_target")" == "$v2_skill_sha256" ]] || die 'existing v0.2 skill was modified'
   [[ "$(sha256_file "$new_sol_target")" == "$v2_sol_sha256" ]] || die 'existing v0.2 Sol controller was modified'
   [[ "$(sha256_file "$luna_target")" == "$v2_luna_sha256" ]] || die 'existing v0.2 Luna agent was modified'
+  if path_exists "$terra_target"; then
+    [[ -n "$v2_terra_sha256" ]] || die 'existing v0.2 Terra agent has no ownership checksum'
+    [[ -f "$terra_target" && ! -L "$terra_target" ]] || die 'existing v0.2 Terra agent is missing or unsafe'
+    [[ "$(sha256_file "$terra_target")" == "$v2_terra_sha256" ]] || die 'existing v0.2 Terra agent was modified'
+  elif [[ -n "$v2_terra_sha256" ]]; then
+    die 'existing v0.2 Terra agent is missing or unsafe'
+  fi
   v2_state_present=1
 else
+  if path_exists "$terra_target"; then
+    die 'existing Terra agent has no ownership state'
+  fi
   if path_exists "$new_skill_target" || path_exists "$new_sol_target"; then
     die 'existing v0.2 target has no ownership state'
   fi
@@ -335,10 +359,12 @@ if (( check_mode )); then
   source_skill_sha256=$(sha256_tree "$skill_source") || die 'cannot hash the source skill'
   source_sol_sha256=$(sha256_file "$sol_source") || die 'cannot hash the source Sol controller'
   source_luna_sha256=$(sha256_file "$luna_source") || die 'cannot hash the source Luna agent'
+  source_terra_sha256=$(sha256_file "$terra_source") || die 'cannot hash the source Terra agent'
   if (( v2_state_present )) &&
     [[ "$v2_skill_sha256" == "$source_skill_sha256" ]] &&
     [[ "$v2_sol_sha256" == "$source_sol_sha256" ]] &&
     [[ "$v2_luna_sha256" == "$source_luna_sha256" ]] &&
+    [[ -n "$v2_terra_sha256" && "$v2_terra_sha256" == "$source_terra_sha256" ]] &&
     ! path_exists "$legacy_skill_target" &&
     ! path_exists "$legacy_sol_target" &&
     ! path_exists "$legacy_state_file"; then
@@ -370,8 +396,11 @@ sol_old=0
 sol_new=0
 luna_old=0
 luna_new=0
+terra_old=0
+terra_new=0
 legacy_skill_old=0
 legacy_sol_old=0
+legacy_state_old=0
 state_old=0
 state_new=0
 
@@ -390,6 +419,8 @@ rollback_install() {
 
   if (( luna_new )); then rm -rf "$luna_target"; fi
   if (( luna_old )) && path_exists "$transaction_dir/old-luna"; then mv "$transaction_dir/old-luna" "$luna_target"; fi
+  if (( terra_new )); then rm -rf "$terra_target"; fi
+  if (( terra_old )) && path_exists "$transaction_dir/old-terra"; then mv "$transaction_dir/old-terra" "$terra_target"; fi
   if (( sol_new )); then rm -rf "$new_sol_target"; fi
   if (( sol_old )) && path_exists "$transaction_dir/old-v020-sol"; then mv "$transaction_dir/old-v020-sol" "$new_sol_target"; fi
   if (( skill_new )); then rm -rf "$new_skill_target"; fi
@@ -397,6 +428,7 @@ rollback_install() {
 
   if (( legacy_sol_old )) && path_exists "$transaction_dir/old-legacy-sol"; then mv "$transaction_dir/old-legacy-sol" "$legacy_sol_target"; fi
   if (( legacy_skill_old )) && path_exists "$transaction_dir/old-legacy-skill"; then mv "$transaction_dir/old-legacy-skill" "$legacy_skill_target"; fi
+  if (( legacy_state_old )) && path_exists "$transaction_dir/old-legacy-state"; then mv "$transaction_dir/old-legacy-state" "$legacy_state_file"; fi
 
   if [[ -n "${transaction_dir:-}" ]]; then rm -rf "$transaction_dir"; fi
   if [[ -n "${backup_dir:-}" ]]; then rm -rf "$backup_dir"; fi
@@ -430,6 +462,14 @@ if path_exists "$luna_target"; then
   copy_exact "$luna_target" "$backup_dir/legacy/luna-max-worker.toml"
 fi
 
+backup_legacy_state_presence=absent
+backup_legacy_state_sha256=
+if path_exists "$legacy_state_file"; then
+  backup_legacy_state_presence=present
+  backup_legacy_state_sha256=$(sha256_file "$legacy_state_file") || die 'cannot hash the legacy install state'
+  copy_exact "$legacy_state_file" "$backup_dir/legacy/install-state"
+fi
+
 backup_new_skill_presence=absent
 backup_new_skill_sha256=
 mkdir "$backup_dir/v020"
@@ -453,6 +493,14 @@ if [[ "$backup_luna_presence" == present ]]; then
   copy_exact "$luna_target" "$backup_dir/v020/luna-max-worker.toml"
 fi
 
+backup_new_terra_presence=absent
+backup_new_terra_sha256=
+if path_exists "$terra_target"; then
+  backup_new_terra_presence=present
+  backup_new_terra_sha256=$(sha256_file "$terra_target") || die 'cannot hash the existing Terra agent'
+  copy_exact "$terra_target" "$backup_dir/v020/terra-high-worker.toml"
+fi
+
 config_presence=absent
 config_sha256=
 if path_exists "$config_target"; then
@@ -469,12 +517,16 @@ manifest_tmp="$backup_dir/.manifest.tmp"
   printf 'legacy_sol_sha256=%s\n' "$backup_sol_sha256"
   printf 'legacy_luna_presence=%s\n' "$backup_luna_presence"
   printf 'legacy_luna_sha256=%s\n' "$backup_luna_sha256"
+  printf 'legacy_state_presence=%s\n' "$backup_legacy_state_presence"
+  printf 'legacy_state_sha256=%s\n' "$backup_legacy_state_sha256"
   printf 'v020_skill_presence=%s\n' "$backup_new_skill_presence"
   printf 'v020_skill_sha256=%s\n' "$backup_new_skill_sha256"
   printf 'v020_sol_presence=%s\n' "$backup_new_sol_presence"
   printf 'v020_sol_sha256=%s\n' "$backup_new_sol_sha256"
   printf 'v020_luna_presence=%s\n' "$backup_new_luna_presence"
   printf 'v020_luna_sha256=%s\n' "$backup_new_luna_sha256"
+  printf 'v020_terra_presence=%s\n' "$backup_new_terra_presence"
+  printf 'v020_terra_sha256=%s\n' "$backup_new_terra_sha256"
   printf 'config_presence=%s\n' "$config_presence"
   printf 'config_sha256=%s\n' "$config_sha256"
 } >"$manifest_tmp"
@@ -485,6 +537,7 @@ mkdir "$transaction_dir/stage"
 copy_exact "$skill_source" "$transaction_dir/stage/v020-skill"
 copy_exact "$sol_source" "$transaction_dir/stage/v020-sol-controller.toml"
 copy_exact "$luna_source" "$transaction_dir/stage/v020-luna-max-worker.toml"
+copy_exact "$terra_source" "$transaction_dir/stage/v020-terra-high-worker.toml"
 
 if path_exists "$state_file"; then
   mv "$state_file" "$transaction_dir/old-state"
@@ -515,12 +568,24 @@ if (( legacy_sol_remove )); then
   legacy_sol_old=1
 fi
 
+if path_exists "$legacy_state_file"; then
+  mv "$legacy_state_file" "$transaction_dir/old-legacy-state"
+  legacy_state_old=1
+fi
+
 if path_exists "$luna_target"; then
   mv "$luna_target" "$transaction_dir/old-luna"
   luna_old=1
 fi
 mv "$transaction_dir/stage/v020-luna-max-worker.toml" "$luna_target"
 luna_new=1
+
+if path_exists "$terra_target"; then
+  mv "$terra_target" "$transaction_dir/old-terra"
+  terra_old=1
+fi
+mv "$transaction_dir/stage/v020-terra-high-worker.toml" "$terra_target"
+terra_new=1
 
 if [[ -n "${ORCHESTRATE_HOME:-}" && "${ORCHESTRATE_FAILPOINT:-}" == after-replace ]]; then
   die 'injected failure after replacement'
@@ -529,9 +594,11 @@ fi
 new_skill_sha256=$(sha256_tree "$new_skill_target") || die 'cannot hash the installed v0.2 skill'
 new_sol_sha256=$(sha256_file "$new_sol_target") || die 'cannot hash the installed v0.2 Sol controller'
 new_luna_sha256=$(sha256_file "$luna_target") || die 'cannot hash the installed v0.2 Luna checksum'
+new_terra_sha256=$(sha256_file "$terra_target") || die 'cannot hash the installed v0.2 Terra checksum'
 valid_hash "$new_skill_sha256" || die 'invalid installed v0.2 skill checksum'
 valid_hash "$new_sol_sha256" || die 'invalid installed v0.2 Sol checksum'
 valid_hash "$new_luna_sha256" || die 'invalid installed v0.2 Luna checksum'
+valid_hash "$new_terra_sha256" || die 'invalid installed v0.2 Terra checksum'
 
 state_tmp=$(mktemp "$state_root/.install-state.XXXXXX") || die 'cannot create v0.2 install state'
 {
@@ -540,6 +607,7 @@ state_tmp=$(mktemp "$state_root/.install-state.XXXXXX") || die 'cannot create v0
   printf 'skill_sha256=%s\n' "$new_skill_sha256"
   printf 'sol_sha256=%s\n' "$new_sol_sha256"
   printf 'luna_sha256=%s\n' "$new_luna_sha256"
+  printf 'terra_sha256=%s\n' "$new_terra_sha256"
 } >"$state_tmp"
 mv "$state_tmp" "$state_file"
 state_tmp=
@@ -552,8 +620,10 @@ fi
 rm -rf "$transaction_dir" || die 'cannot finalize the staged transaction'
 transaction_dir=
 trap - EXIT INT TERM
+rmdir "$legacy_state_root" 2>/dev/null || true
 
 printf 'Install path: %s\n' "$new_skill_target"
 printf 'Install path: %s\n' "$new_sol_target"
 printf 'Install path: %s\n' "$luna_target"
+printf 'Install path: %s\n' "$terra_target"
 printf 'Backup path: %s\n' "$backup_dir"

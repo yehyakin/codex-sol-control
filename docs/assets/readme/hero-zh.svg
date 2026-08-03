@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 420" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', sans-serif" font-size="18">
-  <title>Sol 主控与 Luna Max 执行团队的 Control Orbit</title>
-  <desc>Sol 作为唯一主控，把三个互不重叠的有界任务交给 Luna Max 工作节点；FILES、DIFF、TEST 证据沿点线路返回 Sol 审核。</desc>
+  <title>Sol、Luna Max 与 Terra High 的 Control Orbit</title>
+  <desc>Sol 作为唯一主控，把低歧义有界任务交给 Luna Max；Terra High 处理跨模块或高风险的有界复杂执行。仅当 Luna 首次失败且零 owned-file 写入时才可升级到 Terra；FILES、DIFF、TEST 证据返回 Sol 审核。</desc>
 
   <rect width="1200" height="420" fill="#0B1020"/>
   <rect x="28" y="28" width="1144" height="364" rx="24" fill="#111A30" stroke="#9AA6B8" stroke-opacity="0.35" stroke-width="2"/>
@@ -10,8 +10,8 @@
 
   <text x="64" y="78" fill="#F7F3E8" font-size="36" font-weight="800" letter-spacing="2">SOL / LUNA</text>
   <text x="64" y="106" fill="#65D6C4" font-size="24" font-weight="600">Sol 主控 · Luna Max 执行</text>
-  <text x="64" y="174" fill="#FF6B3D" font-size="30" font-weight="800">普通任务约节省 59%</text>
-  <text x="64" y="205" fill="#9AA6B8" font-size="18">本地项目测试样本验证 · 可复算</text>
+  <text x="64" y="174" fill="#FF6B3D" font-size="30" font-weight="800">普通任务预算范围 72%–76%</text>
+  <text x="64" y="205" fill="#9AA6B8" font-size="18">官方比例与路由开销复算 · 预算区间</text>
 
   <text x="64" y="268" fill="#F7F3E8" font-size="22" font-weight="700">PLAN → EXECUTE → REVIEW</text>
   <circle cx="74" cy="304" r="5" fill="#FF6B3D"/>
@@ -20,7 +20,7 @@
   <text x="64" y="358" fill="#F7F3E8" font-size="21" font-weight="700">FILES · DIFF · TEST</text>
   <text x="64" y="382" fill="#9AA6B8" font-size="20">证据回到 Sol 后才可 PASS / FIX / BLOCKED</text>
 
-  <text x="680" y="88" fill="#9AA6B8" font-size="18" letter-spacing="2">CONTROL ORBIT · 有界并行</text>
+  <text x="680" y="88" fill="#9AA6B8" font-size="18" letter-spacing="2">CONTROL ORBIT · LUNA + TERRA 分级</text>
   <path d="M700 166H1114M700 166V316M1114 166V316" fill="none" stroke="#9AA6B8" stroke-opacity="0.2" stroke-width="2"/>
 
   <g fill="none" stroke="#FF6B3D" stroke-width="4" stroke-linecap="round">
@@ -53,6 +53,19 @@
     <text x="852" y="174" text-anchor="middle" fill="#F7F3E8" font-size="22" font-weight="800">SOL</text>
   </g>
   <text x="852" y="110" text-anchor="middle" fill="#F7F3E8" font-size="18" font-weight="700">唯一主控 · 审核证据</text>
+
+  <g fill="none" stroke="#9AA6B8" stroke-width="3" stroke-linecap="round">
+    <path id="terra-task-orbit" data-tier="terra" d="M904 152H1048"/>
+    <path id="terra-evidence-orbit" data-tier="terra" d="M1048 194H904" stroke-dasharray="5 9"/>
+  </g>
+  <g id="terra-high-worker">
+    <rect x="1048" y="126" width="64" height="64" rx="12" fill="#9AA6B8" fill-opacity="0.16" stroke="#9AA6B8" stroke-width="2"/>
+    <rect x="1056" y="134" width="48" height="48" rx="8" fill="#9AA6B8" stroke="#F7F3E8" stroke-width="2"/>
+    <circle cx="1066" cy="145" r="3" fill="#0B1020"/>
+    <path d="M1074 145H1094M1066 157H1094M1066 169H1086" stroke="#0B1020" stroke-width="3" stroke-linecap="round"/>
+    <text x="1080" y="214" text-anchor="middle" fill="#9AA6B8" font-size="20" font-weight="700">TERRA HIGH</text>
+    <text x="1080" y="238" text-anchor="middle" fill="#F7F3E8" font-size="18">有界复杂执行</text>
+  </g>
 
   <g id="luna-worker-1">
     <rect x="716" y="270" width="64" height="64" rx="12" fill="#65D6C4" fill-opacity="0.16" stroke="#65D6C4" stroke-width="2"/>

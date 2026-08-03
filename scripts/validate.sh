@@ -9,6 +9,7 @@ SKILL_FILE="$SKILL_ROOT/SKILL.md"
 OPENAI_FILE="$SKILL_ROOT/agents/openai.yaml"
 SOL_FILE="$ROOT_DIR/.codex/agents/sol-controller.toml"
 LUNA_FILE="$ROOT_DIR/.codex/agents/luna-max-worker.toml"
+TERRA_FILE="$ROOT_DIR/.codex/agents/terra-high-worker.toml"
 PS_FILE="$SCRIPT_DIR/install.ps1"
 PS_VALIDATE_FILE="$SCRIPT_DIR/validate.ps1"
 PS_UNINSTALL_FILE="$SCRIPT_DIR/uninstall.ps1"
@@ -29,6 +30,7 @@ required_files=(
   ".agents/skills/sol-luna/references/orchestration.md"
   ".codex/agents/sol-controller.toml"
   ".codex/agents/luna-max-worker.toml"
+  ".codex/agents/terra-high-worker.toml"
   "scripts/install.sh"
   "scripts/validate.sh"
   "scripts/test.sh"
@@ -117,7 +119,7 @@ done
 if [[ -z "$PYTHON_BIN" ]]; then
   fail 'Python 3.11 or newer is required for TOML validation'
 else
-if ! "$PYTHON_BIN" - "$ROOT_DIR" "$SKILL_FILE" "$OPENAI_FILE" "$RUNTIME_FILE" "$SOL_FILE" "$LUNA_FILE" "$PS_FILE" "$PS_VALIDATE_FILE" "$PS_UNINSTALL_FILE" "$WINDOWS_LIFECYCLE_FILE" "$WINDOWS_WORKFLOW_FILE" "$TEST_ENTRYPOINT_FILE" "$POSIX_WORKFLOW_FILE" <<'PY' >/dev/null 2>&1
+if ! "$PYTHON_BIN" - "$ROOT_DIR" "$SKILL_FILE" "$OPENAI_FILE" "$RUNTIME_FILE" "$SOL_FILE" "$LUNA_FILE" "$TERRA_FILE" "$PS_FILE" "$PS_VALIDATE_FILE" "$PS_UNINSTALL_FILE" "$WINDOWS_LIFECYCLE_FILE" "$WINDOWS_WORKFLOW_FILE" "$TEST_ENTRYPOINT_FILE" "$POSIX_WORKFLOW_FILE" <<'PY' >/dev/null 2>&1
 from __future__ import annotations
 
 import re
@@ -132,13 +134,14 @@ openai_file = Path(sys.argv[3])
 runtime_file = Path(sys.argv[4]) if sys.argv[4] else None
 sol_file = Path(sys.argv[5])
 luna_file = Path(sys.argv[6])
-ps_file = Path(sys.argv[7])
-ps_validate_file = Path(sys.argv[8])
-ps_uninstall_file = Path(sys.argv[9])
-windows_lifecycle_file = Path(sys.argv[10])
-windows_workflow_file = Path(sys.argv[11])
-test_entrypoint_file = Path(sys.argv[12])
-posix_workflow_file = Path(sys.argv[13])
+terra_file = Path(sys.argv[7])
+ps_file = Path(sys.argv[8])
+ps_validate_file = Path(sys.argv[9])
+ps_uninstall_file = Path(sys.argv[10])
+windows_lifecycle_file = Path(sys.argv[11])
+windows_workflow_file = Path(sys.argv[12])
+test_entrypoint_file = Path(sys.argv[13])
+posix_workflow_file = Path(sys.argv[14])
 
 
 def fail() -> "NoReturn":
@@ -227,6 +230,15 @@ for path, expected in (
             "sandbox_mode": "workspace-write",
         },
     ),
+    (
+        terra_file,
+        {
+            "name": "terra-high-worker",
+            "model": "gpt-5.6-terra",
+            "model_reasoning_effort": "high",
+            "sandbox_mode": "workspace-write",
+        },
+    ),
 ):
     try:
         with path.open("rb") as handle:
@@ -244,6 +256,12 @@ try:
 except (OSError, KeyError, tomllib.TOMLDecodeError):
     fail()
 if not re.search(r"\bdo not (?:spawn|create).*subagent", luna_instructions, re.IGNORECASE | re.DOTALL):
+    fail()
+try:
+    terra_instructions = tomllib.load(terra_file.open("rb"))["developer_instructions"]
+except (OSError, KeyError, tomllib.TOMLDecodeError):
+    fail()
+if not re.search(r"\bdo not (?:spawn|create).*subagent", terra_instructions, re.IGNORECASE | re.DOTALL):
     fail()
 
 if not openai_file.is_file():
@@ -317,7 +335,7 @@ for path in root.rglob("*"):
     if any(pattern.search(text) for pattern in credential_patterns):
         fail()
 
-for forbidden in ("IPZOR", "Buzz", "DeepSeek", "OpenPencil", "gpt-5.6-terra"):
+for forbidden in ("IPZOR", "Buzz", "DeepSeek", "OpenPencil"):
     for path in skill_file.parent.rglob("*"):
         if path.is_file() and not path.is_symlink():
             try:
@@ -336,6 +354,7 @@ for marker in (
     "orchestrate-sol-luna",
     "sol-planner.toml",
     "luna-max-worker.toml",
+    "terra-high-worker.toml",
     "Move-Item",
     "transaction",
     "rollback",
