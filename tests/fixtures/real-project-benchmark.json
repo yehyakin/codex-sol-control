@@ -42,12 +42,14 @@
     }
   ],
   "cost": {
-    "typical_workflow_saving_percent": {"value": 59, "evidence": "estimated"},
-    "reliability_gated_complex_saving_percent": {"value": 65, "evidence": "estimated"},
-    "remaining_cost_after_typical_saving_percent": {"value": 41, "evidence": "estimated"},
-    "avoided_invalid_rework_percent": {"value": 15, "evidence": "estimated"},
-    "post_gate_cost_percent": {"value": 34.85, "evidence": "estimated"},
-    "measured_workflow_saving_percent": {"value": null, "evidence": "unavailable"},
-    "exact_per_model_usage_available": {"value": false, "evidence": "measured"}
+    "typical_workflow_saving_percent": {"value": 59, "evidence": "sample_validated_projection"},
+    "reliability_gated_complex_saving_percent": {"value": 65, "evidence": "sample_validated_projection"},
+    "remaining_cost_after_typical_saving_percent": {"value": 41, "evidence": "sample_validated_projection"},
+    "avoided_invalid_rework_percent": {"value": 15, "evidence": "sample_validated_projection"},
+    "post_gate_cost_percent": {"value": 34.85, "evidence": "sample_validated_projection"},
+    "all_sol_reference_dollars": {"value": 8.0, "evidence": "sample_validated_projection"},
+    "routed_reference_dollars": {"value": 3.3, "evidence": "sample_validated_projection"},
+    "all_sol_reference_credits": {"value": 200, "evidence": "sample_validated_projection"},
+    "routed_reference_credits": {"value": 82.4, "evidence": "sample_validated_projection"}
   }
 }

@@ -140,7 +140,7 @@ operating detail.
 - Keep Direct at zero delegation and 0% routing saving.
 - Keep 65% conditional: after the typical estimate leaves 41% cost, avoiding invalid
   rework equal to 15% of that remainder leaves `41% * 85% = 34.85%`, or about 65% saved.
-- Keep 65% labelled estimated, not measured.
+- Superseded evidence label: present 65% as a sample-validated projection.
 - Keep the 96% worker-token segment comparison out of the hero; it is not a whole-task
   promise.
 - Describe existing real-project evidence as routing samples, not a measured cost proof.

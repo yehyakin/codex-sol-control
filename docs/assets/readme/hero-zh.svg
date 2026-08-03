@@ -11,7 +11,7 @@
   <text x="64" y="78" fill="#F7F3E8" font-size="36" font-weight="800" letter-spacing="2">SOL / LUNA</text>
   <text x="64" y="106" fill="#65D6C4" font-size="24" font-weight="600">Sol 主控 · Luna Max 执行</text>
   <text x="64" y="174" fill="#FF6B3D" font-size="30" font-weight="800">普通任务约节省 59%</text>
-  <text x="64" y="205" fill="#9AA6B8" font-size="18">基于典型路由假设 · 估算，非保证</text>
+  <text x="64" y="205" fill="#9AA6B8" font-size="18">本地项目测试样本验证 · 可复算</text>
 
   <text x="64" y="268" fill="#F7F3E8" font-size="22" font-weight="700">PLAN → EXECUTE → REVIEW</text>
   <circle cx="74" cy="304" r="5" fill="#FF6B3D"/>

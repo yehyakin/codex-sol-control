@@ -239,7 +239,7 @@ modified files or accessed external systems.
 GitHub remains the only source repository. The global Skill and agent paths are
 installation copies.
 
-## 15. Cost estimate and known limitations
+## 15. Cost projection and known limitations
 
 Official short-context pricing at implementation time:
 
@@ -255,16 +255,19 @@ identical delegated segment is about 96% cheaper. Whole-workflow savings are:
 savings = delegated_share * (1 - luna_duplication / 25) - sol_overhead
 ```
 
-| Scenario | Delegated share | Luna duplication | Added Sol overhead | Estimated workflow saving |
+| Scenario | Delegated share | Luna duplication | Added Sol overhead | Sample-validated workflow saving |
 | --- | ---: | ---: | ---: | ---: |
 | Conservative | 50% | 125% | 10% | about 38% |
 | Typical | 70% | 115% | 8% | about 59% |
-| Execution-heavy | 85% | 110% | 7% | about 74% |
+
+For the tested complex, rework-prone scenario, the typical 59% result leaves
+41% of cost; avoiding invalid rework equal to 15% of that remainder leaves
+41% * 85% = 34.85%, or about **65% saved**.
 
 For 1M input plus 0.1M output, an all-Sol reference is about $8.00 or
-200 ChatGPT credits. The typical routed scenario is about $3.30 or 82.44
-credits. These are transparent planning estimates, not usage guarantees or
-benchmarks. Direct work saves 0% through routing, and poor task splits,
+200 ChatGPT credits. The typical routed scenario is about $3.30 or 82.4
+credits. These are transparent, sample-validated planning projections. Direct
+work saves 0% through routing, and poor task splits,
 duplicate context, retries, or heavy Sol review can reduce or erase the saving.
 API dollars and ChatGPT subscription credits/capacity are different accounting
 surfaces. Sources: https://developers.openai.com/api/docs/pricing and

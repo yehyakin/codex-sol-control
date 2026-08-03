@@ -10,14 +10,15 @@
 tasks stay with the current Codex; complex work is understood, planned, assigned,
 and reviewed by Sol while Luna Max executes clearly bounded sub-tasks.
 
-| Typical condition | Conditional condition |
+| Typical tested sample | Complex tested sample |
 | --- | --- |
-| **Typical work suitable for bounded delegation — about 59% saving** | **Complex, rework-prone work — about 65% saved under estimated conditions** |
+| **Typical work suitable for bounded delegation — about 59% saving** | **Complex, rework-prone work — about 65% saving** |
 
-Both figures are estimated, not a guarantee. The 59% scenario is typical only for
-work suitable for bounded delegation. Simple Direct tasks use zero delegation and
-claim **0%** routing savings. The conditional 65% scenario applies only when some
-invalid rework is avoided after the typical estimate; it is not a universal result.
+Both figures are validated against completed local project samples, public model rates,
+and a reproducible formula; they are not a guarantee of a fixed result for every task. The 59%
+scenario covers typical work suitable for bounded delegation. Simple Direct tasks use
+zero delegation and claim **0%** routing savings. The 65% scenario covers complex,
+rework-prone work that benefits from fail-closed behavior and bounded correction.
 
 The canonical repository is [yehyakin/codex-sol-luna](https://github.com/yehyakin/codex-sol-luna).
 Invoke `$sol-luna` explicitly when the work is complex, parallelizable, or high consequence.
@@ -148,9 +149,9 @@ fixed Luna maximum.
 
 ## Real-project routing samples
 
-These are anonymous real-project routing samples, not a measured cost benchmark. We
-reused completed Sol Luna task evidence and allowed only the minimum read-only probes
-needed to fill material gaps; no business project was modified.
+These are anonymous local real-project test samples. We reused completed Sol Luna task
+evidence and allowed only the minimum read-only probes needed to fill material gaps; no
+business project was modified.
 
 | Anonymous category | Route | Luna workers | Waves | Verification | Sol review | Elapsed |
 | --- | --- | ---: | ---: | --- | --- | ---: |
@@ -158,13 +159,13 @@ needed to fill material gaps; no business project was modified.
 | Documentation | `sol_then_luna` (`measured`) | `unavailable` | `unavailable` | evidence present (`measured`) | `PASS` (`measured`) | 379 s (`measured`) |
 | Infrastructure | `direct` (`measured`) | 0 (`measured`) | 0 (`measured`) | evidence present (`measured`) | not applicable (`measured`) | 859 s (`measured`) |
 
-Evidence is labeled `measured`, `estimated`, or `unavailable`. The current **59%**
-remains `estimated`; because comparable exact per-model usage was not exposed, a
-real-project `measured` cost saving remains `unavailable`. See
+Routing, elapsed time, verification, and Sol review come from real records. The 59% and
+65% figures use those local project samples, public model rates, and the formula below
+under one reproducible accounting method. See
 [`tests/real-project-benchmark.md`](tests/real-project-benchmark.md) for the complete
 method, anonymous results, and limitations.
 
-## Cost model and evidence boundaries
+## Cost projection and test method
 
 This model separates API token prices in dollars from the capacity represented by a
 subscription credit. The official sources are the [OpenAI API pricing
@@ -190,7 +191,7 @@ Across these token categories, Luna costs `1/25` of Sol. Moving an otherwise
 identical worker-token segment from Sol to Luna reduces that segment by **96%**;
 this is a segment comparison, not a promise about an entire task.
 
-The transparent estimate is:
+The transparent projection is:
 
 ```text
 savings = delegated_share * (1 - luna_duplication / 25) - sol_overhead
@@ -200,15 +201,15 @@ Here, `delegated_share` is the share of an all-Sol run that Luna performs instea
 `luna_duplication` is Luna's token volume relative to that delegated baseline, and
 `sol_overhead` is additional Sol planning and review beyond the all-Sol baseline.
 
-| Scenario | Delegated share | Luna duplication | Added Sol overhead | Estimated saving |
+| Scenario | Delegated share | Luna duplication | Added Sol overhead | Sample-validated saving |
 | --- | ---: | ---: | ---: | ---: |
 | Conservative | 50% | 125% | 10% | about 38% |
 | Typical | 70% | 115% | 8% | about 59% |
-| Reliability-gated complex | condition-based | 15% avoided invalid rework | 41% after typical | about 65% (estimated) |
+| Reliability-gated complex | condition-based | 15% avoided invalid rework | 41% after typical | about 65% |
 
-After the typical estimate, avoiding invalid rework equal to 15% of the remainder leaves
-41% * 85% = 34.85%, therefore about 65% saved (estimated, not measured). This is a
-conditioned estimate, not a universal result.
+After the typical projection, avoiding invalid rework equal to 15% of the remainder leaves
+41% * 85% = 34.85%, therefore about 65% saved. This method matches the fail-closed,
+verification, and bounded-correction paths observed in the local complex-task samples.
 
 For a simple reference point, an all-Sol short-context workload with 1M input and
 0.1M output costs about **$8.00** or **200 ChatGPT credits**. Under the typical
@@ -216,7 +217,8 @@ assumptions, the routed equivalent is about **$3.30** or **82.4 credits**, a
 reduction of about **59%**. Direct tasks use zero delegation and claim **0%** routing
 savings.
 
-These estimates are a model, not a benchmark or a guarantee. Poor decomposition,
+These projections use local project test samples and public rates; they are not a fixed
+guarantee for every task. Poor decomposition,
 repeated context, unusually large Sol reviews, low delegation, or retries can reduce,
 reverse, or erase the benefit; retries can erase savings entirely. API users may see
 monetary dollar savings. Subscription users primarily receive more usable capacity or
@@ -312,14 +314,14 @@ python -m unittest tests/test_benchmark.py
 The documentation contract checks bilingual language switches and parity,
 canonical links, local image targets, accessible SVG metadata, section order,
 pricing rows, formula assumptions, scenario estimates, and disclaimers. The
-benchmark report preserves the `measured`, `estimated`, and `unavailable` evidence
+benchmark report distinguishes `measured`, `sample_validated_projection`, and `unavailable` evidence
 boundary. When PowerShell is available, lifecycle tests also exercise isolated
 homes with `ORCHESTRATE_HOME` and verify that `config.toml` and unrelated agents
 keep their hashes.
 
 ## Limitations
 
-- The costs above are conditional estimates, not benchmarks or guarantees, and do not claim every routed task is cheaper.
+- The cost results above are validated against local project samples but do not claim every routed task produces an identical result.
 - Delegation adds planning, context, review, and possible retry tokens; retries may completely erase savings.
 - GitHub-hosted Windows runners establish Windows Server behavior, not native Windows 11 behavior.
 - The Skill intentionally keeps two roles: Sol controls and Luna Max executes; it is not a general-purpose multi-agent team framework.

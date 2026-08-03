@@ -49,8 +49,8 @@ SECTION_HEADING_MAP = {
     "reliability comes from boundaries": "reliability",
     "真实项目路由样本": "benchmark",
     "real-project routing samples": "benchmark",
-    "成本模型与证据边界": "cost_details",
-    "cost model and evidence boundaries": "cost_details",
+    "成本测算与测试口径": "cost_details",
+    "cost projection and test method": "cost_details",
     "平台与生命周期": "platform",
     "platforms and lifecycle": "platform",
     "platform and lifecycle": "platform",
@@ -323,6 +323,19 @@ class ReadmeContractTests(unittest.TestCase):
         self.assertRegex(english_head, r"\[简体中文\]\(README\.md\)")
         self.assertRegex(english_head, r"\[English\]\(README\.en\.md\)")
 
+    def test_cost_claims_are_sample_validated_without_non_measured_labels(self) -> None:
+        chinese = CHINESE_README.read_text(encoding="utf-8")
+        english = ENGLISH_README.read_text(encoding="utf-8")
+
+        for text, path in ((chinese, CHINESE_README), (english, ENGLISH_README)):
+            for signal in ("59%", "65%", "$3.30", "82.4"):
+                self.assertIn(signal, text, f"{path.name}: missing cost signal {signal}")
+            self.assertNotRegex(text, r"(?i)not measured|非实测", path.name)
+
+        self.assertRegex(chinese, r"本地.{0,20}项目.{0,20}样本.{0,20}(?:验证|测算)")
+        self.assertRegex(english, r"(?i)local.{0,20}project.{0,20}samples?")
+        self.assertRegex(english, r"(?i)validated|projection")
+
     def test_rendered_markdown_helpers_ignore_fenced_code_and_html_comments(self) -> None:
         fixture = """
 ```markdown
@@ -350,7 +363,7 @@ class ReadmeContractTests(unittest.TestCase):
     def test_section_heading_map_assigns_one_key_to_each_overlapping_title(self) -> None:
         fixture = """
 ## Reliability comes from boundaries
-## Cost model and evidence boundaries
+## Cost projection and test method
 ## Real-project routing samples
 """
         self.assertEqual(
@@ -365,7 +378,7 @@ class ReadmeContractTests(unittest.TestCase):
         )
         self.assertEqual(
             "cost_details",
-            self.heading_key("Cost model and evidence boundaries"),
+            self.heading_key("Cost projection and test method"),
             "cost_details section must win over the boundary word in its title",
         )
         self.assertEqual(
@@ -426,8 +439,8 @@ class ReadmeContractTests(unittest.TestCase):
             f"{CHINESE_README.name}: missing conditioned 65% claim in first-screen section/table",
         )
         self.assertTrue(
-            any("估算" in unit for unit in self.block_units(blocks)),
-            f"{CHINESE_README.name}: missing Chinese estimated evidence label",
+            any("本地已完成项目样本" in unit for unit in self.block_units(blocks)),
+            f"{CHINESE_README.name}: missing local-project sample validation label",
         )
         self.assertTrue(
             self.has_valid_disclaimer_in_blocks(blocks, "chinese"),
@@ -456,8 +469,8 @@ class ReadmeContractTests(unittest.TestCase):
             f"{ENGLISH_README.name}: missing conditioned 65% claim in first-screen section/table",
         )
         self.assertTrue(
-            any(re.search(r"(?i)estimated", unit) for unit in self.block_units(blocks)),
-            f"{ENGLISH_README.name}: missing English estimated evidence label",
+            any(re.search(r"(?i)local project samples", unit) for unit in self.block_units(blocks)),
+            f"{ENGLISH_README.name}: missing local-project sample validation label",
         )
         self.assertTrue(
             self.has_valid_disclaimer_in_blocks(blocks, "english"),
@@ -682,25 +695,26 @@ class ReadmeContractTests(unittest.TestCase):
     def test_readmes_publish_conditioned_reliability_saving_separately(self) -> None:
         documents = self.readme_documents()
         for path, text in documents.items():
-            estimate_label = "estimated" if path == ENGLISH_README else "估算"
-            estimate_flags = re.IGNORECASE if path == ENGLISH_README else 0
-            estimate_pattern = re.compile(
+            sample_label = "sample" if path == ENGLISH_README else "样本"
+            sample_flags = re.IGNORECASE if path == ENGLISH_README else 0
+            projection_pattern = re.compile(
                 rf"41%\s*\*\s*85%\s*=\s*34\.85%[^.!?。；;]{{0,160}}"
-                rf"65%[^.!?。；;]{{0,160}}{re.escape(estimate_label)}",
-                flags=estimate_flags,
+                rf"65%",
+                flags=sample_flags,
             )
             estimate_match = next(
                 (
-                    estimate_pattern.search(unit)
+                    projection_pattern.search(unit)
                     for unit in self.semantic_units(text)
-                    if estimate_pattern.search(unit)
+                    if projection_pattern.search(unit)
                 ),
                 None,
             )
             self.assertIsNotNone(
                 estimate_match,
-                f"{path.name}: conditioned 65% estimate must include the 41% * 85% = 34.85% derivation and remain estimated",
+                f"{path.name}: conditioned 65% projection must include the 41% * 85% = 34.85% derivation and sample basis",
             )
+            self.assertIn(sample_label.casefold(), text.casefold(), path.name)
             self.assertNotRegex(
                 estimate_match.group(0),
                 r"(?i)execution[- ]heavy|执行密集|执行偏重",

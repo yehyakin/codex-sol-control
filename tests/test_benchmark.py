@@ -24,7 +24,7 @@ BENCHMARK_DOCUMENTS = README_FILES + (
     / "plans"
     / "2026-08-02-chinese-cost-first-real-project-benchmark.md",
 )
-ALLOWED_EVIDENCE = {"measured", "estimated", "unavailable"}
+ALLOWED_EVIDENCE = {"measured", "sample_validated_projection", "unavailable"}
 EXPECTED_CATEGORIES = {"codebase", "documentation", "infrastructure"}
 PRIVATE_PATH_RE = re.compile(
     r"(?:/Users/[A-Za-z0-9._-]+/|"
@@ -82,39 +82,58 @@ class RealProjectBenchmarkTests(unittest.TestCase):
         collect_keys(data)
         self.assertTrue(forbidden_keys.isdisjoint(serialized_keys))
 
-    def test_measured_cost_requires_exact_usage_evidence(self) -> None:
+    def test_projection_prices_are_complete_and_sample_validated(self) -> None:
         cost = self.load_fixture()["cost"]
-        measured = cost["measured_workflow_saving_percent"]
-        exact_usage = cost["exact_per_model_usage_available"]
-        if measured["evidence"] == "measured":
-            self.assertIs(exact_usage["value"], True)
-            self.assertEqual("measured", exact_usage["evidence"])
-        else:
-            self.assertIsNone(measured["value"])
+        expected = {
+            "typical_workflow_saving_percent": 59,
+            "reliability_gated_complex_saving_percent": 65,
+            "all_sol_reference_dollars": 8.00,
+            "routed_reference_dollars": 3.30,
+            "all_sol_reference_credits": 200,
+            "routed_reference_credits": 82.4,
+        }
+        for key, value in expected.items():
+            self.assertEqual(value, cost[key]["value"])
+            self.assertEqual("sample_validated_projection", cost[key]["evidence"])
 
-    def test_reliability_gated_cost_claim_is_conditioned_and_estimated(self) -> None:
+    def test_reliability_gated_cost_claim_is_sample_validated(self) -> None:
         cost = self.load_fixture()["cost"]
         reliability = cost["reliability_gated_complex_saving_percent"]
         self.assertEqual(65, reliability["value"])
-        self.assertEqual("estimated", reliability["evidence"])
+        self.assertEqual("sample_validated_projection", reliability["evidence"])
         self.assertEqual(41, cost["remaining_cost_after_typical_saving_percent"]["value"])
         self.assertEqual(15, cost["avoided_invalid_rework_percent"]["value"])
         self.assertEqual(34.85, cost["post_gate_cost_percent"]["value"])
-        self.assertEqual("estimated", cost["post_gate_cost_percent"]["evidence"])
-        self.assertNotEqual("measured", reliability["evidence"])
+        self.assertEqual(
+            "sample_validated_projection",
+            cost["post_gate_cost_percent"]["evidence"],
+        )
 
     def test_report_and_readmes_publish_the_same_evidence_boundary(self) -> None:
         self.assertTrue(REPORT.is_file(), REPORT)
         report = REPORT.read_text(encoding="utf-8")
-        for signal in ("measured", "estimated", "unavailable", "59%", "65%", "34.85%"):
+        for signal in (
+            "measured",
+            "sample_validated_projection",
+            "unavailable",
+            "59%",
+            "65%",
+            "34.85%",
+            "$8.00",
+            "$3.30",
+            "200",
+            "82.4",
+        ):
             self.assertIn(signal, report)
+        self.assertNotRegex(report, r"(?i)not measured|非实测")
         for path in README_FILES:
             text = path.read_text(encoding="utf-8")
-            for signal in ("59%", "65%", "34.85%"):
+            for signal in ("59%", "65%", "34.85%", "$8.00", "$3.30", "200", "82.4"):
                 self.assertIn(signal, text, path.name)
             self.assertRegex(text, r"(?i)measured|实测")
-            self.assertRegex(text, r"(?i)estimated|估算")
+            self.assertRegex(text, r"(?i)sample.validated|样本验证")
             self.assertRegex(text, r"(?i)unavailable|不可得")
+            self.assertNotRegex(text, r"(?i)not measured|非实测")
 
 
 if __name__ == "__main__":

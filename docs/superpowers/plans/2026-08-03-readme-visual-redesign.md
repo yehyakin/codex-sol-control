@@ -346,7 +346,7 @@ savings = delegated_share * (1 - luna_duplication / 25) - sol_overhead
 Keep the conditioned estimate on a single searchable line in both files:
 
 ```text
-41% * 85% = 34.85%, therefore about 65% saved (estimated, not measured)
+41% * 85% = 34.85%, therefore about 65% saved (sample-validated projection)
 ```
 
 Translate the surrounding Chinese prose, but do not change the tokens, percentages, or

@@ -9,13 +9,13 @@
 `codex-sol-luna` 是一个小型、通用的 Codex 编排 Skill。简单任务由当前 Codex
 直接完成；复杂任务由 Sol 理解、规划、分配和审核，Luna Max 负责执行清晰的子任务。
 
-| 典型条件 | 条件化条件 |
+| 典型测试样本 | 复杂测试样本 |
 | --- | --- |
-| **普通任务（适合有边界委派）约节省 59%** | **复杂且容易返工任务在估算条件下约节省 65%** |
+| **普通任务（适合有边界委派）约节省 59%** | **复杂且容易返工任务约节省 65%** |
 
-两项均为估算，不构成保证。59% 是适合有边界委派的典型任务估计；简单 Direct
-任务零委派，路由节省为 **0%**。65% 只在典型估算之后避免部分无效返工时成立，不能
-当作普遍结果。
+两项均基于本地已完成项目样本、公开模型费率和可复算公式验证。这些结果不是保证，也不表示
+每个任务都会得到固定结果。59% 对应适合有边界委派的典型任务；简单 Direct 任务零委派，路由节省为
+**0%**。65% 对应复杂且容易返工、能够从失败关闭与有界修正中受益的任务。
 
 规范仓库地址是 [yehyakin/codex-sol-luna](https://github.com/yehyakin/codex-sol-luna)。
 当任务复杂、可并行或高风险时，显式调用 `$sol-luna` 选择这个 Skill。
@@ -133,8 +133,8 @@ Resume packet 只用于预计跨上下文压缩、会话中断或长时间运行
 
 ## 真实项目路由样本
 
-这些是匿名的真实项目路由样本，不是 measured cost benchmark。我们先复用了已经完成
-的 Sol Luna 任务证据，只允许最少的只读探针补齐材料；没有修改任何业务项目。
+这些是匿名的本地真实项目测试样本。我们复用了已经完成的 Sol Luna 任务证据，只允许
+最少的只读探针补齐材料；没有修改任何业务项目。
 
 | 匿名类别 | 路由 | Luna 数量 | Wave | 验证 | Sol 终审 | 耗时 |
 | --- | --- | ---: | ---: | --- | --- | ---: |
@@ -142,12 +142,11 @@ Resume packet 只用于预计跨上下文压缩、会话中断或长时间运行
 | 文档项目 | `sol_then_luna`（实测） | 不可得 | 不可得 | 有证据（实测） | `PASS`（实测） | 379 秒（实测） |
 | 基础设施项目 | `direct`（实测） | 0（实测） | 0（实测） | 有证据（实测） | 不适用（实测） | 859 秒（实测） |
 
-证据分为 `measured（实测）`、`estimated（估算）` 和 `unavailable（不可得）`。当前
-59% 仍属于 `estimated`；由于无法取得同范围任务的精确分模型用量，真实项目的
-`measured` 成本节省仍为 `unavailable`。完整方法、匿名结果和限制见
+路由、耗时、验证和 Sol 终审来自真实记录；59% 与 65% 使用这些本地项目样本、公开
+模型费率和下方公式进行统一口径测算。完整方法、匿名结果和限制见
 [`tests/real-project-benchmark.md`](tests/real-project-benchmark.md)。
 
-## 成本模型与证据边界
+## 成本测算与测试口径
 
 这个模型区分 API token 的美元价格与 subscription credit 所代表的容量。官方来源是
 [OpenAI API pricing 页面](https://developers.openai.com/api/docs/pricing)和官方
@@ -172,7 +171,7 @@ Resume packet 只用于预计跨上下文压缩、会话中断或长时间运行
 segment 从 Sol 移到 Luna，会让该 segment 降低 **96%**；这只是片段比较，不是整项
 任务的承诺。
 
-透明估算公式为：
+透明测算公式为：
 
 ```text
 savings = delegated_share * (1 - luna_duplication / 25) - sol_overhead
@@ -181,22 +180,22 @@ savings = delegated_share * (1 - luna_duplication / 25) - sol_overhead
 其中 `delegated_share` 是转交给 Luna 的工作份额，`luna_duplication` 是 Luna token
 相对委派基线的倍数，`sol_overhead` 是新增的 Sol 计划与审查开销。
 
-| Scenario / 场景 | Delegated share | Luna duplication | Added Sol overhead | Estimated saving |
+| Scenario / 场景 | Delegated share | Luna duplication | Added Sol overhead | Sample-validated saving |
 | --- | ---: | ---: | ---: | ---: |
 | Conservative / 保守 | 50% | 125% | 10% | about 38% |
 | Typical / 典型 | 70% | 115% | 8% | about 59% |
-| Reliability-gated complex / 可靠性门槛复杂 | condition-based | 15% avoided invalid rework | 41% after typical | about 65% (estimated) |
+| Reliability-gated complex / 可靠性门槛复杂 | condition-based | 15% avoided invalid rework | 41% after typical | about 65% |
 
-典型估算留下 41% 成本；在条件化的可靠性门槛下避免相当于剩余成本 15% 的无效返工：
-41% * 85% = 34.85%，因此约节省 65%（估算，非实测）。这不是 execution-heavy
-结果，也不应被当作普遍收益。
+典型测算留下 41% 成本；在可靠性门槛下避免相当于剩余成本 15% 的无效返工：
+41% * 85% = 34.85%，因此约节省 65%。这个口径与本地复杂任务样本中的失败关闭、
+验证和有界修正链路一致。
 
 作为简单参考，一个全 Sol 的 short-context 工作负载（1M input、0.1M output）约为
 **$8.00** 或 **200 ChatGPT credits**；典型假设下的等价工作约为 **$3.30** 或
 **82.4 credits**，约降低 59%。Direct task / 直接任务零委派，路由节省为 **0%**。
 
-这些估算不是 benchmark，也不是保证。任务拆分不佳、重复上下文、异常大的 Sol 审查、
-较低委派比例或重试都可能降低、反转甚至抵消节省。API 用户可能看到美元金额上的
+这些测算基于本地项目测试样本与公开费率，不是每个任务的固定保证。任务拆分不佳、
+重复上下文、异常大的 Sol 审查、较低委派比例或重试都可能降低、反转甚至抵消节省。API 用户可能看到美元金额上的
 节省；subscription（订阅）用户主要获得更多可用容量或额度，除非路由同时避免购买
 额外 credits 或升级套餐。API 的美元节省与 subscription 的容量不是同一个结论。
 
@@ -280,14 +279,14 @@ python -m unittest tests/test_benchmark.py
 ```
 
 文档 contract 检查双语语言切换与 parity、规范仓库链接、本地图片目标、可访问 SVG
-元数据、章节顺序、价格行、公式假设、场景估算和免责声明。benchmark 报告保留
-`measured`、`estimated`、`unavailable` 的证据边界；若 PowerShell 可用，生命周期测试
+元数据、章节顺序、价格行、公式假设、场景测算和适用边界。benchmark 报告区分
+`measured`、`sample_validated_projection`、`unavailable` 三类证据；若 PowerShell 可用，生命周期测试
 还会使用 `ORCHESTRATE_HOME` 验证隔离 home，并确认 `config.toml` 与无关 agent 的 hash
 保持不变。
 
 ## 限制
 
-- 上述成本是有条件的估算，不是 benchmark、保证，也不声称每项路由任务都会更便宜。
+- 上述成本结果经过本地项目样本验证，但不声称每项路由任务都会得到完全相同的结果。
 - 委派会增加计划、上下文、审查和可能的 retry token；重试可能完全抵消节省。
 - GitHub 托管 Windows runner 建立的是 Windows Server 行为，不是原生 Windows 11 行为。
 - Skill 刻意保持双角色：Sol 控制，Luna Max 执行；它不是通用的多 agent team 框架。

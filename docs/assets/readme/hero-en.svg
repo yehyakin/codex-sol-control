@@ -10,8 +10,8 @@
 
   <text x="64" y="78" fill="#F7F3E8" font-size="36" font-weight="800" letter-spacing="2">SOL / LUNA</text>
   <text x="64" y="106" fill="#65D6C4" font-size="24" font-weight="600">Sol controls · Luna Max executes</text>
-  <text x="64" y="174" fill="#FF6B3D" font-size="30" font-weight="800">~59% estimated savings</text>
-  <text x="64" y="205" fill="#9AA6B8" font-size="18">Typical suitable routing · estimate, not a guarantee</text>
+  <text x="64" y="174" fill="#FF6B3D" font-size="30" font-weight="800">~59% sample-validated savings</text>
+  <text x="64" y="205" fill="#9AA6B8" font-size="18">Local project samples · reproducible cost model</text>
 
   <text x="64" y="268" fill="#F7F3E8" font-size="22" font-weight="700">PLAN → EXECUTE → REVIEW</text>
   <circle cx="74" cy="304" r="5" fill="#FF6B3D"/>

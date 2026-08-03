@@ -333,7 +333,7 @@ class ControlOrbitAssetContractTests(unittest.TestCase):
                 elif name == "hero-en.svg":
                     self.assertIn("Sol", text, name)
                     self.assertIn("Luna", text, name)
-                    self.assertIn("estimated", text.casefold(), name)
+                    self.assertIn("sample-validated", text.casefold(), name)
                 else:
                     self.assertIn("Sol", text, name)
                     self.assertIn("Luna", text, name)
@@ -343,7 +343,7 @@ class ControlOrbitAssetContractTests(unittest.TestCase):
                     self.assertIn("DIFF", text, name)
                     self.assertIn("TEST", text, name)
                     if name.endswith("-zh.svg"):
-                        self.assertIn("估算", text, name)
+                        self.assertIn("本地项目测试样本验证", text, name)
                 else:
                     for token in ("PASS", "FIX", "BLOCKED"):
                         self.assertIn(token, text, f"{name}: missing {token}")
