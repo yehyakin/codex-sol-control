@@ -122,6 +122,30 @@ Resume packet 只用于预计跨上下文压缩、会话中断或长时间运行
 `goal`、`completed`、`in_flight`、`artifact_location`、`next_action`。短任务和 Direct
 任务不生成 resume packet。实时容量决定批次大小，计划从不假设固定的 Luna 最大数量。
 
+### 执行连续性与计划收敛
+
+对于已经授权的执行，计划不是停止点。只有出现新的权限请求、需要确认的不可逆选择、
+真实 blocker，或用户明确取消、替换、重定向当前请求时才停止或暂停；这些是唯一的
+stop gates。普通状态问题或 status inquiry 不会暂停已授权工作，不需要新的权限，也
+不是 blocker；应报告状态并继续既定计划和证据闭环。
+
+用户明确取消、替换或重定向当前请求会停止旧计划，并要求从新请求重新规划。实质性的
+user steering 不是普通 status inquiry；Sol 重新规划期间不得继续旧计划的执行。
+
+Sol 的规划使用 Host 提供的 planning timebox。必须在 planning timebox 内收敛为 plan、
+determination 或 concrete evidence gap，并在 timebox 结束前产出其中之一。没有收敛的
+延长分析不算进展。如果后续或下游 stage 被 blocker 阻塞，仍要交付已有 artifact 和
+evidence 且已经 evidence-complete 的前置 stage；只有未解决的下游工作保持 blocked。
+Partial delivery 只有在完成的 stage evidence-complete 时才允许。
+
+如果 transport/spawn 报告 `completed` 但没有 structured result，只允许向同一个 worker
+发起一次 result-only follow-up。该 follow-up 不得授权新的 write 或 re-execution；如果
+仍然没有绑定 final candidate 的 structured result，必须返回 `BLOCKED`，不得再次检索或
+重新执行。
+
+用户催促、要求 hurry 或说 “do not stop” 都不能 lower、relax 或 reduce evidence 或
+verification threshold。证据门槛保持不变，所有 safety gates 继续适用。
+
 ## 成本测算与测试口径
 
 这个模型区分 API token 的美元价格与 subscription credit 所代表的容量。官方来源是

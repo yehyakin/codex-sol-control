@@ -7,7 +7,7 @@ repository, global agent file, or live production system is read or modified.
 
 ## Method
 
-- The fourteen scenarios are defined in `tests/fixtures/forward-cases.json`.
+- The twenty-two scenarios are defined in `tests/fixtures/forward-cases.json`.
 - Each case describes the expected route without exposing internal runtime
   mechanics as a public mode or fixed worker-count promise.
 - Contract tests check explicit invocation, direct handling of ordinary simple
@@ -15,6 +15,13 @@ repository, global agent file, or live production system is read or modified.
   live-capacity batching, exact selection proof, and focused review fixes.
 - Four reliability cases add final-candidate evidence binding, transport/spawn
   completion separation, no-delta retry blocking, and long-task-only resume.
+- Seven continuity cases add authorized-plan continuation, status-inquiry
+  continuity, planning convergence, partial-stage delivery, one-time
+  result-only recovery after transport completion, safe blocking after failed
+  recovery, and urgency-invariant evidence thresholds.
+- One steering case ensures explicit user cancellation, replacement, or
+  redirection stops the old plan and triggers re-planning, while ordinary status
+  inquiries still continue the authorized work.
 - Installer tests use a temporary `ORCHESTRATE_HOME`, synthesize a v0.1
   installation with checksums, and exercise migration, modified-target
   preservation, rollback, uninstall, restore, unrelated files, and
@@ -38,6 +45,14 @@ repository, global agent file, or live production system is read or modified.
 | Transport/spawn `completed` | `sol_then_luna` | delivery only; structured result required | BLOCKED |
 | Identical retry with no Delta | `sol_then_luna` | no relaunch without new evidence | BLOCKED |
 | Long-task resume | `sol_then_luna` | minimal resume packet required | PASS |
+| Authorized plan is not a stop point | `sol_then_luna` | execution continues unless a real gate appears | PASS |
+| Status inquiry during authorized work | `sol_then_luna` | no pause or new permission required | PASS |
+| Planning timebox convergence | `sol` | plan, determination, or evidence gap | not applicable |
+| Later-stage blocker with earlier evidence | `sol_then_luna` | completed earlier stage is delivered | BLOCKED |
+| Completed without structured result | `sol_then_luna` | one same-worker result-only recovery | PASS |
+| Recovery still has no bound result | `sol_then_luna` | no second recovery or re-execution | BLOCKED |
+| Urgency does not lower evidence | `blocked` | safety threshold unchanged | BLOCKED |
+| Explicit user steering | `sol` | old plan stops and Sol re-plans | not applicable |
 
 ## Reliability guard status
 

@@ -136,6 +136,36 @@ interrupted, or run for a long time. It contains only `goal`, `completed`,
 generate a Resume packet. Live capacity controls batching; the plan never assumes a
 fixed Luna maximum.
 
+### Execution continuity and planning convergence
+
+For authorized execution, a plan is not a stop point. Stop or pause only for a
+new permission request, an irreversible choice requiring confirmation, a real
+blocker, or an explicit user cancellation, replacement, or redirection of the
+current request; these are the only stop gates. An ordinary status question or
+status inquiry does not pause authorized work, requires no new permission, and is
+not a blocker. Report the state and continue the approved plan and evidence loop.
+
+An explicit user cancellation, replacement, or redirection stops the old plan and
+requires re-planning from the new request. Substantive user steering is not an
+ordinary status inquiry; stop old-plan execution while Sol re-plans.
+
+Sol uses the Host's planning timebox. Within the planning timebox, Sol must
+converge to a plan, a determination, or a concrete evidence gap. The plan,
+determination, or evidence gap must be produced before the planning timebox ends;
+extended analysis without convergence is not progress. If a later or downstream
+stage is blocked, deliver an earlier or prior stage that is evidence-complete with
+its artifact and evidence. Partial delivery is allowed only when the completed
+stage is evidence-complete; only unresolved downstream work remains blocked.
+
+If transport/spawn reports `completed` without a structured result, allow exactly
+one result-only follow-up to the same worker. The follow-up cannot authorize a new
+write or re-execution. If it still cannot retrieve a structured result bound to the
+final candidate, return `BLOCKED`; do not launch another retrieval or re-execute.
+
+User urgency, requests to hurry, or saying "do not stop" cannot lower, relax, or
+reduce the evidence or verification threshold. The evidence threshold remains
+unchanged and every safety gate still applies.
+
 ## Cost projection and test method
 
 This model separates API token prices in dollars from the capacity represented by a

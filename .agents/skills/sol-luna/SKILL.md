@@ -35,6 +35,33 @@ Ordinary simple work stays direct unless the user explicitly invokes
 5. Sol reviews real files, the diff, test or build output, and requirement
    coverage before deciding `PASS`, `FIX`, or `BLOCKED`.
 
+## Execution continuity and planning convergence
+
+For authorized execution, a plan is not a stop point. Stop or pause only for a
+new permission request, an irreversible choice requiring confirmation, or a
+real blocker, or an explicit user cancellation, replacement, or redirection of
+the current request; these are the only stop gates. Otherwise continue through
+the approved stages.
+
+An explicit user cancellation, replacement, or redirection stops the old plan
+and requires re-planning from the new request. Substantive user steering is not
+an ordinary status inquiry; do not continue old-plan execution while Sol
+re-plans.
+
+An ordinary status question or status inquiry does not pause authorized work;
+it requires no new permission and is not a blocker. Report the current state
+and continue the existing plan and evidence loop.
+
+Sol's planning has a host-stated planning timebox. Within the planning timebox,
+Sol must converge to a plan, a determination, or a concrete evidence gap. The
+plan, determination, or evidence gap must be produced before the planning
+timebox ends. Extended analysis without convergence is not progress.
+
+If a later or downstream stage is blocked, deliver the earlier or prior stage
+when it is evidence-complete, including its artifact and evidence. Partial
+delivery is allowed only when the completed stage is evidence-complete; only
+the unresolved downstream work remains blocked.
+
 ## Sol plan
 
 ```yaml
@@ -95,6 +122,12 @@ before `PASS`. A top-level `Candidate` result field is not added.
 
 transport/spawn `completed` only proves delivery lifecycle completion; it cannot substitute for a structured Luna `PASS`, Verification/Evidence/changed-path proof, or Sol review.
 
+If transport/spawn reports `completed` without a structured result, allow
+exactly one result-only follow-up to the same worker. This result-only follow-up
+authorizes no new write and no re-execution. If it still cannot retrieve a
+structured result bound to the final candidate, return `BLOCKED`; do not launch
+another retrieval.
+
 Luna may return `PASS` for its assigned task only. Sol decides whether the
 overall work is complete.
 
@@ -121,6 +154,10 @@ plus a `Delta` that changes the same-scope task packet or adds new evidence. The
 `none` class is valid only when no failure occurred; any failure uses another
 allowed class. The same task packet with no new evidence is `BLOCKED` and must
 not be relaunched.
+
+User urgency, requests to hurry, or saying "do not stop" cannot lower, relax,
+or reduce the evidence or verification threshold. The evidence threshold
+remains unchanged and every safety gate still applies.
 
 ## Resume packet (long tasks only)
 

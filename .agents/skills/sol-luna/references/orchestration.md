@@ -10,6 +10,28 @@ completion decision; Luna Max owns bounded execution.
 - Planning-only or review-only work may stop after Sol and use zero Luna.
 - Execution work uses the minimum useful number of Luna workers.
 
+For authorized execution, a plan is not a stop point. Stop or pause only for a
+new permission request, an irreversible choice requiring confirmation, or a
+real blocker, or an explicit user cancellation, replacement, or redirection of
+the current request; these are the only stop gates. Ordinary status questions or
+status inquiries do not pause authorized work, require no new permission, and are
+not blockers.
+
+An explicit user cancellation, replacement, or redirection stops the old plan
+and requires re-planning from the new request. Substantive user steering is not
+an ordinary status inquiry; do not continue old-plan execution while Sol
+re-plans.
+
+Sol's planning has a host-stated planning timebox. Within that planning timebox,
+Sol must converge to a plan, a determination, or a concrete evidence gap. The
+plan, determination, or evidence gap must be produced before the planning
+timebox ends; extended analysis without convergence is not progress.
+
+When a later or downstream stage is blocked, deliver an earlier or prior stage
+that is evidence-complete with its artifact and evidence. Partial delivery is
+allowed only when the completed stage is evidence-complete; only unresolved
+downstream work remains blocked.
+
 ## 2. Sol plan
 
 Sol produces only this top-level shape:
@@ -96,6 +118,12 @@ Transport/spawn `completed` only proves delivery lifecycle completion. It cannot
 substitute for a structured Luna `PASS`, Verification/Evidence/changed-path proof,
 or Sol review.
 
+If transport/spawn reports `completed` without a structured result, allow exactly
+one result-only follow-up to the same worker. The result-only follow-up may not
+authorize a new write or re-execution. If it still cannot retrieve a structured
+result bound to the final candidate, return `BLOCKED`; do not launch another
+retrieval.
+
 ## 7. Sol review
 
 Sol inspects the original request, `done_when`, real files, complete diff,
@@ -127,6 +155,10 @@ Verification: <exact regression command or procedure>
 
 The same owner performs the fix. A second failure, expanded scope, or new owner
 conflict becomes `BLOCKED`; do not retry indefinitely.
+
+User urgency, requests to hurry, or saying "do not stop" cannot lower, relax, or
+reduce the evidence or verification threshold. The evidence threshold remains
+unchanged and every safety gate still applies.
 
 The focused correction is a Correction Packet with the original owner and
 unchanged scope. It must include `Failure class` from exactly `runtime`,

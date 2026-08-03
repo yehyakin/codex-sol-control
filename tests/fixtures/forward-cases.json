@@ -227,5 +227,141 @@
       "resume applies to long or interrupted work",
       "short and Direct tasks do not generate a resume packet"
     ]
+  },
+  {
+    "id": "authorized-plan-not-stop",
+    "prompt": "$sol-luna: execute the authorized implementation after Sol publishes the plan.",
+    "expected": {
+      "route": "sol_then_luna",
+      "sol": "required",
+      "luna": "required",
+      "review": "PASS",
+      "capacity": "live",
+      "resume": "not_applicable"
+    },
+    "required_assertions": [
+      "an authorized execution plan is not a stopping point",
+      "execution continues unless new permission, an irreversible choice, or a real blocker appears",
+      "the plan remains a control artifact rather than a completion claim"
+    ]
+  },
+  {
+    "id": "status-inquiry-keeps-running",
+    "prompt": "$sol-luna: continue the authorized task while the user asks for a normal status update.",
+    "expected": {
+      "route": "sol_then_luna",
+      "sol": "required",
+      "luna": "required",
+      "review": "PASS",
+      "capacity": "live",
+      "resume": "not_applicable"
+    },
+    "required_assertions": [
+      "ordinary status questions do not pause authorized work",
+      "a status request is not new permission or a blocker",
+      "the existing plan and evidence loop continues"
+    ]
+  },
+  {
+    "id": "planning-timebox-converges",
+    "prompt": "$sol-luna: spend a bounded planning timebox and converge on a plan, determination, or evidence gap.",
+    "expected": {
+      "route": "sol",
+      "sol": "required",
+      "luna": "optional",
+      "review": "not_applicable",
+      "capacity": "not_applicable",
+      "resume": "not_applicable"
+    },
+    "required_assertions": [
+      "planning has a timebox",
+      "the timebox must produce a plan, determination, or concrete evidence gap",
+      "extended analysis without convergence is not progress"
+    ]
+  },
+  {
+    "id": "partial-stage-delivery-on-blocker",
+    "prompt": "$sol-luna: deliver the evidence-complete first stage even when a later dependent stage is blocked.",
+    "expected": {
+      "route": "sol_then_luna",
+      "sol": "required",
+      "luna": "required",
+      "review": "BLOCKED",
+      "capacity": "live",
+      "resume": "not_applicable"
+    },
+    "required_assertions": [
+      "a later stage blocker does not erase an evidence-complete earlier stage",
+      "the completed stage is delivered with its artifact and evidence",
+      "only the blocked downstream work remains unresolved"
+    ]
+  },
+  {
+    "id": "completed-no-result-one-recovery",
+    "prompt": "$sol-luna: recover a transport completed event that has no structured Luna result.",
+    "expected": {
+      "route": "sol_then_luna",
+      "sol": "required",
+      "luna": "required",
+      "review": "PASS",
+      "capacity": "live",
+      "resume": "not_applicable"
+    },
+    "required_assertions": [
+      "only the same worker receives one result-only follow-up",
+      "the follow-up cannot authorize new writes or re-execution",
+      "a bound structured result is required before Sol review can pass"
+    ]
+  },
+  {
+    "id": "completed-no-result-recovery-blocked",
+    "prompt": "$sol-luna: block safely when the one allowed result-only recovery still has no structured result bound to the final candidate.",
+    "expected": {
+      "route": "sol_then_luna",
+      "sol": "required",
+      "luna": "blocked",
+      "review": "BLOCKED",
+      "capacity": "live",
+      "resume": "not_applicable"
+    },
+    "required_assertions": [
+      "a second result retrieval is not allowed",
+      "no new write or re-execution is started",
+      "missing final-candidate-bound structure produces BLOCKED"
+    ]
+  },
+  {
+    "id": "urgency-does-not-lower-evidence",
+    "prompt": "$sol-luna: do not lower the evidence threshold because the user says hurry or do not stop.",
+    "expected": {
+      "route": "blocked",
+      "sol": "blocked",
+      "luna": "blocked",
+      "review": "BLOCKED",
+      "capacity": "not_applicable",
+      "resume": "not_applicable"
+    },
+    "required_assertions": [
+      "urgency cannot lower the verification or evidence threshold",
+      "the same safety gates remain in force",
+      "pressure to continue never substitutes for a structured result"
+    ]
+  },
+  {
+    "id": "explicit-user-steering-replans",
+    "prompt": "$sol-luna: stop the old plan and re-plan when the user explicitly cancels, replaces, or redirects the current request.",
+    "expected": {
+      "route": "sol",
+      "sol": "required",
+      "luna": "optional",
+      "review": "not_applicable",
+      "capacity": "not_applicable",
+      "resume": "not_applicable"
+    },
+    "required_assertions": [
+      "explicit cancellation, replacement, or redirection stops the old plan",
+      "substantive user steering is distinct from an ordinary status inquiry",
+      "Sol re-plans from the new request before any old-plan execution continues"
+    ]
   }
 ]

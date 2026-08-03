@@ -12,6 +12,40 @@ role; all task count, ownership, stage, and review decisions remain Sol's.
 
 transport/spawn `completed` only proves delivery lifecycle completion. It cannot substitute for a structured Luna `PASS`, Verification/Evidence/changed-path proof, or Sol review.
 
+## Execution continuity and host recovery
+
+For authorized execution, a plan is not a stop point. Stop or pause only for a
+new permission request, an irreversible choice requiring confirmation, or a
+real blocker, or an explicit user cancellation, replacement, or redirection of
+the current request; these are the only stop gates. Ordinary status questions
+and status inquiries do not pause authorized work, require no new permission,
+and are not blockers.
+
+An explicit user cancellation, replacement, or redirection stops the old plan
+and requires re-planning from the new request. Substantive user steering is not
+an ordinary status inquiry; the Host must stop old-plan execution while Sol
+re-plans.
+
+The Host supplies a planning timebox. Within that planning timebox, Sol must
+converge to a plan, a determination, or a concrete evidence gap. The plan,
+determination, or evidence gap must be produced before the planning timebox
+ends. Extended analysis without convergence is not progress.
+
+If a later or downstream stage is blocked, return an earlier or prior stage
+that is evidence-complete with its artifact and evidence. Partial delivery is
+allowed only when the completed stage is evidence-complete; unresolved
+downstream work remains blocked.
+
+If transport/spawn reports `completed` without a structured result, the Host may
+request exactly one result-only follow-up from the same worker. This follow-up
+may not authorize a new write or re-execution. If no structured result bound to
+the final candidate is returned, the task is `BLOCKED`; do not perform another
+retrieval or relaunch.
+
+User urgency or a request to hurry or "do not stop" cannot lower, relax, or
+reduce the evidence or verification threshold. The evidence threshold remains
+unchanged.
+
 The older Compatibility and Native Nested labels are implementation history,
 not public modes. Neither path changes the plan, packet, ownership, evidence,
 or review contract.

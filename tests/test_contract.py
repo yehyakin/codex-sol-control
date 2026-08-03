@@ -257,6 +257,95 @@ class RepositoryContractTests(unittest.TestCase):
         self.assertRegex(text, r"(?i)Resume packet.{0,180}(?:long|compression|interruption)")
         self.assertIn("Short and Direct tasks never generate a resume packet", text)
 
+    def test_v041_authorized_execution_plan_is_not_a_stop_point(self) -> None:
+        text = self.contract_text()
+        self.assertRegex(
+            text,
+            r"(?is)authorized execution.{0,220}(?:plan|planning).{0,180}(?:not|never).{0,100}stop",
+        )
+        self.assertRegex(
+            text,
+            r"(?is)(?:stop|pause).{0,180}(?:new permission|irreversible|real blocker)",
+        )
+        self.assertRegex(
+            text,
+            r"(?is)(?:new permission|irreversible choice|real blocker).{0,180}(?:only|unless)",
+        )
+
+    def test_v041_status_questions_do_not_pause_authorized_work(self) -> None:
+        text = self.contract_text()
+        self.assertRegex(
+            text,
+            r"(?is)(?:ordinary|normal|routine) status (?:question|inquiry).{0,180}(?:continue|resume|does not pause|not pause)",
+        )
+        self.assertRegex(
+            text,
+            r"(?is)(?:status (?:question|inquiry)).{0,180}(?:no new permission|not a blocker)",
+        )
+
+    def test_v041_planning_timebox_must_converge(self) -> None:
+        text = self.contract_text()
+        self.assertRegex(
+            text,
+            r"(?is)planning.{0,120}(?:timebox|time box).{0,220}(?:plan|determination|evidence gap)",
+        )
+        self.assertRegex(
+            text,
+            r"(?is)(?:plan|determination|evidence gap).{0,120}(?:within|inside|before).{0,120}(?:timebox|time box)",
+        )
+
+    def test_v041_later_stage_blocker_still_delivers_earlier_evidence(self) -> None:
+        text = self.contract_text()
+        self.assertRegex(
+            text,
+            r"(?is)(?:later|subsequent|downstream) stage.{0,220}(?:blocked|blocker).{0,220}(?:earlier|prior|completed) stage.{0,180}(?:deliver|return|ship).{0,180}(?:evidence|artifact)",
+        )
+        self.assertRegex(
+            text,
+            r"(?is)(?:partial|front-loaded) delivery.{0,180}(?:evidence-complete|complete evidence)",
+        )
+
+    def test_v041_completed_without_structured_result_allows_one_result_only_follow_up(self) -> None:
+        text = self.contract_text()
+        self.assertRegex(
+            text,
+            r"(?is)completed.{0,160}(?:without|no).{0,100}structured.{0,100}result.{0,220}(?:one|single).{0,80}(?:same|original) worker.{0,140}(?:result-only|result only) follow[- ]up",
+        )
+        self.assertRegex(
+            text,
+            r"(?is)(?:result-only|result only) follow[- ]up.{0,180}(?:no new write|no re[- ]execut|not authorize).{0,100}(?:write|execution)",
+        )
+        self.assertRegex(
+            text,
+            r"(?is)(?:still|otherwise).{0,120}(?:no|without).{0,100}(?:structured|bound final candidate).{0,150}BLOCKED",
+        )
+
+    def test_v041_urgency_cannot_lower_evidence_threshold(self) -> None:
+        text = self.contract_text()
+        self.assertRegex(
+            text,
+            r"(?is)(?:urgent|urgency|hurry|do not stop|don't stop|催促).{0,220}(?:cannot|does not|must not).{0,160}(?:lower|relax|reduce).{0,120}(?:evidence|verification).{0,100}(?:threshold|bar)",
+        )
+        self.assertRegex(
+            text,
+            r"(?is)(?:evidence|verification).{0,100}(?:threshold|bar).{0,160}(?:unchanged|remains|still applies)",
+        )
+
+    def test_v041_explicit_user_steering_stops_old_plan_and_replans(self) -> None:
+        text = self.contract_text()
+        self.assertRegex(
+            text,
+            r"(?is)explicit user (?:cancellation|replacement|redirection).{0,180}(?:stop|stops).{0,100}(?:old|current).{0,100}(?:plan|task)",
+        )
+        self.assertRegex(
+            text,
+            r"(?is)(?:substantive|material) user steering.{0,160}(?:not|never).{0,100}ordinary status (?:question|inquiry)",
+        )
+        self.assertRegex(
+            text,
+            r"(?is)(?:requires|must).{0,100}re-?plan.{0,180}(?:new|updated).{0,100}(?:request|goal)",
+        )
+
     def test_v040_runtime_surface_matrix_is_release_time_only(self) -> None:
         path = ROOT / "docs" / "release" / "runtime-surface-matrix.md"
         self.assertTrue(path.is_file(), path)
@@ -373,6 +462,14 @@ class RepositoryContractTests(unittest.TestCase):
             "transport-completed-not-pass",
             "identical-retry-no-delta",
             "long-task-resume",
+            "authorized-plan-not-stop",
+            "status-inquiry-keeps-running",
+            "planning-timebox-converges",
+            "partial-stage-delivery-on-blocker",
+            "completed-no-result-one-recovery",
+            "completed-no-result-recovery-blocked",
+            "urgency-does-not-lower-evidence",
+            "explicit-user-steering-replans",
         }
         self.assertEqual(expected_ids, {case["id"] for case in cases})
         self.assertEqual(len(expected_ids), len(cases))
