@@ -1,6 +1,6 @@
 [简体中文](README.md) · [English](README.en.md)
 
-![Sol blueprint architect sends bounded work orders to Luna work cells and receives evidence for review](docs/assets/sol-luna-hero.svg)
+![Sol controller assigns bounded work to Luna Max workers and receives FILES, DIFF, and TEST evidence](docs/assets/readme/hero-en.svg)
 
 # Sol Luna
 
@@ -23,6 +23,8 @@ rework-prone work that benefits from fail-closed behavior and bounded correction
 The canonical repository is [yehyakin/codex-sol-luna](https://github.com/yehyakin/codex-sol-luna).
 Invoke `$sol-luna` explicitly when the work is complex, parallelizable, or high consequence.
 
+![Control Orbit routes Direct, Sol-only, and Sol → Luna work into PASS, FIX, or BLOCKED evidence review](docs/assets/readme/control-plane-en.svg)
+
 ## 60-second quickstart
 
 From a [codex-sol-luna](https://github.com/yehyakin/codex-sol-luna) checkout, validate
@@ -38,33 +40,7 @@ then invoke `$sol-luna`. Small, independent, or explanation-only work stays Dire
 the complete platform commands and uninstall/rollback path are in
 [Platforms and lifecycle](#platforms-and-lifecycle).
 
-## One controller, one execution workshop
-
-![Sol planning room above three Luna work cells with evidence returning through a lift](docs/assets/sol-luna-architecture.svg)
-
-Sol is the single controller: it controls goal understanding, completion criteria,
-stage planning, file ownership, routing, and the final review. Luna Max workers only
-execute bounded work, verify their changes, and return evidence. Parallel work is
-allowed only across disjoint owner scopes; live capacity determines the worker count,
-not a promised fixed maximum.
-
-Runtime output defaults to Simplified Chinese; when the user explicitly requests
-another language, use the requested language. Code, commands, paths, identifiers,
-and original evidence may retain their source form.
-
-```text
-User goal → Sol plans and routes → Luna Max executes bounded work
-          → Sol reviews files, diffs, and evidence → delivery
-```
-
-| Role | Responsibility | Boundary |
-| --- | --- | --- |
-| Sol | Controller, planner, router, and reviewer | Orchestration and final decision only |
-| Luna Max | Bounded implementation and self-verification | Assigned files only; no recursive delegation |
-
 ## Choose the route
-
-![Direct, Sol-only, and Sol-to-Luna routing tracks on a workshop board](docs/assets/sol-luna-routing.svg)
 
 The Skill does not delegate every task. First weigh the cost of planning, execution,
 and review against the work itself:
@@ -79,9 +55,27 @@ Good `$sol-luna` candidates have a clear `write_scope`, paths not to touch, an o
 `done_when`, and reproducible verification commands. If the goal is ambiguous, repeated
 context is too expensive, or review adds little value, staying Direct is more reliable.
 
-## Workflow
+Sol is the single controller: it controls goal understanding, completion criteria, stage planning,
+file ownership, routing, and the final review. Luna Max workers only execute bounded work, verify
+their changes, and return evidence. Parallel work is allowed only across disjoint owner scopes; live
+capacity determines the worker count, not a promised fixed maximum. Runtime output defaults to Simplified Chinese;
+when the user explicitly requests another language, use the requested language.
+Code, commands, paths, identifiers, and original evidence may retain their source form.
 
-![FILES, DIFF, and TEST trays enter Sol's inspection lightbox for PASS, FIX, or BLOCKED](docs/assets/sol-luna-review.svg)
+```text
+User goal → Sol plans and routes → Luna Max executes bounded work
+          → Sol reviews files, diffs, and evidence → delivery
+```
+
+| Role | Responsibility | Boundary |
+| --- | --- | --- |
+| Sol | Controller, planner, router, and reviewer | Orchestration and final decision only |
+| Luna Max | Bounded implementation and self-verification | Assigned files only; no recursive delegation |
+
+## Reliability comes from boundaries
+
+Reliability comes from provable identity, ownership, evidence freshness, and bounded
+correction rather than from a label in configuration.
 
 Every delegated task follows a reviewable loop:
 
@@ -93,11 +87,6 @@ Every delegated task follows a reviewable loop:
 Worker completion is not final approval; delivery follows only after Sol reviews the
 real diff. One file has one owner for the entire run. Disjoint scopes may run in
 parallel; uncertain or overlapping scopes wait.
-
-## Reliability comes from boundaries
-
-Reliability comes from provable identity, ownership, evidence freshness, and bounded
-correction rather than from a label in configuration.
 
 ### Runtime identity and fail-closed behavior
 
@@ -146,24 +135,6 @@ interrupted, or run for a long time. It contains only `goal`, `completed`,
 `in_flight`, `artifact_location`, and `next_action`. Short and Direct tasks never
 generate a Resume packet. Live capacity controls batching; the plan never assumes a
 fixed Luna maximum.
-
-## Real-project routing samples
-
-These are anonymous local real-project test samples. We reused completed Sol Luna task
-evidence and allowed only the minimum read-only probes needed to fill material gaps; no
-business project was modified.
-
-| Anonymous category | Route | Luna workers | Waves | Verification | Sol review | Elapsed |
-| --- | --- | ---: | ---: | --- | --- | ---: |
-| Codebase | `sol_then_luna` (`measured`) | `unavailable` | `unavailable` | evidence present (`measured`) | `BLOCKED` (`measured`) | 2340 s (`measured`) |
-| Documentation | `sol_then_luna` (`measured`) | `unavailable` | `unavailable` | evidence present (`measured`) | `PASS` (`measured`) | 379 s (`measured`) |
-| Infrastructure | `direct` (`measured`) | 0 (`measured`) | 0 (`measured`) | evidence present (`measured`) | not applicable (`measured`) | 859 s (`measured`) |
-
-Routing, elapsed time, verification, and Sol review come from real records. The 59% and
-65% figures use those local project samples, public model rates, and the formula below
-under one reproducible accounting method. See
-[`tests/real-project-benchmark.md`](tests/real-project-benchmark.md) for the complete
-method, anonymous results, and limitations.
 
 ## Cost projection and test method
 
@@ -281,6 +252,24 @@ valid recorded backup after owned installation removal. The release-time runtime
 surface and evidence status are documented in
 [`docs/release/runtime-surface-matrix.md`](docs/release/runtime-surface-matrix.md).
 
+## Real-project routing samples
+
+These are anonymous local real-project test samples. We reused completed Sol Luna task
+evidence and allowed only the minimum read-only probes needed to fill material gaps; no
+business project was modified.
+
+| Anonymous category | Route | Luna workers | Waves | Verification | Sol review | Elapsed |
+| --- | --- | ---: | ---: | --- | --- | ---: |
+| Codebase | `sol_then_luna` (`measured`) | `unavailable` | `unavailable` | evidence present (`measured`) | `BLOCKED` (`measured`) | 2340 s (`measured`) |
+| Documentation | `sol_then_luna` (`measured`) | `unavailable` | `unavailable` | evidence present (`measured`) | `PASS` (`measured`) | 379 s (`measured`) |
+| Infrastructure | `direct` (`measured`) | 0 (`measured`) | 0 (`measured`) | evidence present (`measured`) | not applicable (`measured`) | 859 s (`measured`) |
+
+Routing, elapsed time, verification, and Sol review come from real records. The 59% and
+65% figures use those local project samples, public model rates, and the formula below
+under one reproducible accounting method. See
+[`tests/real-project-benchmark.md`](tests/real-project-benchmark.md) for the complete
+method, anonymous results, and limitations.
+
 ## Repository and development
 
 ### Repository layout
@@ -290,7 +279,7 @@ surface and evidence status are documented in
 .codex/agents/                 exact Sol and Luna custom-agent definitions
 scripts/                       macOS/Linux lifecycle and validation scripts
 tests/                         contract, forward-case, and lifecycle tests
-docs/assets/                   repository-owned hero, architecture, routing, and review SVGs
+docs/assets/readme/            repository-owned localized Control Orbit hero and control-plane SVGs
 README.md                      canonical Simplified Chinese guide
 README.en.md                   complete English peer
 ```

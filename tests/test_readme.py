@@ -15,12 +15,21 @@ CHINESE_README = ROOT / "README.md"
 ENGLISH_README = ROOT / "README.en.md"
 README_FILES = (CHINESE_README, ENGLISH_README)
 SVG_FILES = (
-    ROOT / "docs" / "assets" / "sol-luna-hero.svg",
-    ROOT / "docs" / "assets" / "sol-luna-architecture.svg",
-    ROOT / "docs" / "assets" / "sol-luna-routing.svg",
-    ROOT / "docs" / "assets" / "sol-luna-review.svg",
+    ROOT / "docs" / "assets" / "readme" / "hero-zh.svg",
+    ROOT / "docs" / "assets" / "readme" / "hero-en.svg",
+    ROOT / "docs" / "assets" / "readme" / "control-plane-zh.svg",
+    ROOT / "docs" / "assets" / "readme" / "control-plane-en.svg",
 )
-EXPECTED_IMAGE_TARGETS = tuple(path.relative_to(ROOT).as_posix() for path in SVG_FILES)
+EXPECTED_IMAGE_TARGETS_BY_README = {
+    CHINESE_README: (
+        "docs/assets/readme/hero-zh.svg",
+        "docs/assets/readme/control-plane-zh.svg",
+    ),
+    ENGLISH_README: (
+        "docs/assets/readme/hero-en.svg",
+        "docs/assets/readme/control-plane-en.svg",
+    ),
+}
 CANONICAL_REPOSITORY_URL = "https://github.com/yehyakin/codex-sol-luna"
 OLD_REPOSITORY_URL = "https://github.com/yehyakin/codex-sol-luna-orchestrator"
 
@@ -63,16 +72,22 @@ SECTION_HEADING_MAP = {
 }
 EXPECTED_SECTION_KEYS = (
     "quickstart",
-    "architecture",
     "routing",
-    "workflow",
     "reliability",
-    "benchmark",
     "cost_details",
     "platform",
+    "benchmark",
     "repository",
     "limitations",
     "prior_art",
+)
+
+CONTROL_ORBIT_PALETTE = (
+    "#0B1020",
+    "#F7F3E8",
+    "#65D6C4",
+    "#8FA7FF",
+    "#FF6B3D",
 )
 
 ENGLISH_DISCLAIMER_RE = re.compile(r"\bnot(?:\s+a)?\s+guarantee\b", re.IGNORECASE)
@@ -382,8 +397,8 @@ class ReadmeContractTests(unittest.TestCase):
             "cost_details section must win over the boundary word in its title",
         )
         self.assertEqual(
-            ["workflow"],
-            self.heading_sequence("# Workflow\n### Workflow\n## Workflow"),
+            ["routing"],
+            self.heading_sequence("# Choose the route\n### Choose the route\n## Choose the route"),
             "section fixture: only a rendered ## heading may contribute a section key",
         )
 
@@ -500,36 +515,32 @@ class ReadmeContractTests(unittest.TestCase):
             images.append((match.group("alt").strip(), target.split("#", 1)[0]))
         return images
 
-    def test_readmes_use_the_four_local_images_in_the_same_order(self) -> None:
+    def test_readmes_use_the_localized_images_in_the_same_order(self) -> None:
         documents = self.readme_documents()
         sequences = {path: self.image_sequence(text, path.name) for path, text in documents.items()}
         for path, sequence in sequences.items():
             self.assertEqual(
-                list(EXPECTED_IMAGE_TARGETS),
+                list(EXPECTED_IMAGE_TARGETS_BY_README[path]),
                 [target for _, target in sequence],
-                f"{path.name}: rendered image asset sequence must match {list(EXPECTED_IMAGE_TARGETS)}",
+                f"{path.name}: rendered image asset sequence must match {list(EXPECTED_IMAGE_TARGETS_BY_README[path])}",
             )
-        for target in EXPECTED_IMAGE_TARGETS:
-            chinese_alt = next(
-                (alt for alt, asset in sequences[CHINESE_README] if asset == target),
-                "",
-            )
-            english_alt = next(
-                (alt for alt, asset in sequences[ENGLISH_README] if asset == target),
-                "",
-            )
-            self.assertTrue(
-                chinese_alt,
-                f"{target}: Chinese README image alt text must be non-empty",
-            )
-            self.assertTrue(
-                english_alt,
-                f"{target}: English README image alt text must be non-empty",
+        for path, sequence in sequences.items():
+            for alt, target in sequence:
+                self.assertTrue(alt, f"{target}: {path.name} image alt text must be non-empty")
+
+        english_targets = EXPECTED_IMAGE_TARGETS_BY_README[ENGLISH_README]
+        for index, ((chinese_alt, chinese_target), (english_alt, english_target)) in enumerate(
+            zip(sequences[CHINESE_README], sequences[ENGLISH_README])
+        ):
+            self.assertEqual(
+                english_targets[index],
+                english_target,
+                f"image index {index}: English asset must pair with the localized Chinese asset",
             )
             self.assertNotEqual(
                 chinese_alt,
                 english_alt,
-                f"{target}: image alt text must be localized",
+                f"{chinese_target}: corresponding Chinese and English alt text must be localized",
             )
 
     def test_all_relative_markdown_links_resolve_inside_the_repository(self) -> None:
@@ -579,10 +590,8 @@ class ReadmeContractTests(unittest.TestCase):
             self.assertNotRegex(source, r"(?is)<image\b|data:image|<foreignObject\b")
             self.assertNotRegex(source, r"(?is)<linearGradient\b|<radialGradient\b")
             self.assertNotRegex(source, r"(?i)oil-visual|border collie|边牧|圆框眼镜")
-            self.assertIn("#F4E8D3", source, path.name)
-            self.assertIn("#17130F", source, path.name)
-            self.assertIn("#D95F32", source, path.name)
-            self.assertIn("#416C8A", source, path.name)
+            for color in CONTROL_ORBIT_PALETTE:
+                self.assertIn(color, source, path.name)
 
     def test_readme_section_order_matches_in_both_languages(self) -> None:
         documents = self.readme_documents()
