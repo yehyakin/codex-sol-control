@@ -575,8 +575,11 @@ if (-not $v3StatePresent -and (Test-PathExists $lunaTarget)) {
         throw "existing shared Luna has no ownership state"
     }
 }
+if (-not $v3StatePresent -and -not $previousStatePresent -and (Test-PathExists $terraTarget)) {
+    throw "existing Terra target has no supported ownership state"
+}
 if (-not $v3StatePresent -and -not $previousStatePresent -and
-    ((Test-PathExists $compatSkillTarget) -or (Test-PathExists $newSolTarget) -or (Test-PathExists $terraTarget))) {
+    ((Test-PathExists $compatSkillTarget) -or (Test-PathExists $newSolTarget))) {
     throw "existing Sol Control target has no supported ownership state"
 }
 

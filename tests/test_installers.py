@@ -497,10 +497,12 @@ class InstallerTests(unittest.TestCase):
 
         check = self.run_script("install.sh", "--check")
         self.assertNotEqual(0, check.returncode, check.stdout)
+        self.assertRegex(check.stdout, r"(?i)Terra.*ownership state")
         self.assertEqual(before, snapshot(self.test_home))
 
         install = self.run_script("install.sh")
         self.assertNotEqual(0, install.returncode, install.stdout)
+        self.assertRegex(install.stdout, r"(?i)Terra.*ownership state")
         self.assertEqual(before, snapshot(self.test_home))
 
     def test_existing_terra_with_v3_state_missing_terra_checksum_fails_closed_in_check_and_install(self) -> None:

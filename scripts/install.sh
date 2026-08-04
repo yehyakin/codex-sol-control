@@ -404,7 +404,10 @@ if (( ! v3_state_present )) && path_exists "$luna_target"; then
 fi
 
 if (( ! v3_state_present && ! previous_state_present )); then
-  if path_exists "$compat_skill_target" || path_exists "$new_sol_target" || path_exists "$terra_target"; then
+  if path_exists "$terra_target"; then
+    die 'existing Terra target has no supported ownership state'
+  fi
+  if path_exists "$compat_skill_target" || path_exists "$new_sol_target"; then
     die 'existing Sol Control target has no supported ownership state'
   fi
 fi
