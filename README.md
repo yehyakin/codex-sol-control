@@ -347,6 +347,7 @@ pwsh -NoProfile -File scripts/uninstall.ps1 -RestoreLatest
 | --- | --- |
 | 本地仓库 | Skill Creator **PASS**；证据快照记录 **106/106** tests PASS |
 | 托管 CI | POSIX **PASS**；Windows Server 2022 / `windows-latest` × Windows PowerShell 5.1 / PowerShell 7 **PASS** |
+| Windows 实机安装 | 用户报告安装成功；未收集 Windows 版本、安装日志或运行时身份载荷，因此不扩展为 Native Nested 证明 |
 | 运行表面 | Compatibility 已验证；Native Nested、全新 CLI child model/effort 身份与物理 Windows 11 尚未证明 |
 
 v0.3.0 的证据绑定报告记录于提交 `6895f06`：

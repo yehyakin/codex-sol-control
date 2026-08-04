@@ -347,6 +347,7 @@ The current release baseline is **v0.3.0**.
 | --- | --- |
 | Local repository | Skill Creator **PASS**; the evidence snapshot records **106/106** tests PASS |
 | Hosted CI | POSIX **PASS**; Windows Server 2022 / `windows-latest` × Windows PowerShell 5.1 / PowerShell 7 **PASS** |
+| Physical Windows install | User-reported installation success; the Windows version, install log, and runtime identity payload were not captured, so this does not establish Native Nested |
 | Runtime surface | Compatibility verified; Native Nested, fresh-CLI child model/effort identity, and physical Windows 11 remain unproven |
 
 The v0.3.0 evidence-bound report is recorded at commit `6895f06`:

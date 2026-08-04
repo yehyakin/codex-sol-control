@@ -785,6 +785,7 @@ class ReadmeContractTests(unittest.TestCase):
                 "unproven": r"Native Nested.*全新 CLI child model/effort 身份.*物理 Windows 11 尚未证明",
                 "local_row_label": "本地仓库",
                 "hosted_row_label": "托管 CI",
+                "physical_windows_row_label": "Windows 实机安装",
                 "local_row_signals": (
                     "Skill Creator **PASS**",
                     "**106/106** tests PASS",
@@ -795,6 +796,12 @@ class ReadmeContractTests(unittest.TestCase):
                     "windows-latest",
                     "Windows PowerShell 5.1",
                     "PowerShell 7 **PASS**",
+                ),
+                "physical_windows_row_signals": (
+                    "用户报告安装成功",
+                    "未收集 Windows 版本",
+                    "安装日志",
+                    "运行时身份",
                 ),
             },
             ENGLISH_README: {
@@ -803,6 +810,7 @@ class ReadmeContractTests(unittest.TestCase):
                 "unproven": r"Native Nested, fresh-CLI child model/effort identity, and physical Windows 11 remain unproven",
                 "local_row_label": "Local repository",
                 "hosted_row_label": "Hosted CI",
+                "physical_windows_row_label": "Physical Windows install",
                 "local_row_signals": (
                     "Skill Creator **PASS**",
                     "**106/106** tests PASS",
@@ -813,6 +821,12 @@ class ReadmeContractTests(unittest.TestCase):
                     "windows-latest",
                     "Windows PowerShell 5.1",
                     "PowerShell 7 **PASS**",
+                ),
+                "physical_windows_row_signals": (
+                    "User-reported installation success",
+                    "Windows version",
+                    "install log",
+                    "runtime identity",
                 ),
             },
         }
@@ -901,7 +915,11 @@ class ReadmeContractTests(unittest.TestCase):
                 table_blocks.append(data_rows)
 
             status_table_rows: list[dict[str, str]] = []
-            target_labels = (spec["local_row_label"], spec["hosted_row_label"])
+            target_labels = (
+                spec["local_row_label"],
+                spec["hosted_row_label"],
+                spec["physical_windows_row_label"],
+            )
             for data_rows in table_blocks:
                 rows: dict[str, str] = {}
                 for cells in data_rows:
@@ -923,7 +941,7 @@ class ReadmeContractTests(unittest.TestCase):
             )
             status_rows = status_table_rows[0]
 
-            for row_key in ("local", "hosted"):
+            for row_key in ("local", "hosted", "physical_windows"):
                 row_label = spec[f"{row_key}_row_label"]
                 self.assertIn(
                     row_label,
