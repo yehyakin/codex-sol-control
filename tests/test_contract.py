@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Contract tests for the v0.2.0 and v0.3.0 ``sol-luna`` package."""
+"""Contract tests for the v0.4.0 ``sol-control`` package."""
 
 from __future__ import annotations
 
@@ -15,7 +15,7 @@ except ModuleNotFoundError as exc:  # pragma: no cover - old runner guard
 
 
 ROOT = Path(__file__).resolve().parents[1]
-SKILL_ROOT = ROOT / ".agents" / "skills" / "sol-luna"
+SKILL_ROOT = ROOT / ".agents" / "skills" / "sol-control"
 SOL_AGENT = ROOT / ".codex" / "agents" / "sol-controller.toml"
 LUNA_AGENT = ROOT / ".codex" / "agents" / "luna-max-worker.toml"
 TERRA_AGENT = ROOT / ".codex" / "agents" / "terra-high-worker.toml"
@@ -34,8 +34,11 @@ V030_REQUIRED_FILES = (
     "tests/windows-lifecycle.ps1",
     ".github/workflows/windows-validation.yml",
 )
-CANONICAL_REPOSITORY_URL = "https://github.com/yehyakin/codex-sol-luna"
-OLD_REPOSITORY_URL = "https://github.com/yehyakin/codex-sol-luna-orchestrator"
+CANONICAL_REPOSITORY_URL = "https://github.com/yehyakin/codex-sol-control"
+OLD_REPOSITORY_URLS = (
+    "https://github.com/yehyakin/codex-sol-luna",
+    "https://github.com/yehyakin/codex-sol-luna-orchestrator",
+)
 
 
 def read_if_present(path: Path) -> str:
@@ -84,7 +87,8 @@ class RepositoryContractTests(unittest.TestCase):
             self.assertTrue(path.is_file(), relative)
             text = path.read_text(encoding="utf-8")
             self.assertIn(CANONICAL_REPOSITORY_URL, text, relative)
-            self.assertNotIn(OLD_REPOSITORY_URL, text, relative)
+            for old_url in OLD_REPOSITORY_URLS:
+                self.assertNotIn(old_url, text, relative)
 
     def test_windows_sources_declare_the_v030_native_lifecycle_contract(self) -> None:
         required = {
@@ -158,9 +162,9 @@ class RepositoryContractTests(unittest.TestCase):
         text = read_if_present(SKILL_ROOT / "SKILL.md")
         self.assertTrue(text.startswith("---\n"), "SKILL.md must have frontmatter")
         frontmatter = text.split("---", 2)[1] if "---" in text else ""
-        self.assertRegex(frontmatter, r"(?m)^name:\s*sol-luna\s*$")
+        self.assertRegex(frontmatter, r"(?m)^name:\s*sol-control\s*$")
         self.assertRegex(frontmatter, r"(?m)^description:\s*Use when\b")
-        self.assertIn("$sol-luna", text)
+        self.assertIn("$sol-control", text)
         self.assertRegex(text, r"(?i)ordinary\s+simple\s+(work|tasks?).{0,120}\bdirect\b")
         self.assertRegex(text, r"(?i)planning[- ]only.{0,120}zero\s+Luna")
 
@@ -182,7 +186,7 @@ class RepositoryContractTests(unittest.TestCase):
         self.assertRegex(terra_instructions, r"用户.*明确.*其他语言", TERRA_AGENT.name)
 
         openai_text = read_if_present(SKILL_ROOT / "agents" / "openai.yaml")
-        self.assertIn('default_prompt: "使用 $sol-luna', openai_text)
+        self.assertIn('default_prompt: "使用 $sol-control', openai_text)
 
         chinese_readme = read_if_present(ROOT / "README.md")
         english_readme = read_if_present(ROOT / "README.en.md")
@@ -467,7 +471,7 @@ class RepositoryContractTests(unittest.TestCase):
         cases = json.loads(path.read_text(encoding="utf-8"))
         expected_ids = {
             "ordinary-simple-direct",
-            "explicit-sol-luna",
+            "explicit-sol-control",
             "planning-only-sol",
             "single-file-execution",
             "live-capacity-batching",

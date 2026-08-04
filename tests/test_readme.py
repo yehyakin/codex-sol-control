@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""RED contract tests for the v0.3.0 bilingual documentation surface."""
+"""Contract tests for the v0.4.0 bilingual documentation surface."""
 
 from __future__ import annotations
 
@@ -30,8 +30,11 @@ EXPECTED_IMAGE_TARGETS_BY_README = {
         "docs/assets/readme/control-plane-en.svg",
     ),
 }
-CANONICAL_REPOSITORY_URL = "https://github.com/yehyakin/codex-sol-luna"
-OLD_REPOSITORY_URL = "https://github.com/yehyakin/codex-sol-luna-orchestrator"
+CANONICAL_REPOSITORY_URL = "https://github.com/yehyakin/codex-sol-control"
+OLD_REPOSITORY_URLS = (
+    "https://github.com/yehyakin/codex-sol-luna",
+    "https://github.com/yehyakin/codex-sol-luna-orchestrator",
+)
 
 MARKDOWN_LINK_RE = re.compile(
     r"!?\[[^\]]*\]\((?:<(?P<bracketed>[^>]+)>|(?P<plain>[^\s)]+))"
@@ -456,8 +459,9 @@ class ReadmeContractTests(unittest.TestCase):
         documents = self.readme_documents()
         for path, text in documents.items():
             self.assertIn(CANONICAL_REPOSITORY_URL, text, path.name)
-            self.assertNotIn(OLD_REPOSITORY_URL, text, path.name)
-            self.assertIn("codex-sol-luna", text, path.name)
+            for old_url in OLD_REPOSITORY_URLS:
+                self.assertNotIn(old_url, text, path.name)
+            self.assertIn("codex-sol-control", text, path.name)
 
     def image_sequence(self, text: str, readme_name: str = "fixture README") -> list[tuple[str, str]]:
         images: list[tuple[str, str]] = []
@@ -606,6 +610,7 @@ class ReadmeContractTests(unittest.TestCase):
     def test_readmes_explain_the_two_role_runtime_and_platform_quickstarts(self) -> None:
         documents = self.readme_documents()
         signals = (
+            "$sol-control",
             "$sol-luna",
             "sol-controller",
             "luna-max-worker",
@@ -771,6 +776,7 @@ class ReadmeContractTests(unittest.TestCase):
     def test_bilingual_core_signals_have_parity(self) -> None:
         documents = self.readme_documents()
         parity_signals = (
+            "$sol-control",
             "$sol-luna",
             "sol-controller",
             "luna-max-worker",
@@ -793,14 +799,12 @@ class ReadmeContractTests(unittest.TestCase):
             "saving = 1 - route_cost",
             "config.toml",
             "RestoreLatest",
-            "v0.3.0",
-            "106/106",
+            "v0.4.0",
+            "tests PASS",
             "Compatibility",
             "Native Nested",
-            "6895f06",
-            "ORCHESTRATE_SOL_LUNA_V2_IMPLEMENTATION_REPORT.md",
-            "actions/runs/30858707335",
-            "actions/runs/30858707364",
+            "SOL_CONTROL_IMPLEMENTATION_REPORT.md",
+            "v0.5.0",
         )
         for signal in parity_signals:
             for path, text in documents.items():
@@ -816,14 +820,14 @@ class ReadmeContractTests(unittest.TestCase):
                 "physical_windows_row_label": "Windows 实机安装",
                 "local_row_signals": (
                     "Skill Creator **PASS**",
-                    "**106/106** tests PASS",
+                    "tests PASS",
                 ),
                 "hosted_row_signals": (
-                    "POSIX **PASS**",
+                    "POSIX",
                     "Windows Server 2022",
                     "windows-latest",
                     "Windows PowerShell 5.1",
-                    "PowerShell 7 **PASS**",
+                    "PowerShell 7",
                 ),
                 "physical_windows_row_signals": (
                     "用户报告安装成功",
@@ -841,14 +845,14 @@ class ReadmeContractTests(unittest.TestCase):
                 "physical_windows_row_label": "Physical Windows install",
                 "local_row_signals": (
                     "Skill Creator **PASS**",
-                    "**106/106** tests PASS",
+                    "tests PASS",
                 ),
                 "hosted_row_signals": (
-                    "POSIX **PASS**",
+                    "POSIX",
                     "Windows Server 2022",
                     "windows-latest",
                     "Windows PowerShell 5.1",
-                    "PowerShell 7 **PASS**",
+                    "PowerShell 7",
                 ),
                 "physical_windows_row_signals": (
                     "User-reported installation success",
@@ -884,12 +888,9 @@ class ReadmeContractTests(unittest.TestCase):
             )
             release_block = rendered[release_heading.start() : release_end]
             for signal in (
-                "v0.3.0",
-                "106/106",
-                "6895f06",
-                "(ORCHESTRATE_SOL_LUNA_V2_IMPLEMENTATION_REPORT.md)",
-                "https://github.com/yehyakin/codex-sol-luna/actions/runs/30858707335",
-                "https://github.com/yehyakin/codex-sol-luna/actions/runs/30858707364",
+                "v0.4.0",
+                "tests PASS",
+                "(SOL_CONTROL_IMPLEMENTATION_REPORT.md)",
             ):
                 self.assertIn(
                     signal,

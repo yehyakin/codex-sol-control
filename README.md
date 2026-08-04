@@ -2,23 +2,25 @@
 
 ![Sol 作为唯一主控，将有边界的任务路由给 Terra High 或 Luna Max，并在证据返回后完成最终审核](docs/assets/readme/hero-zh.svg)
 
-# Sol Luna
+# Sol Control
 
 **Sol 单一主控。Terra High 与 Luna Max 分层执行。真实文件与证据通过后才交付。**
 
-`codex-sol-luna` 是一个面向 Codex 的轻量级编排 Skill。它不追求“更多 Agent”，而是让不同模型只承担最适合自己的工作：
+`codex-sol-control` 是一个面向 Codex 的轻量级编排 Skill。它不追求“更多 Agent”，而是让不同模型只承担最适合自己的工作：
 
 - **Sol** 是唯一主控：理解目标、定义完成条件、规划、分配、调度并完成最终审核。
 - **Terra High** 是复杂执行层：处理跨模块、长上下文、模糊调试、共享接口与高风险实现。
 - **Luna Max** 是轻量执行层：承接清晰、低歧义、边界明确、可独立验证的任务。
 
-简单任务仍由当前 Codex 直接完成。复杂、跨模块、可并行或高风险任务，再显式调用 `$sol-luna`。
+简单任务仍由当前 Codex 直接完成。复杂、跨模块、可并行或高风险任务，再显式调用 `$sol-control`。
+
+> **v0.4.x 兼容说明：**旧命令 `$sol-luna` 仍可显式调用，但它只会转交给 `$sol-control`，不会启动第二套编排流程。新配置请使用 `$sol-control`；兼容入口计划在 v0.5.0 移除。
 
 运行时默认使用简体中文；如果用户明确指定其他语言，则遵循用户选择。
 
 > **一个 Sol，两级执行。Terra 与 Luna 都是叶子执行者，不得创建子代理，也不得批准整体任务。**
 
-规范仓库：[yehyakin/codex-sol-luna](https://github.com/yehyakin/codex-sol-luna)
+规范仓库：[yehyakin/codex-sol-control](https://github.com/yehyakin/codex-sol-control)
 
 ## 核心路由与预计节省
 
@@ -33,7 +35,7 @@
 
 ## 为什么能节省成本
 
-Sol Luna 的节省逻辑很直接：
+Sol Control 的节省逻辑很直接：
 
 > **把高成本的目标理解、边界判断与最终审核留给 Sol；把实际执行按复杂度路由给 Terra 或 Luna。**
 
@@ -133,8 +135,8 @@ API 用户看到的是美元金额；ChatGPT / Codex 用户通常看到的是 cr
 ### macOS / Linux
 
 ```sh
-git clone https://github.com/yehyakin/codex-sol-luna.git
-cd codex-sol-luna
+git clone https://github.com/yehyakin/codex-sol-control.git
+cd codex-sol-control
 
 bash scripts/validate.sh
 bash scripts/install.sh
@@ -145,8 +147,8 @@ bash scripts/install.sh
 Windows PowerShell 5.1：
 
 ```powershell
-git clone https://github.com/yehyakin/codex-sol-luna.git
-Set-Location codex-sol-luna
+git clone https://github.com/yehyakin/codex-sol-control.git
+Set-Location codex-sol-control
 
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/validate.ps1
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/install.ps1
@@ -162,7 +164,7 @@ pwsh -NoProfile -File scripts/install.ps1
 安装后，打开新的 Codex 会话并显式调用：
 
 ```text
-$sol-luna
+$sol-control
 
 目标：为现有 Next.js 项目增加账号设置功能。
 
@@ -180,14 +182,14 @@ $sol-luna
 也可以直接写：
 
 ```text
-$sol-luna 重构认证模块，保持现有 API 兼容，测试和构建必须通过。
+$sol-control 重构认证模块，保持现有 API 兼容，测试和构建必须通过。
 ```
 
 你不需要指定 worker 数量，也不需要自己判断哪些任务交给 Terra 或 Luna。提供**目标、可观察的完成条件与明确限制**即可；Sol 负责形成最小可执行计划。
 
 ## 它解决什么问题
 
-| 常见问题 | Sol Luna 的处理方式 |
+| 常见问题 | Sol Control 的处理方式 |
 | --- | --- |
 | 同一个 Agent 同时规划、实现和验证，容易顾此失彼 | Sol 专注判断与审核，Terra / Luna 专注有界执行 |
 | 所有工作都使用最高成本模型 | 按复杂度把执行路由到 Terra 或 Luna |
@@ -304,7 +306,7 @@ worker 的 `PASS` 只代表它自己的任务通过。只有 Sol 可以批准整
 - 无法划分独立 write scope；
 - 编排、重复上下文与审核成本明显高于实现本身。
 
-`$sol-luna` 不是默认模式。**小任务保持 Direct，复杂任务才进入编排。**
+`$sol-control` 不是默认模式。**小任务保持 Direct，复杂任务才进入编排。**
 
 ## 安装、检查与卸载
 
@@ -337,35 +339,35 @@ pwsh -NoProfile -File scripts/uninstall.ps1 -RestoreLatest
 
 安装器只管理本项目拥有的 Skill 与 agent 文件，并保留无关 agent 和用户自己的 `~/.codex/config.toml`。隔离生命周期测试时可使用 `ORCHESTRATE_HOME` 指定临时 home。
 
+从 v0.3 升级时，安装器会先校验旧 `$sol-luna` Skill、三个 agent 与 ownership state，再迁移到 `~/.codex/sol-control`。`--restore-latest` 可恢复升级前的完整可管理状态；检测到用户修改、无 ownership 的目标或校验失败时会停止，不会覆盖。
+
 平台与证据覆盖详见 [`docs/release/runtime-surface-matrix.md`](docs/release/runtime-surface-matrix.md)。
 
 ## 当前状态
 
-当前发布基线为 **v0.3.0**。
+当前发布基线为 **v0.4.0**。
 
 | 验证面 | 已记录证据 |
 | --- | --- |
-| 本地仓库 | Skill Creator **PASS**；证据快照记录 **106/106** tests PASS |
-| 托管 CI | POSIX **PASS**；Windows Server 2022 / `windows-latest` × Windows PowerShell 5.1 / PowerShell 7 **PASS** |
+| 本地仓库 | Skill Creator **PASS**；v0.4.0 候选版本 **112/112 tests PASS** |
+| 托管 CI | v0.4.0 首次提交后验证 POSIX、Windows Server 2022 / `windows-latest` × Windows PowerShell 5.1 / PowerShell 7；当前状态：待运行 |
 | Windows 实机安装 | 用户报告安装成功；未收集 Windows 版本、安装日志或运行时身份载荷，因此不扩展为 Native Nested 证明 |
 | 运行表面 | Compatibility 已验证；Native Nested、全新 CLI child model/effort 身份与物理 Windows 11 尚未证明 |
 
-v0.3.0 的证据绑定报告记录于提交 `6895f06`：
-
-- [POSIX CI](https://github.com/yehyakin/codex-sol-luna/actions/runs/30858707335)
-- [Windows CI](https://github.com/yehyakin/codex-sol-luna/actions/runs/30858707364)
-- [完整实施报告](ORCHESTRATE_SOL_LUNA_V2_IMPLEMENTATION_REPORT.md)
+v0.4.0 的提交号与 POSIX / Windows CI 链接会在候选提交通过托管验证后绑定；当前详见[完整实施报告](SOL_CONTROL_IMPLEMENTATION_REPORT.md)。
 
 这些状态描述的是已记录证据范围，不推断未验证运行表面。
 
 ## 仓库结构
 
 ```text
-.agents/skills/sol-luna/
-├─ SKILL.md                    public Skill
-└─ references/
-   ├─ orchestration.md         编排契约
-   └─ runtime-notes.md         运行时与调度说明
+.agents/skills/
+├─ sol-control/                唯一完整 Skill
+│  ├─ SKILL.md
+│  └─ references/
+│     ├─ orchestration.md      编排契约
+│     └─ runtime-notes.md      运行时与调度说明
+└─ sol-luna/                   v0.4.x 薄兼容入口
 
 .codex/agents/
 ├─ sol-controller.toml
@@ -386,15 +388,15 @@ README.en.md                   English
 
 ## 文档入口
 
-- [Public Skill](.agents/skills/sol-luna/SKILL.md)
-- [编排契约](.agents/skills/sol-luna/references/orchestration.md)
-- [运行时说明](.agents/skills/sol-luna/references/runtime-notes.md)
+- [Public Skill](.agents/skills/sol-control/SKILL.md)
+- [编排契约](.agents/skills/sol-control/references/orchestration.md)
+- [运行时说明](.agents/skills/sol-control/references/runtime-notes.md)
 - [Sol 配置](.codex/agents/sol-controller.toml)
 - [Terra High 配置](.codex/agents/terra-high-worker.toml)
 - [Luna Max 配置](.codex/agents/luna-max-worker.toml)
 - [运行表面矩阵](docs/release/runtime-surface-matrix.md)
 - [真实项目路由样本](tests/real-project-benchmark.md)
-- [v0.3.0 实施报告](ORCHESTRATE_SOL_LUNA_V2_IMPLEMENTATION_REPORT.md)
+- [v0.4.0 实施报告](SOL_CONTROL_IMPLEMENTATION_REPORT.md)
 
 ## 开发与测试
 

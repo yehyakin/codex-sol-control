@@ -2,23 +2,25 @@
 
 ![Sol acts as the single controller, routes bounded work to Terra High or Luna Max, and performs the final review after evidence returns](docs/assets/readme/hero-en.svg)
 
-# Sol Luna
+# Sol Control
 
 **One Sol controller. Terra High and Luna Max as tiered executors. Real files and evidence before delivery.**
 
-`codex-sol-luna` is a lightweight orchestration Skill for Codex. It does not optimize for “more agents.” It gives each model the kind of work it is best suited to perform:
+`codex-sol-control` is a lightweight orchestration Skill for Codex. It does not optimize for “more agents.” It gives each model the kind of work it is best suited to perform:
 
 - **Sol** is the single controller: understand the goal, define completion criteria, plan, assign, schedule, and perform the final review.
 - **Terra High** is the complex execution tier: cross-module work, long-context investigation, ambiguous debugging, shared interfaces, and high-risk implementation.
 - **Luna Max** is the lightweight execution tier: clear, low-ambiguity, tightly bounded, independently verifiable work.
 
-Simple tasks stay with the current Codex session. Explicitly invoke `$sol-luna` for work that is complex, cross-module, parallelizable, or high-consequence.
+Simple tasks stay with the current Codex session. Explicitly invoke `$sol-control` for work that is complex, cross-module, parallelizable, or high-consequence.
+
+> **v0.4.x compatibility:** the old `$sol-luna` command remains available for explicit invocation, but only redirects to `$sol-control`; it does not start a second orchestration flow. Use `$sol-control` for new configuration. The alias is scheduled for removal in v0.5.0.
 
 Runtime output defaults to Simplified Chinese unless the user explicitly requests another language.
 
 > **One Sol, two execution tiers. Terra and Luna are leaf executors: neither may create subagents or approve the overall task.**
 
-Canonical repository: [yehyakin/codex-sol-luna](https://github.com/yehyakin/codex-sol-luna)
+Canonical repository: [yehyakin/codex-sol-control](https://github.com/yehyakin/codex-sol-control)
 
 ## Core routing and projected savings
 
@@ -133,8 +135,8 @@ A small subset of Enterprise workspaces still using the legacy rate card should 
 ### macOS / Linux
 
 ```sh
-git clone https://github.com/yehyakin/codex-sol-luna.git
-cd codex-sol-luna
+git clone https://github.com/yehyakin/codex-sol-control.git
+cd codex-sol-control
 
 bash scripts/validate.sh
 bash scripts/install.sh
@@ -145,8 +147,8 @@ bash scripts/install.sh
 Windows PowerShell 5.1:
 
 ```powershell
-git clone https://github.com/yehyakin/codex-sol-luna.git
-Set-Location codex-sol-luna
+git clone https://github.com/yehyakin/codex-sol-control.git
+Set-Location codex-sol-control
 
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/validate.ps1
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/install.ps1
@@ -162,7 +164,7 @@ pwsh -NoProfile -File scripts/install.ps1
 After installation, open a new Codex session and explicitly invoke:
 
 ```text
-$sol-luna
+$sol-control
 
 Goal: Add account settings to the existing Next.js application.
 
@@ -180,14 +182,14 @@ Do not:
 A one-line request also works:
 
 ```text
-$sol-luna Refactor the authentication module, preserve the current API, and make sure tests and build pass.
+$sol-control Refactor the authentication module, preserve the current API, and make sure tests and build pass.
 ```
 
 You do not need to choose a worker count or decide which tasks belong to Terra or Luna. Provide the **goal, observable completion criteria, and important constraints**; Sol creates the smallest useful plan.
 
 ## What it solves
 
-| Common problem | Sol Luna's response |
+| Common problem | Sol Control's response |
 | --- | --- |
 | One agent plans, implements, and verifies too much at once | Sol owns judgment and review; Terra / Luna own bounded execution |
 | Every task uses the highest-cost model | Execution is routed to Terra or Luna according to complexity |
@@ -304,7 +306,7 @@ The current Codex session is usually better for:
 - work that cannot be divided into independent write scopes;
 - tasks where orchestration, repeated context, and review cost more than implementation.
 
-`$sol-luna` is not the default for everything. **Keep small work Direct; orchestrate only when complexity justifies it.**
+`$sol-control` is not the default for everything. **Keep small work Direct; orchestrate only when complexity justifies it.**
 
 ## Install, check, and uninstall
 
@@ -337,35 +339,35 @@ pwsh -NoProfile -File scripts/uninstall.ps1 -RestoreLatest
 
 The lifecycle scripts manage only project-owned Skill and agent files. They preserve unrelated agents and the user's `~/.codex/config.toml`. Set `ORCHESTRATE_HOME` to a temporary home for isolated lifecycle tests.
 
+When upgrading from v0.3, the installer verifies the old `$sol-luna` Skill, all three agents, and the ownership state before migrating to `~/.codex/sol-control`. `--restore-latest` restores the complete manageable pre-upgrade state. The installer stops instead of overwriting user-modified, unowned, or checksum-invalid targets.
+
 See [`docs/release/runtime-surface-matrix.md`](docs/release/runtime-surface-matrix.md) for platform and evidence coverage.
 
 ## Current status
 
-The current release baseline is **v0.3.0**.
+The current release baseline is **v0.4.0**.
 
 | Verification surface | Recorded evidence |
 | --- | --- |
-| Local repository | Skill Creator **PASS**; the evidence snapshot records **106/106** tests PASS |
-| Hosted CI | POSIX **PASS**; Windows Server 2022 / `windows-latest` × Windows PowerShell 5.1 / PowerShell 7 **PASS** |
+| Local repository | Skill Creator **PASS**; the v0.4.0 candidate records **112/112 tests PASS** |
+| Hosted CI | POSIX and Windows Server 2022 / `windows-latest` × Windows PowerShell 5.1 / PowerShell 7 run after the first v0.4.0 commit; current status: pending |
 | Physical Windows install | User-reported installation success; the Windows version, install log, and runtime identity payload were not captured, so this does not establish Native Nested |
 | Runtime surface | Compatibility verified; Native Nested, fresh-CLI child model/effort identity, and physical Windows 11 remain unproven |
 
-The v0.3.0 evidence-bound report is recorded at commit `6895f06`:
-
-- [POSIX CI](https://github.com/yehyakin/codex-sol-luna/actions/runs/30858707335)
-- [Windows CI](https://github.com/yehyakin/codex-sol-luna/actions/runs/30858707364)
-- [Full implementation report](ORCHESTRATE_SOL_LUNA_V2_IMPLEMENTATION_REPORT.md)
+The v0.4.0 commit and POSIX / Windows CI links will be bound after the candidate passes hosted verification. See the [full implementation report](SOL_CONTROL_IMPLEMENTATION_REPORT.md) for the current evidence.
 
 These statements describe the recorded evidence boundary; they do not infer support for unverified runtime surfaces.
 
 ## Repository layout
 
 ```text
-.agents/skills/sol-luna/
-├─ SKILL.md                    public Skill
-└─ references/
-   ├─ orchestration.md         orchestration contract
-   └─ runtime-notes.md         runtime and dispatch notes
+.agents/skills/
+├─ sol-control/                the only full Skill
+│  ├─ SKILL.md
+│  └─ references/
+│     ├─ orchestration.md      orchestration contract
+│     └─ runtime-notes.md      runtime and dispatch notes
+└─ sol-luna/                   thin v0.4.x compatibility alias
 
 .codex/agents/
 ├─ sol-controller.toml
@@ -386,15 +388,15 @@ README.en.md                   English
 
 ## Documentation
 
-- [Public Skill](.agents/skills/sol-luna/SKILL.md)
-- [Orchestration contract](.agents/skills/sol-luna/references/orchestration.md)
-- [Runtime notes](.agents/skills/sol-luna/references/runtime-notes.md)
+- [Public Skill](.agents/skills/sol-control/SKILL.md)
+- [Orchestration contract](.agents/skills/sol-control/references/orchestration.md)
+- [Runtime notes](.agents/skills/sol-control/references/runtime-notes.md)
 - [Sol configuration](.codex/agents/sol-controller.toml)
 - [Terra High configuration](.codex/agents/terra-high-worker.toml)
 - [Luna Max configuration](.codex/agents/luna-max-worker.toml)
 - [Runtime surface matrix](docs/release/runtime-surface-matrix.md)
 - [Real-project routing samples](tests/real-project-benchmark.md)
-- [v0.3.0 implementation report](ORCHESTRATE_SOL_LUNA_V2_IMPLEMENTATION_REPORT.md)
+- [v0.4.0 implementation report](SOL_CONTROL_IMPLEMENTATION_REPORT.md)
 
 ## Development and testing
 

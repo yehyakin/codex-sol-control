@@ -43,7 +43,7 @@ repository, global agent file, or live production system is read or modified.
 | Case | Expected route | Luna expectation | Review expectation |
 | --- | --- | --- | --- |
 | Ordinary simple work | `direct` | none | not applicable |
-| Explicit `$sol-luna` execution | `sol_then_luna` | required | PASS |
+| Explicit `$sol-control` execution | `sol_then_luna` | required | PASS |
 | Plan-only request | `sol` | optional, including zero | not applicable |
 | Single-file execution | `sol_then_luna` | required | PASS |
 | Changing live capacity | `sol_then_luna` | required, dynamically batched | PASS |

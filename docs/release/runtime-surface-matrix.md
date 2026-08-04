@@ -1,10 +1,10 @@
 # Runtime surface matrix
 
-Release-time documentation for the Sol/Luna package. This matrix is not a
+Release-time documentation for Sol Control. This matrix is not a
 per-task checklist and does not turn configuration text into runtime proof.
 Statuses are limited to `VERIFIED`, `FAILED`, and `UNVERIFIED`.
 
-Date: 2026-08-03
+Date: 2026-08-05
 
 | Surface | Signal | Status | Evidence location | Date |
 | --- | --- | --- | --- | --- |
@@ -27,7 +27,9 @@ Date: 2026-08-03
 | codex exec | result retrieval | UNVERIFIED | No codex exec result retrieval payload captured | 2026-08-03 |
 | codex exec | candidate binding | UNVERIFIED | No codex exec final-candidate snapshot captured | 2026-08-03 |
 
-The observed Desktop compatibility handoff remains `UNVERIFIED` because no
-checkable runtime artifact or path was captured. Agent selection, exact model,
+The Compatibility workflow shape was exercised in the earlier release, but the
+individual identity rows remain `UNVERIFIED` because no checkable runtime
+identity payload was captured. The renamed `$sol-control` fresh-session check is
+recorded separately after v0.4 installation. Agent selection, exact model,
 reasoning effort, nested dispatch, result retrieval, and candidate binding stay
 `UNVERIFIED` until a runtime payload and its evidence location are available.

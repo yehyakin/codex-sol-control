@@ -1,0 +1,6 @@
+interface:
+  display_name: "Sol Control"
+  short_description: "Sol controls cost-aware, evidence-gated execution."
+  default_prompt: "使用 $sol-control 规划、分配、执行、验证并审核这项任务。"
+policy:
+  allow_implicit_invocation: false

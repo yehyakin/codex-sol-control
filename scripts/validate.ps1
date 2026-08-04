@@ -284,10 +284,12 @@ function Assert-RepositoryTextSafety {
 
 $repoRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot ".."))
 $requiredFiles = @(
+    ".agents/skills/sol-control/SKILL.md",
+    ".agents/skills/sol-control/agents/openai.yaml",
+    ".agents/skills/sol-control/references/orchestration.md",
+    ".agents/skills/sol-control/references/runtime-notes.md",
     ".agents/skills/sol-luna/SKILL.md",
     ".agents/skills/sol-luna/agents/openai.yaml",
-    ".agents/skills/sol-luna/references/orchestration.md",
-    ".agents/skills/sol-luna/references/runtime-notes.md",
     ".codex/agents/sol-controller.toml",
     ".codex/agents/luna-max-worker.toml",
     ".codex/agents/terra-high-worker.toml",
@@ -316,7 +318,7 @@ foreach ($relative in $requiredFiles) {
     Assert-File (Join-Path $repoRoot $relative)
 }
 
-$skillRoot = Join-Path $repoRoot ".agents/skills/sol-luna"
+$skillRoot = Join-Path $repoRoot ".agents/skills/sol-control"
 Assert-PlainTree $skillRoot
 $skillText = Read-Utf8Text (Join-Path $skillRoot "SKILL.md")
 $skillLines = @($skillText -split "`r?`n")
@@ -334,15 +336,31 @@ if ($closingIndex -lt 0) {
     throw "Validation: SKILL.md has no YAML frontmatter closer"
 }
 $frontmatter = ($skillLines[1..($closingIndex - 1)] -join "`n")
-Assert-Regex $frontmatter '(?m)^name:\s*sol-luna\s*$' "SKILL.md has the wrong name"
+Assert-Regex $frontmatter '(?m)^name:\s*sol-control\s*$' "SKILL.md has the wrong name"
 Assert-Regex $frontmatter '(?m)^description:\s*Use when\b' "SKILL.md has no usable description"
-Assert-Regex $skillText '\$sol-luna' 'SKILL.md does not expose $sol-luna'
+Assert-Regex $skillText '\$sol-control' 'SKILL.md does not expose $sol-control'
 
 $openaiText = Read-Utf8Text (Join-Path $skillRoot "agents/openai.yaml")
 foreach ($marker in @("interface:", "display_name:", "short_description:", "default_prompt:")) {
     if ($openaiText.IndexOf($marker, [System.StringComparison]::Ordinal) -lt 0) {
         throw "Validation: openai.yaml is missing $marker"
     }
+}
+Assert-Regex $openaiText '\$sol-control' 'openai.yaml does not expose $sol-control'
+Assert-Regex $openaiText '(?m)^\s*allow_implicit_invocation:\s*false\s*$' "openai.yaml permits implicit invocation"
+
+$compatSkillRoot = Join-Path $repoRoot ".agents/skills/sol-luna"
+Assert-PlainTree $compatSkillRoot
+$compatSkillText = Read-Utf8Text (Join-Path $compatSkillRoot "SKILL.md")
+if (@($compatSkillText -split "`r?`n").Count -gt 45) {
+    throw "Validation: compatibility SKILL.md is not thin"
+}
+foreach ($pattern in @('(?m)^name:\s*sol-luna\s*$', '\$sol-luna', '\$sol-control', 'v0\.5\.0')) {
+    Assert-Regex $compatSkillText $pattern "compatibility SKILL.md is incomplete"
+}
+$compatOpenaiText = Read-Utf8Text (Join-Path $compatSkillRoot "agents/openai.yaml")
+foreach ($pattern in @('\$sol-luna', '\$sol-control', '(?m)^\s*allow_implicit_invocation:\s*false\s*$')) {
+    Assert-Regex $compatOpenaiText $pattern "compatibility openai.yaml is incomplete"
 }
 
 $solPath = Join-Path $repoRoot ".codex/agents/sol-controller.toml"
@@ -407,6 +425,14 @@ foreach ($path in @(Get-ChildItem -LiteralPath $skillRoot -File -Force -Recurse)
     foreach ($term in $forbiddenSkillTerms) {
         if ($text.IndexOf($term, [System.StringComparison]::OrdinalIgnoreCase) -ge 0) {
             throw "Validation: forbidden residue in skill source: $term"
+        }
+    }
+}
+foreach ($path in @(Get-ChildItem -LiteralPath $compatSkillRoot -File -Force -Recurse)) {
+    $text = Read-Utf8Text $path.FullName
+    foreach ($term in $forbiddenSkillTerms) {
+        if ($text.IndexOf($term, [System.StringComparison]::OrdinalIgnoreCase) -ge 0) {
+            throw "Validation: forbidden residue in compatibility skill source: $term"
         }
     }
 }

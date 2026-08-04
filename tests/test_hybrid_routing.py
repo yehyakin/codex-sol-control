@@ -24,7 +24,7 @@ except ModuleNotFoundError as exc:  # pragma: no cover - old runner guard
 
 
 ROOT = Path(__file__).resolve().parents[1]
-SKILL_ROOT = ROOT / ".agents" / "skills" / "sol-luna"
+SKILL_ROOT = ROOT / ".agents" / "skills" / "sol-control"
 TERRA_AGENT = ROOT / ".codex" / "agents" / "terra-high-worker.toml"
 FORWARD_CASES = ROOT / "tests" / "fixtures" / "forward-cases.json"
 README_FILES = (ROOT / "README.md", ROOT / "README.en.md")
@@ -35,7 +35,7 @@ CONTRACT_DOCS = (
     ROOT / ".codex" / "agents" / "sol-controller.toml",
     ROOT / "README.md",
     ROOT / "README.en.md",
-    ROOT / "ORCHESTRATE_SOL_LUNA_V2_IMPLEMENTATION_REPORT.md",
+    ROOT / "SOL_CONTROL_IMPLEMENTATION_REPORT.md",
     ROOT / "tests" / "forward-tests.md",
 )
 POSIX_SCRIPTS = (
@@ -216,12 +216,12 @@ class LifecycleContractTests(unittest.TestCase):
             self.assertEqual(0, install.returncode, install.stdout)
 
             terra = home / ".codex" / "agents" / "terra-high-worker.toml"
-            state = home / ".codex" / "sol-luna" / "install-state"
+            state = home / ".codex" / "sol-control" / "install-state"
             self.assertTrue(terra.is_file(), "install must install Terra High")
             self.assertTrue(state.is_file(), state)
             state_text = state.read_text(encoding="utf-8")
             self.assertRegex(state_text, r"(?m)^terra_sha256=[0-9a-f]{64}$")
-            backup_root = home / ".codex" / "sol-luna" / "backups"
+            backup_root = home / ".codex" / "sol-control" / "backups"
             manifests = sorted(backup_root.glob("*/manifest"))
             self.assertTrue(manifests, "install must retain a versioned backup manifest")
             manifest_text = manifests[-1].read_text(encoding="utf-8")

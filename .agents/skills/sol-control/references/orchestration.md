@@ -1,11 +1,11 @@
-# Sol Luna orchestration contract
+# Sol Control orchestration contract
 
 This reference defines the operating contract. Sol owns every scheduling and
 completion decision; Luna Max or Terra High owns bounded execution.
 
 ## 1. Start and route
 
-- Explicit `$sol-luna` invocation starts Sol.
+- Explicit `$sol-control` invocation starts Sol.
 - Ordinary simple work without explicit invocation remains direct.
 - Planning-only or review-only work may stop after Sol and use zero workers (and therefore zero Luna workers).
 - Execution work uses the minimum useful number of workers selected by Sol.

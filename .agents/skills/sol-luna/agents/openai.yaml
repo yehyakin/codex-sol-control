@@ -1,4 +1,6 @@
 interface:
-  display_name: "Sol Luna"
-  short_description: "Sol controls; Luna Max executes and returns evidence."
-  default_prompt: "使用 $sol-luna 规划、分配、执行、验证并审核这项任务。"
+  display_name: "Sol Luna (compatibility)"
+  short_description: "Temporary compatibility alias for Sol Control."
+  default_prompt: "使用旧入口 $sol-luna 执行任务，并迁移到 $sol-control。"
+policy:
+  allow_implicit_invocation: false
