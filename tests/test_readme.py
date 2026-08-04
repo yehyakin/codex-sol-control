@@ -841,12 +841,38 @@ class ReadmeContractTests(unittest.TestCase):
                 "control_orbit": "docs/assets/readme/control-plane-zh.svg",
                 "compatibility": r"Compatibility\s+已验证",
                 "unproven": r"Native Nested.*全新 CLI child model/effort 身份.*物理 Windows 11 尚未证明",
+                "local_row_label": "本地仓库",
+                "hosted_row_label": "托管 CI",
+                "local_row_signals": (
+                    "Skill Creator **PASS**",
+                    "**106/106** tests PASS",
+                ),
+                "hosted_row_signals": (
+                    "POSIX **PASS**",
+                    "Windows Server 2022",
+                    "windows-latest",
+                    "Windows PowerShell 5.1",
+                    "PowerShell 7 **PASS**",
+                ),
             },
             ENGLISH_README: {
                 "title": "v0.3.0 release status",
                 "control_orbit": "docs/assets/readme/control-plane-en.svg",
                 "compatibility": r"Compatibility\s+verified",
                 "unproven": r"Native Nested, fresh-CLI child model/effort identity, and physical Windows 11 remain unproven",
+                "local_row_label": "Local repository",
+                "hosted_row_label": "Hosted CI",
+                "local_row_signals": (
+                    "Skill Creator **PASS**",
+                    "**106/106** tests PASS",
+                ),
+                "hosted_row_signals": (
+                    "POSIX **PASS**",
+                    "Windows Server 2022",
+                    "windows-latest",
+                    "Windows PowerShell 5.1",
+                    "PowerShell 7 **PASS**",
+                ),
             },
         }
         for path, text in documents.items():
@@ -908,6 +934,37 @@ class ReadmeContractTests(unittest.TestCase):
                 spec["unproven"],
                 f"{path.name}: release status must mark unsupported surfaces unproven",
             )
+
+            status_rows: dict[str, str] = {}
+            for line in release_block.splitlines():
+                if not (line.strip().startswith("|") and line.strip().endswith("|")):
+                    continue
+                cells = self.table_cells(line)
+                if len(cells) < 2:
+                    continue
+                row_label = cells[0]
+                if row_label in (spec["local_row_label"], spec["hosted_row_label"]):
+                    self.assertNotIn(
+                        row_label,
+                        status_rows,
+                        f"{path.name}: release status row must be unique: {row_label}",
+                    )
+                    status_rows[row_label] = cells[1]
+
+            for row_key in ("local", "hosted"):
+                row_label = spec[f"{row_key}_row_label"]
+                self.assertIn(
+                    row_label,
+                    status_rows,
+                    f"{path.name}: release status missing {row_key} evidence row",
+                )
+                row = status_rows[row_label]
+                for signal in spec[f"{row_key}_row_signals"]:
+                    self.assertIn(
+                        signal,
+                        row,
+                        f"{path.name}: {row_key} release status row missing {signal}",
+                    )
 
 
 if __name__ == "__main__":
