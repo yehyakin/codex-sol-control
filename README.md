@@ -349,7 +349,7 @@ pwsh -NoProfile -File scripts/uninstall.ps1 -RestoreLatest
 
 | 验证面 | 已记录证据 |
 | --- | --- |
-| 本地仓库 | Skill Creator **PASS**；v0.4.0 候选版本 **112/112 tests PASS** |
+| 本地仓库 | Skill Creator **PASS**；v0.4.0 候选版本 **113/113 tests PASS** |
 | 托管 CI | [POSIX PASS](https://github.com/yehyakin/codex-sol-control/actions/runs/30954375350)：Ubuntu/macOS × Python 3.11/3.13；[Windows PASS](https://github.com/yehyakin/codex-sol-control/actions/runs/30954375332)：Windows Server 2022 / `windows-latest` × Windows PowerShell 5.1 / PowerShell 7 |
 | Windows 实机安装 | 用户报告安装成功；未收集 Windows 版本、安装日志或运行时身份载荷，因此不扩展为 Native Nested 证明 |
 | 运行表面 | Compatibility 已验证；Native Nested、全新 CLI child model/effort 身份与物理 Windows 11 尚未证明 |

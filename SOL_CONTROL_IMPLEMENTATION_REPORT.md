@@ -134,7 +134,7 @@ work, shared-file conflict, staged dependencies, incomplete packets, missing evi
 evidence, bounded correction, timeout/recovery behavior, result conflict, user steering,
 unavailable model identity, Luna-to-Terra upgrade, and dirty-worktree preservation.
 
-The v0.4 local candidate currently records **112/112 tests PASS** through `scripts/test.sh`.
+The v0.4 local candidate currently records **113/113 tests PASS** through `scripts/test.sh`.
 
 ## 10. Real model calls
 

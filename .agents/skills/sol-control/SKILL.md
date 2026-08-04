@@ -38,6 +38,10 @@ a permanent agent team.
   falsifiable, small context, mechanical, or high-throughput.
 - Route to **Terra High** for cross-module work, long-context investigation,
   ambiguous debugging, shared interface judgment, or high-risk implementation.
+- Start every custom agent with a fresh context: set `fork_turns="none"` and
+  provide the complete minimal plan or task packet explicitly. Never combine a
+  custom `agent_type` with a full-history fork; if the runtime cannot honor the
+  fresh-context launch, **Fail Closed**.
 - Before dispatch, prove the exact model identity, reasoning effort, selected
   custom agent, and effective inherited permission boundary. If any selection
   is unprovable, **Fail Closed** and return `BLOCKED`.

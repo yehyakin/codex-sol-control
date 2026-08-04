@@ -6,6 +6,9 @@ completion decision; Luna Max or Terra High owns bounded execution.
 ## 1. Start and route
 
 - Explicit `$sol-control` invocation starts Sol.
+- The Host starts `sol-controller` with `fork_turns="none"` and an explicit
+  minimal context packet. Every later custom worker launch uses the same fresh-
+  context rule; a full-history custom-agent fork is invalid and fails closed.
 - Ordinary simple work without explicit invocation remains direct.
 - Planning-only or review-only work may stop after Sol and use zero workers (and therefore zero Luna workers).
 - Execution work uses the minimum useful number of workers selected by Sol.

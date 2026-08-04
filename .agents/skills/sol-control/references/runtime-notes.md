@@ -70,9 +70,12 @@ If any exact selection cannot be proved, **Fail Closed**. Do not silently
 substitute a nearby model, effort, role, or permission profile, and do not use
 an agent label to spoof identity.
 
-Luna and Terra must not spawn or create subagents. A fresh context is preferred
-when switching custom agent types so parent model or role identity is not
-inherited accidentally. Luna is only for clear, low-ambiguity, falsifiable,
+Luna and Terra must not spawn or create subagents. Every custom-agent launch,
+including the initial `sol-controller`, must use `fork_turns="none"` plus an
+explicit minimal context or task packet. Never combine a custom `agent_type`
+with a full-history fork; if fresh-context selection cannot be honored, fail
+closed so the parent model or role identity is not inherited accidentally.
+Luna is only for clear, low-ambiguity, falsifiable,
 small context, mechanical, or high-throughput work; Terra is for cross-module,
 long-context, ambiguous-debugging, shared interface, or high-risk implementation
 work. Only when Luna's first failure happens before Luna writes any owned file

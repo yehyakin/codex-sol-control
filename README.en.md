@@ -349,7 +349,7 @@ The current release baseline is **v0.4.0**.
 
 | Verification surface | Recorded evidence |
 | --- | --- |
-| Local repository | Skill Creator **PASS**; the v0.4.0 candidate records **112/112 tests PASS** |
+| Local repository | Skill Creator **PASS**; the v0.4.0 candidate records **113/113 tests PASS** |
 | Hosted CI | [POSIX PASS](https://github.com/yehyakin/codex-sol-control/actions/runs/30954375350): Ubuntu/macOS × Python 3.11/3.13; [Windows PASS](https://github.com/yehyakin/codex-sol-control/actions/runs/30954375332): Windows Server 2022 / `windows-latest` × Windows PowerShell 5.1 / PowerShell 7 |
 | Physical Windows install | User-reported installation success; the Windows version, install log, and runtime identity payload were not captured, so this does not establish Native Nested |
 | Runtime surface | Compatibility verified; Native Nested, fresh-CLI child model/effort identity, and physical Windows 11 remain unproven |

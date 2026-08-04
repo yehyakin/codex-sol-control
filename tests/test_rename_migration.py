@@ -30,6 +30,17 @@ class RenameMigrationContractTests(unittest.TestCase):
         self.assertIn("$sol-control", metadata)
         self.assertRegex(metadata, r"(?m)^\s*allow_implicit_invocation:\s*false\s*$")
 
+    def test_custom_agent_launches_require_fresh_context(self) -> None:
+        surfaces = (
+            CANONICAL_SKILL / "SKILL.md",
+            CANONICAL_SKILL / "references" / "orchestration.md",
+            CANONICAL_SKILL / "references" / "runtime-notes.md",
+        )
+        for surface in surfaces:
+            text = read(surface)
+            self.assertIn('fork_turns="none"', text, surface)
+            self.assertRegex(text, r"(?is)full-history.{0,120}(?:invalid|never|fail)")
+
     def test_sol_luna_is_a_thin_one_release_compatibility_alias(self) -> None:
         alias = read(COMPAT_SKILL / "SKILL.md")
         metadata = read(COMPAT_SKILL / "agents" / "openai.yaml")
