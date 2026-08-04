@@ -935,21 +935,63 @@ class ReadmeContractTests(unittest.TestCase):
                 f"{path.name}: release status must mark unsupported surfaces unproven",
             )
 
-            status_rows: dict[str, str] = {}
-            for line in release_block.splitlines():
-                if not (line.strip().startswith("|") and line.strip().endswith("|")):
-                    continue
-                cells = self.table_cells(line)
-                if len(cells) < 2:
-                    continue
-                row_label = cells[0]
-                if row_label in (spec["local_row_label"], spec["hosted_row_label"]):
-                    self.assertNotIn(
-                        row_label,
-                        status_rows,
-                        f"{path.name}: release status row must be unique: {row_label}",
+            def gfm_row_cells(line: str) -> tuple[str, ...] | None:
+                stripped = line.strip()
+                if not stripped or "|" not in stripped:
+                    return None
+                cells = self.table_cells(stripped)
+                return cells if len(cells) >= 2 else None
+
+            table_blocks: list[list[tuple[str, ...]]] = []
+            lines = release_block.splitlines()
+            line_index = 0
+            while line_index + 1 < len(lines):
+                header_cells = gfm_row_cells(lines[line_index])
+                delimiter_cells = gfm_row_cells(lines[line_index + 1])
+                if (
+                    header_cells is None
+                    or delimiter_cells is None
+                    or len(header_cells) != len(delimiter_cells)
+                    or not all(
+                        re.fullmatch(r":?-+:?", cell.replace(" ", ""))
+                        for cell in delimiter_cells
                     )
-                    status_rows[row_label] = cells[1]
+                ):
+                    line_index += 1
+                    continue
+
+                data_rows: list[tuple[str, ...]] = []
+                line_index += 2
+                while line_index < len(lines):
+                    data_cells = gfm_row_cells(lines[line_index])
+                    if data_cells is None or len(data_cells) != len(header_cells):
+                        break
+                    data_rows.append(data_cells)
+                    line_index += 1
+                table_blocks.append(data_rows)
+
+            status_table_rows: list[dict[str, str]] = []
+            target_labels = (spec["local_row_label"], spec["hosted_row_label"])
+            for data_rows in table_blocks:
+                rows: dict[str, str] = {}
+                for cells in data_rows:
+                    row_label = cells[0]
+                    if row_label in target_labels:
+                        self.assertNotIn(
+                            row_label,
+                            rows,
+                            f"{path.name}: release status row must be unique: {row_label}",
+                        )
+                        rows[row_label] = cells[1]
+                if rows:
+                    status_table_rows.append(rows)
+
+            self.assertEqual(
+                len(status_table_rows),
+                1,
+                f"{path.name}: local and hosted release rows must share one GFM table",
+            )
+            status_rows = status_table_rows[0]
 
             for row_key in ("local", "hosted"):
                 row_label = spec[f"{row_key}_row_label"]
