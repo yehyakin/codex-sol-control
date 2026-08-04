@@ -53,9 +53,12 @@ or review contract.
 
 ## Exact runtime proof
 
-Configuration text and agent names are not proof of execution identity. Every
-launch must expose evidence of the selected custom agent, exact model,
-reasoning effort, and effective permission boundary:
+Configuration text and agent names alone are not proof of execution identity.
+Every custom agent uses a two-turn gate. Its first turn is an identity-only
+handshake: the parent retains the requested `agent_type` and `fork_turns="none"`
+launch record, while the child reports the actual runtime model, reasoning
+effort, and effective permission boundary. The parent sends the real plan or
+task packet to that same agent only after the combined evidence matches:
 
 - `sol-controller`: exact model `gpt-5.6-sol`, reasoning effort `high`,
   read-only;
@@ -66,15 +69,18 @@ reasoning effort, and effective permission boundary:
   with effective access no broader than the inherited parent boundary and the
   `workspace-write` ceiling.
 
-If any exact selection cannot be proved, **Fail Closed**. Do not silently
-substitute a nearby model, effort, role, or permission profile, and do not use
-an agent label to spoof identity.
+No task execution or file write is allowed during the identity handshake. If
+any exact selection cannot be proved, **Fail Closed** without sending the task.
+Do not silently substitute a nearby model, effort, role, or permission profile,
+and do not use an agent label to spoof identity.
 
 Luna and Terra must not spawn or create subagents. Every custom-agent launch,
-including the initial `sol-controller`, must use `fork_turns="none"` plus an
-explicit minimal context or task packet. Never combine a custom `agent_type`
-with a full-history fork; if fresh-context selection cannot be honored, fail
-closed so the parent model or role identity is not inherited accidentally.
+including the initial `sol-controller`, must use `fork_turns="none"` plus the
+identity-only handshake above; the complete minimal context or task packet is
+sent to the verified same agent in its next turn. Never combine a custom
+`agent_type` with a full-history fork; if fresh-context selection cannot be
+honored, fail closed so the parent model or role identity is not inherited
+accidentally.
 Luna is only for clear, low-ambiguity, falsifiable,
 small context, mechanical, or high-throughput work; Terra is for cross-module,
 long-context, ambiguous-debugging, shared interface, or high-risk implementation

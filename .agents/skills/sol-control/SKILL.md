@@ -38,13 +38,17 @@ a permanent agent team.
   falsifiable, small context, mechanical, or high-throughput.
 - Route to **Terra High** for cross-module work, long-context investigation,
   ambiguous debugging, shared interface judgment, or high-risk implementation.
-- Start every custom agent with a fresh context: set `fork_turns="none"` and
-  provide the complete minimal plan or task packet explicitly. Never combine a
-  custom `agent_type` with a full-history fork; if the runtime cannot honor the
-  fresh-context launch, **Fail Closed**.
-- Before dispatch, prove the exact model identity, reasoning effort, selected
-  custom agent, and effective inherited permission boundary. If any selection
-  is unprovable, **Fail Closed** and return `BLOCKED`.
+- Start every custom agent with a fresh context: set `fork_turns="none"` and use
+  the first turn only as an identity handshake. The parent launch record proves
+  the requested `agent_type` and fork mode; the child reports its runtime model,
+  reasoning effort, and effective permission boundary. No task execution or
+  file write is allowed during this handshake.
+- After the handshake matches the expected custom-agent configuration, send the
+  complete minimal plan or task packet to that same agent. Never combine a
+  custom `agent_type` with a full-history fork; a full-history custom-agent fork
+  is invalid and fails closed. If the exact model identity, reasoning effort,
+  selected agent, fork mode, or permission is mismatched or unprovable, do not
+  send the task: **Fail Closed** and return `BLOCKED`.
 - One file has one owner for the whole run. Only when Luna's first failure
   happens before Luna writes any owned file may Sol escalate the same task and
   unchanged scope to Terra once, rather than retrying Luna indefinitely. If

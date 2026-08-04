@@ -147,7 +147,7 @@ class TerraAgentContractTests(unittest.TestCase):
             "Skill must escalate a misclassified Luna task to Terra without unbounded Luna retries",
         )
 
-    def test_unprovable_model_identity_fails_closed_before_dispatch(self) -> None:
+    def test_unprovable_model_identity_fails_closed_before_execution(self) -> None:
         skill_files = [path for path in SKILL_ROOT.rglob("*") if path.is_file()]
         text = compact("\n".join(read_text(path) for path in skill_files))
         self.assertRegex(text, r"(?i)Fail\s+Closed|失败关闭")
@@ -155,6 +155,11 @@ class TerraAgentContractTests(unittest.TestCase):
             text,
             r"(?is)(?:exact\s+model|model\s+identity|模型(?:身份|选择)).{0,240}"
             r"(?:cannot|unable|unprovable|无法|不可证明).{0,240}(?:blocked|fail\s+closed|关闭)",
+        )
+        self.assertRegex(
+            text,
+            r"(?is)identity(?:-only)?\s+handshake.{0,360}(?:no|without).{0,120}"
+            r"(?:task execution|planning).{0,120}(?:write|writing)",
         )
 
 

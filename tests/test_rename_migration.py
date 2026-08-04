@@ -40,6 +40,8 @@ class RenameMigrationContractTests(unittest.TestCase):
             text = read(surface)
             self.assertIn('fork_turns="none"', text, surface)
             self.assertRegex(text, r"(?is)full-history.{0,120}(?:invalid|never|fail)")
+            self.assertRegex(text, r"(?is)identity(?:-only)?\s+handshake")
+            self.assertRegex(text, r"(?is)(?:no|without).{0,100}(?:task execution|planning).{0,100}(?:write|writing)")
 
     def test_sol_luna_is_a_thin_one_release_compatibility_alias(self) -> None:
         alias = read(COMPAT_SKILL / "SKILL.md")

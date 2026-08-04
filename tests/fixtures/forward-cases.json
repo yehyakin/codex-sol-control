@@ -402,7 +402,7 @@
   },
   {
     "id": "model-identity-unavailable-fail-closed",
-    "prompt": "$sol-control: reject dispatch when the selected model identity and reasoning effort cannot be proved.",
+    "prompt": "$sol-control: perform an identity-only handshake, then reject task execution when the selected model identity and reasoning effort cannot be proved.",
     "expected": {
       "route": "blocked",
       "sol": "blocked",
@@ -413,9 +413,9 @@
       "resume": "not_applicable"
     },
     "required_assertions": [
-      "model identity and selection must be proved",
+      "the launch record and child handshake must prove model identity and selection",
       "Fail Closed prevents silent model substitution",
-      "no Luna or Terra dispatch occurs when identity is unavailable"
+      "no Luna or Terra task execution or write occurs when identity is unavailable"
     ]
   },
   {
