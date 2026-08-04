@@ -23,6 +23,16 @@ actual results depend on total tokens, repeated context, Sol review, and rework.
 The canonical repository is [yehyakin/codex-sol-luna](https://github.com/yehyakin/codex-sol-luna).
 Invoke `$sol-luna` explicitly when work is complex, cross-module, or high consequence.
 
+### v0.3.0 release status
+
+| Verification surface | Result |
+| --- | --- |
+| Local repository | Skill Creator **PASS**; **106/106** tests PASS |
+| Hosted CI | POSIX **PASS**; Windows Server 2022 / `windows-latest` × Windows PowerShell 5.1 / PowerShell 7 **PASS** |
+| Orchestration mode | **Compatibility verified**; Native Nested, fresh-CLI child model/effort identity, and physical Windows 11 remain unproven |
+
+Evidence is bound to report commit `6895f06`: [POSIX CI](https://github.com/yehyakin/codex-sol-luna/actions/runs/30858707335) · [Windows CI](https://github.com/yehyakin/codex-sol-luna/actions/runs/30858707364) · [full implementation report](ORCHESTRATE_SOL_LUNA_V2_IMPLEMENTATION_REPORT.md)
+
 ![Control Orbit shows Direct, Sol-only, Sol → Luna, and Sol → Terra routes with PASS, FIX, and BLOCKED evidence returning to Sol](docs/assets/readme/control-plane-en.svg)
 
 ## 60-second quickstart

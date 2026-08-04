@@ -20,6 +20,16 @@
 规范仓库地址是 [yehyakin/codex-sol-luna](https://github.com/yehyakin/codex-sol-luna)。
 当任务复杂、跨模块或高风险时，显式调用 `$sol-luna` 选择这个 Skill。
 
+### v0.3.0 发布状态
+
+| 验证面 | 结果 |
+| --- | --- |
+| 本地仓库 | Skill Creator **PASS**；**106/106** tests PASS |
+| 托管 CI | POSIX **PASS**；Windows Server 2022 / `windows-latest` × Windows PowerShell 5.1 / PowerShell 7 **PASS** |
+| 编排模式 | **Compatibility 已验证**；Native Nested、全新 CLI child model/effort 身份与物理 Windows 11 尚未证明 |
+
+证据绑定报告提交 `6895f06`：[POSIX CI](https://github.com/yehyakin/codex-sol-luna/actions/runs/30858707335) · [Windows CI](https://github.com/yehyakin/codex-sol-luna/actions/runs/30858707364) · [完整实施报告](ORCHESTRATE_SOL_LUNA_V2_IMPLEMENTATION_REPORT.md)
+
 ![Control Orbit 展示 Direct、Sol-only、Sol → Luna 与 Sol → Terra 路由，以及返回 Sol 的 PASS、FIX、BLOCKED 证据闭环](docs/assets/readme/control-plane-zh.svg)
 
 ## 60 秒开始

@@ -822,6 +822,14 @@ class ReadmeContractTests(unittest.TestCase):
             "0%",
             "config.toml",
             "RestoreLatest",
+            "v0.3.0",
+            "106/106",
+            "Compatibility",
+            "Native Nested",
+            "6895f06",
+            "ORCHESTRATE_SOL_LUNA_V2_IMPLEMENTATION_REPORT.md",
+            "actions/runs/30858707335",
+            "actions/runs/30858707364",
         )
         for signal in parity_signals:
             for path, text in documents.items():
