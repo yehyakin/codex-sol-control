@@ -171,8 +171,11 @@ Pending final global installation. The acceptance check requires a new Codex ses
 ## 14. GitHub commit and version
 
 Release target: `v0.4.0` on `main` at
-https://github.com/yehyakin/codex-sol-control. Final commit, hosted POSIX/Windows CI, repository
-rename, and annotated tag are recorded after they exist.
+https://github.com/yehyakin/codex-sol-control. The rename and lifecycle implementation candidate is
+[`d204003`](https://github.com/yehyakin/codex-sol-control/commit/d2040035c02ae1e6aab4394ffd58152dba6dd309).
+Hosted evidence is [POSIX PASS](https://github.com/yehyakin/codex-sol-control/actions/runs/30954375350)
+and [Windows PASS](https://github.com/yehyakin/codex-sol-control/actions/runs/30954375332). The final
+repository rename and annotated tag are recorded after they exist.
 
 ## 15. Known limitations
 

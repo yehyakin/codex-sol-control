@@ -350,11 +350,11 @@ The current release baseline is **v0.4.0**.
 | Verification surface | Recorded evidence |
 | --- | --- |
 | Local repository | Skill Creator **PASS**; the v0.4.0 candidate records **112/112 tests PASS** |
-| Hosted CI | POSIX and Windows Server 2022 / `windows-latest` × Windows PowerShell 5.1 / PowerShell 7 run after the first v0.4.0 commit; current status: pending |
+| Hosted CI | [POSIX PASS](https://github.com/yehyakin/codex-sol-control/actions/runs/30954375350): Ubuntu/macOS × Python 3.11/3.13; [Windows PASS](https://github.com/yehyakin/codex-sol-control/actions/runs/30954375332): Windows Server 2022 / `windows-latest` × Windows PowerShell 5.1 / PowerShell 7 |
 | Physical Windows install | User-reported installation success; the Windows version, install log, and runtime identity payload were not captured, so this does not establish Native Nested |
 | Runtime surface | Compatibility verified; Native Nested, fresh-CLI child model/effort identity, and physical Windows 11 remain unproven |
 
-The v0.4.0 commit and POSIX / Windows CI links will be bound after the candidate passes hosted verification. See the [full implementation report](SOL_CONTROL_IMPLEMENTATION_REPORT.md) for the current evidence.
+The rename and lifecycle implementation candidate is [`d204003`](https://github.com/yehyakin/codex-sol-control/commit/d2040035c02ae1e6aab4394ffd58152dba6dd309). See the [full implementation report](SOL_CONTROL_IMPLEMENTATION_REPORT.md) for the current evidence.
 
 These statements describe the recorded evidence boundary; they do not infer support for unverified runtime surfaces.
 
