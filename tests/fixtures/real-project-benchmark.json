@@ -42,14 +42,15 @@
     }
   ],
   "cost": {
-    "typical_workflow_saving_percent": {"value": 59, "evidence": "sample_validated_projection"},
-    "reliability_gated_complex_saving_percent": {"value": 65, "evidence": "sample_validated_projection"},
-    "remaining_cost_after_typical_saving_percent": {"value": 41, "evidence": "sample_validated_projection"},
-    "avoided_invalid_rework_percent": {"value": 15, "evidence": "sample_validated_projection"},
-    "post_gate_cost_percent": {"value": 34.85, "evidence": "sample_validated_projection"},
-    "all_sol_reference_dollars": {"value": 8.0, "evidence": "sample_validated_projection"},
-    "routed_reference_dollars": {"value": 3.3, "evidence": "sample_validated_projection"},
-    "all_sol_reference_credits": {"value": 200, "evidence": "sample_validated_projection"},
-    "routed_reference_credits": {"value": 82.4, "evidence": "sample_validated_projection"}
+    "sol_relative_credit_weight": {"value": 1.0, "evidence": "scenario_model_projection"},
+    "terra_relative_credit_weight": {"value": 0.4, "evidence": "scenario_model_projection"},
+    "luna_relative_credit_weight": {"value": 0.04, "evidence": "scenario_model_projection"},
+    "ordinary_saving_min_percent": {"value": 72.2, "evidence": "scenario_model_projection"},
+    "ordinary_saving_max_percent": {"value": 76.2, "evidence": "scenario_model_projection"},
+    "mixed_saving_min_percent": {"value": 50.4, "evidence": "scenario_model_projection"},
+    "mixed_saving_max_percent": {"value": 60.4, "evidence": "scenario_model_projection"},
+    "complex_direct_saving_min_percent": {"value": 33.4, "evidence": "scenario_model_projection"},
+    "complex_direct_saving_max_percent": {"value": 43.4, "evidence": "scenario_model_projection"},
+    "composite_center_percent": {"value": 56, "evidence": "scenario_model_projection"}
   }
 }

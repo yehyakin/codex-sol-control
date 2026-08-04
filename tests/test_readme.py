@@ -59,7 +59,9 @@ SECTION_HEADING_MAP = {
     "真实项目路由样本": "benchmark",
     "real-project routing samples": "benchmark",
     "成本测算与测试口径": "cost_details",
+    "成本模型与证据边界": "cost_details",
     "cost projection and test method": "cost_details",
+    "cost model and evidence boundary": "cost_details",
     "平台与生命周期": "platform",
     "platforms and lifecycle": "platform",
     "platform and lifecycle": "platform",
@@ -72,7 +74,9 @@ SECTION_HEADING_MAP = {
 }
 EXPECTED_SECTION_KEYS = (
     "quickstart",
+    "architecture",
     "routing",
+    "workflow",
     "reliability",
     "cost_details",
     "platform",
@@ -96,17 +100,15 @@ CHINESE_DISCLAIMER_RE = re.compile(
 )
 
 API_RATES = {
-    "GPT-5.6 Sol": ("$5.00", "$0.50", "$6.25", "$30.00"),
-    "GPT-5.6 Luna": ("$0.20", "$0.02", "$0.25", "$1.20"),
+    "GPT-5.6 Sol": ("$5.00", "$0.50", "$30.00"),
+    "GPT-5.6 Terra": ("$2.00", "$0.20", "$12.00"),
+    "GPT-5.6 Luna": ("$0.20", "$0.02", "$1.20"),
 }
 CHATGPT_RATES = {
     "GPT-5.6 Sol": ("125", "12.5", "750"),
+    "GPT-5.6 Terra": ("50", "5", "300"),
     "GPT-5.6 Luna": ("5", "0.5", "30"),
 }
-SCENARIOS = (
-    (("Conservative", "保守"), ("50%", "125%", "10%", "38%")),
-    (("Typical", "典型"), ("70%", "115%", "8%", "59%")),
-)
 
 
 class ReadmeContractTests(unittest.TestCase):
@@ -338,18 +340,18 @@ class ReadmeContractTests(unittest.TestCase):
         self.assertRegex(english_head, r"\[简体中文\]\(README\.md\)")
         self.assertRegex(english_head, r"\[English\]\(README\.en\.md\)")
 
-    def test_cost_claims_are_sample_validated_without_non_measured_labels(self) -> None:
+    def test_cost_claims_are_scenario_model_projections_not_sample_validated_costs(self) -> None:
         chinese = CHINESE_README.read_text(encoding="utf-8")
         english = ENGLISH_README.read_text(encoding="utf-8")
 
         for text, path in ((chinese, CHINESE_README), (english, ENGLISH_README)):
-            for signal in ("59%", "65%", "$3.30", "82.4"):
+            for signal in ("72%", "76%", "50%", "60%", "33%", "43%", "56%", "0.4", "0.04"):
                 self.assertIn(signal, text, f"{path.name}: missing cost signal {signal}")
-            self.assertNotRegex(text, r"(?i)not measured|非实测", path.name)
+            self.assertIn("scenario_model_projection", text, path.name)
+            self.assertNotIn("sample_validated_projection", text, path.name)
 
-        self.assertRegex(chinese, r"本地.{0,20}项目.{0,20}样本.{0,20}(?:验证|测算)")
-        self.assertRegex(english, r"(?i)local.{0,20}project.{0,20}samples?")
-        self.assertRegex(english, r"(?i)validated|projection")
+        self.assertRegex(chinese, r"(?:场景|模型).{0,30}(?:投影|预算)")
+        self.assertRegex(english, r"(?i)scenario.{0,30}model.{0,30}projection")
 
     def test_rendered_markdown_helpers_ignore_fenced_code_and_html_comments(self) -> None:
         fixture = """
@@ -442,24 +444,25 @@ class ReadmeContractTests(unittest.TestCase):
         blocks = self.first_screen_blocks(text, CHINESE_README.name)
         block_texts = [block for _, block, _ in blocks]
         self.assertTrue(
-            self.block_contains_tokens(blocks, ("普通任务", "59%")),
-            f"{CHINESE_README.name}: missing typical 59% claim in first-screen semantic block",
+            self.block_contains_tokens(blocks, ("普通", "72%", "76%")),
+            f"{CHINESE_README.name}: missing ordinary 72%-76% range in first-screen semantic block",
         )
         self.assertTrue(
-            any("适合有边界委派" in block for block in block_texts),
-            f"{CHINESE_README.name}: missing bounded-delegation qualifier in first screen",
+            self.block_contains_tokens(blocks, ("混合", "50%", "60%")),
+            f"{CHINESE_README.name}: missing mixed 50%-60% range in first-screen semantic block",
         )
         self.assertTrue(
-            self.block_contains_tokens(blocks, ("复杂且容易返工任务", "65%")),
-            f"{CHINESE_README.name}: missing conditioned 65% claim in first-screen section/table",
+            self.block_contains_tokens(blocks, ("复杂", "33%", "43%")),
+            f"{CHINESE_README.name}: missing complex-direct 33%-43% range in first-screen section/table",
         )
         self.assertTrue(
-            any("本地已完成项目样本" in unit for unit in self.block_units(blocks)),
-            f"{CHINESE_README.name}: missing local-project sample validation label",
+            self.block_contains_tokens(blocks, ("综合", "56%")),
+            f"{CHINESE_README.name}: missing composite 56% range in first-screen section/table",
         )
         self.assertTrue(
-            self.has_valid_disclaimer_in_blocks(blocks, "chinese"),
-            f"{CHINESE_README.name}: missing valid Chinese not-guarantee disclaimer",
+            any("不是固定结果或保证" in block for block in block_texts)
+            or self.has_valid_disclaimer_in_blocks(blocks, "chinese"),
+            f"{CHINESE_README.name}: missing current-range disclaimer in first screen",
         )
         self.assertTrue(
             self.has_direct_zero_in_blocks(blocks),
@@ -471,21 +474,23 @@ class ReadmeContractTests(unittest.TestCase):
         blocks = self.first_screen_blocks(text, ENGLISH_README.name)
         block_texts = [block for _, block, _ in blocks]
         self.assertTrue(
-            self.block_contains_tokens(blocks, ("typical", "59%"))
-            or self.block_contains_tokens(blocks, ("ordinary", "59%")),
-            f"{ENGLISH_README.name}: missing typical 59% claim in first-screen semantic block",
+            self.block_contains_tokens(blocks, ("typical", "72%", "76%"))
+            or self.block_contains_tokens(blocks, ("ordinary", "72%", "76%")),
+            f"{ENGLISH_README.name}: missing ordinary 72%-76% range in first-screen semantic block",
         )
         self.assertTrue(
-            any("suitable for bounded delegation" in block for block in block_texts),
-            f"{ENGLISH_README.name}: missing bounded-delegation qualifier in first screen",
+            self.block_contains_tokens(blocks, ("mixed", "50%", "60%"))
+            or self.block_contains_tokens(blocks, ("hybrid", "50%", "60%")),
+            f"{ENGLISH_README.name}: missing mixed 50%-60% range in first-screen semantic block",
         )
         self.assertTrue(
-            self.block_contains_tokens(blocks, ("complex", "65%")),
-            f"{ENGLISH_README.name}: missing conditioned 65% claim in first-screen section/table",
+            self.block_contains_tokens(blocks, ("complex", "33%", "43%")),
+            f"{ENGLISH_README.name}: missing complex-direct 33%-43% range in first-screen section/table",
         )
         self.assertTrue(
-            any(re.search(r"(?i)local project samples", unit) for unit in self.block_units(blocks)),
-            f"{ENGLISH_README.name}: missing local-project sample validation label",
+            self.block_contains_tokens(blocks, ("composite", "56%"))
+            or self.block_contains_tokens(blocks, ("combined", "56%")),
+            f"{ENGLISH_README.name}: missing composite 56% range in first-screen section/table",
         )
         self.assertTrue(
             self.has_valid_disclaimer_in_blocks(blocks, "english"),
@@ -634,6 +639,7 @@ class ReadmeContractTests(unittest.TestCase):
             "$sol-luna",
             "sol-controller",
             "luna-max-worker",
+            "terra-high-worker",
             "bash scripts/validate.sh",
             "bash scripts/install.sh",
             "bash scripts/uninstall.sh",
@@ -654,6 +660,10 @@ class ReadmeContractTests(unittest.TestCase):
                 self.assertIn(signal, text, f"{path.name}: missing platform/runtime signal {signal}")
             self.assertRegex(text, r"(?i)Sol.{0,120}(?:controls|controller|控制)")
             self.assertRegex(text, r"(?i)Luna(?: Max)?[\s\S]{0,120}(?:executes|worker|执行)")
+            self.assertRegex(
+                text,
+                r"(?i)Terra(?: High)?[\s\S]{0,180}(?:executes|worker|跨模块|cross[- ]module|high[- ]risk|高风险)",
+            )
 
     def test_readmes_publish_exact_api_and_chatgpt_rate_rows(self) -> None:
         documents = self.readme_documents()
@@ -674,26 +684,43 @@ class ReadmeContractTests(unittest.TestCase):
                     f"{path.name}: wrong ChatGPT rate row for {model}",
                 )
 
-    def test_readmes_publish_the_exact_cost_formula_assumptions_and_estimates(self) -> None:
+    def test_readmes_publish_current_cost_ranges_and_relative_credit_weights(self) -> None:
         documents = self.readme_documents()
-        formula = "savings = delegated_share * (1 - luna_duplication / 25) - sol_overhead"
         for path, text in documents.items():
-            self.assertIn("https://developers.openai.com/api/docs/pricing", text, path.name)
-            self.assertIn("https://learn.chatgpt.com/docs/pricing", text, path.name)
-            self.assertIn("2026-08-02", text, path.name)
-            self.assertIn(formula, text, path.name)
-            for assumption in ("delegated_share", "luna_duplication", "sol_overhead"):
-                self.assertIn(assumption, text, f"{path.name}: missing assumption {assumption}")
-            self.assertIn("1/25", text, path.name)
-            self.assertIn("96%", text, path.name)
-
-            lines = text.splitlines()
-            for labels, values in SCENARIOS:
-                scenario_rows = [line for line in lines if any(label in line for label in labels)]
-                self.assertTrue(scenario_rows, f"{path.name}: missing scenario {labels[0]}")
+            self.assertIn("https://developers.openai.com/api/docs/models/compare", text, path.name)
+            self.assertIn(
+                "https://help.openai.com/en/articles/20001106-codex-rate-card",
+                text,
+                path.name,
+            )
+            self.assertIn("2026-08-03", text, path.name)
+            blocks = self.markdown_blocks(text)
+            for labels, value in (
+                (("Sol", "索尔"), "1"),
+                (("Terra", "Terra 高"), "0.4"),
+                (("Luna", "Luna 高"), "0.04"),
+            ):
                 self.assertTrue(
-                    any(all(value in line for value in values) for line in scenario_rows),
-                    f"{path.name}: incomplete {labels[0]} scenario",
+                    any(
+                        any(label.casefold() in block.casefold() for label in labels)
+                        and re.search(rf"(?<![\d.]){re.escape(value)}(?![\d.])", block)
+                        for _, block, _ in blocks
+                    ),
+                    f"{path.name}: missing relative credit weight {labels[0]}={value}",
+                )
+            for labels, values in (
+                (("ordinary", "typical", "普通"), ("72%", "76%")),
+                (("mixed", "hybrid", "混合"), ("50%", "60%")),
+                (("complex", "复杂"), ("33%", "43%")),
+                (("composite", "combined", "综合"), ("56%",)),
+            ):
+                self.assertTrue(
+                    any(
+                        any(label.casefold() in block.casefold() for label in labels)
+                        and all(value in block for value in values)
+                        for _, block, _ in blocks
+                    ),
+                    f"{path.name}: missing current cost range for {labels[0]}",
                 )
 
             self.assertTrue(
@@ -701,33 +728,25 @@ class ReadmeContractTests(unittest.TestCase):
                 f"{path.name}: Direct and 0% must share one paragraph or table cell",
             )
 
-    def test_readmes_publish_conditioned_reliability_saving_separately(self) -> None:
+    def test_readmes_do_not_publish_old_complex_direct_claim_as_current(self) -> None:
         documents = self.readme_documents()
+        historical_markers = re.compile(
+            r"(?i)(?:historical|legacy|prior|previous|not\s+current|"
+            r"condition(?:ed|al|-based)|reliability[- ]gated|"
+            r"历史|旧口径|旧基准|非现行|条件(?:下|性)|可靠性门槛)"
+        )
         for path, text in documents.items():
-            sample_label = "sample" if path == ENGLISH_README else "样本"
-            sample_flags = re.IGNORECASE if path == ENGLISH_README else 0
-            projection_pattern = re.compile(
-                rf"41%\s*\*\s*85%\s*=\s*34\.85%[^.!?。；;]{{0,160}}"
-                rf"65%",
-                flags=sample_flags,
-            )
-            estimate_match = next(
-                (
-                    projection_pattern.search(unit)
-                    for unit in self.semantic_units(text)
-                    if projection_pattern.search(unit)
-                ),
-                None,
-            )
-            self.assertIsNotNone(
-                estimate_match,
-                f"{path.name}: conditioned 65% projection must include the 41% * 85% = 34.85% derivation and sample basis",
-            )
-            self.assertIn(sample_label.casefold(), text.casefold(), path.name)
+            for unit in self.semantic_units(text):
+                if re.search(r"(?i)(?:complex|复杂).{0,180}65%", unit):
+                    self.assertRegex(
+                        unit,
+                        historical_markers,
+                        f"{path.name}: complex 65% must be explicitly historical/non-current",
+                    )
             self.assertNotRegex(
-                estimate_match.group(0),
-                r"(?i)execution[- ]heavy|执行密集|执行偏重",
-                f"{path.name}: 65% must not be mixed with execution-heavy wording",
+                text,
+                r"41%\s*\*\s*85%\s*=\s*34\.85%",
+                f"{path.name}: old reliability-gated derivation must not remain current",
             )
 
     def test_readmes_preserve_linux_do_attribution(self) -> None:
@@ -785,26 +804,209 @@ class ReadmeContractTests(unittest.TestCase):
             "$sol-luna",
             "sol-controller",
             "luna-max-worker",
+            "terra-high-worker",
             "gpt-5.6-sol",
             "gpt-5.6-luna",
-            "savings = delegated_share * (1 - luna_duplication / 25) - sol_overhead",
-            "https://developers.openai.com/api/docs/pricing",
-            "https://learn.chatgpt.com/docs/pricing",
-            "1/25",
-            "96%",
-            "38%",
-            "59%",
-            "65%",
-            "41%",
-            "85%",
-            "34.85%",
+            "gpt-5.6-terra",
+            "https://developers.openai.com/api/docs/models/compare",
+            "https://help.openai.com/en/articles/20001106-codex-rate-card",
+            "72%",
+            "76%",
+            "50%",
+            "60%",
+            "33%",
+            "43%",
+            "56%",
+            "0.4",
+            "0.04",
             "0%",
             "config.toml",
             "RestoreLatest",
+            "v0.3.0",
+            "106/106",
+            "Compatibility",
+            "Native Nested",
+            "6895f06",
+            "ORCHESTRATE_SOL_LUNA_V2_IMPLEMENTATION_REPORT.md",
+            "actions/runs/30858707335",
+            "actions/runs/30858707364",
         )
         for signal in parity_signals:
             for path, text in documents.items():
                 self.assertIn(signal, text, f"{path.name}: parity signal missing: {signal}")
+
+        release_status_specs = {
+            CHINESE_README: {
+                "title": "v0.3.0 发布状态",
+                "control_orbit": "docs/assets/readme/control-plane-zh.svg",
+                "compatibility": r"Compatibility\s+已验证",
+                "unproven": r"Native Nested.*全新 CLI child model/effort 身份.*物理 Windows 11 尚未证明",
+                "local_row_label": "本地仓库",
+                "hosted_row_label": "托管 CI",
+                "local_row_signals": (
+                    "Skill Creator **PASS**",
+                    "**106/106** tests PASS",
+                ),
+                "hosted_row_signals": (
+                    "POSIX **PASS**",
+                    "Windows Server 2022",
+                    "windows-latest",
+                    "Windows PowerShell 5.1",
+                    "PowerShell 7 **PASS**",
+                ),
+            },
+            ENGLISH_README: {
+                "title": "v0.3.0 release status",
+                "control_orbit": "docs/assets/readme/control-plane-en.svg",
+                "compatibility": r"Compatibility\s+verified",
+                "unproven": r"Native Nested, fresh-CLI child model/effort identity, and physical Windows 11 remain unproven",
+                "local_row_label": "Local repository",
+                "hosted_row_label": "Hosted CI",
+                "local_row_signals": (
+                    "Skill Creator **PASS**",
+                    "**106/106** tests PASS",
+                ),
+                "hosted_row_signals": (
+                    "POSIX **PASS**",
+                    "Windows Server 2022",
+                    "windows-latest",
+                    "Windows PowerShell 5.1",
+                    "PowerShell 7 **PASS**",
+                ),
+            },
+        }
+        for path, text in documents.items():
+            spec = release_status_specs[path]
+            rendered = self.rendered_markdown(text)
+            release_heading_matches = list(
+                re.finditer(rf"(?m)^## {re.escape(spec['title'])}\s*$", rendered)
+            )
+            self.assertEqual(
+                len(release_heading_matches),
+                1,
+                f"{path.name}: release status must have exactly one H2 heading",
+            )
+            release_heading = release_heading_matches[0]
+            self.assertEqual(
+                release_heading.group(0).split(maxsplit=1)[0],
+                "##",
+                f"{path.name}: release status heading must be H2",
+            )
+
+            control_orbit_matches = list(
+                re.finditer(
+                    rf"(?m)^!\[[^\n]*\]\({re.escape(spec['control_orbit'])}\)\s*$",
+                    rendered,
+                )
+            )
+            self.assertEqual(
+                len(control_orbit_matches),
+                1,
+                f"{path.name}: Control Orbit image must have exactly one target",
+            )
+            control_orbit = control_orbit_matches[0]
+            self.assertLess(
+                release_heading.end(),
+                control_orbit.start(),
+                f"{path.name}: release status must precede Control Orbit",
+            )
+            release_block = rendered[release_heading.start() : control_orbit.start()]
+            for signal in (
+                "v0.3.0",
+                "106/106",
+                "6895f06",
+                "(ORCHESTRATE_SOL_LUNA_V2_IMPLEMENTATION_REPORT.md)",
+                "https://github.com/yehyakin/codex-sol-luna/actions/runs/30858707335",
+                "https://github.com/yehyakin/codex-sol-luna/actions/runs/30858707364",
+            ):
+                self.assertIn(
+                    signal,
+                    release_block,
+                    f"{path.name}: release status block missing {signal}",
+                )
+            self.assertRegex(
+                release_block,
+                spec["compatibility"],
+                f"{path.name}: release status must positively verify Compatibility",
+            )
+            self.assertRegex(
+                release_block,
+                spec["unproven"],
+                f"{path.name}: release status must mark unsupported surfaces unproven",
+            )
+
+            def gfm_row_cells(line: str) -> tuple[str, ...] | None:
+                stripped = line.strip()
+                if not stripped or "|" not in stripped:
+                    return None
+                cells = self.table_cells(stripped)
+                return cells if len(cells) >= 2 else None
+
+            table_blocks: list[list[tuple[str, ...]]] = []
+            lines = release_block.splitlines()
+            line_index = 0
+            while line_index + 1 < len(lines):
+                header_cells = gfm_row_cells(lines[line_index])
+                delimiter_cells = gfm_row_cells(lines[line_index + 1])
+                if (
+                    header_cells is None
+                    or delimiter_cells is None
+                    or len(header_cells) != len(delimiter_cells)
+                    or not all(
+                        re.fullmatch(r":?-+:?", cell.replace(" ", ""))
+                        for cell in delimiter_cells
+                    )
+                ):
+                    line_index += 1
+                    continue
+
+                data_rows: list[tuple[str, ...]] = []
+                line_index += 2
+                while line_index < len(lines):
+                    data_cells = gfm_row_cells(lines[line_index])
+                    if data_cells is None or len(data_cells) != len(header_cells):
+                        break
+                    data_rows.append(data_cells)
+                    line_index += 1
+                table_blocks.append(data_rows)
+
+            status_table_rows: list[dict[str, str]] = []
+            target_labels = (spec["local_row_label"], spec["hosted_row_label"])
+            for data_rows in table_blocks:
+                rows: dict[str, str] = {}
+                for cells in data_rows:
+                    row_label = cells[0]
+                    if row_label in target_labels:
+                        self.assertNotIn(
+                            row_label,
+                            rows,
+                            f"{path.name}: release status row must be unique: {row_label}",
+                        )
+                        rows[row_label] = cells[1]
+                if rows:
+                    status_table_rows.append(rows)
+
+            self.assertEqual(
+                len(status_table_rows),
+                1,
+                f"{path.name}: local and hosted release rows must share one GFM table",
+            )
+            status_rows = status_table_rows[0]
+
+            for row_key in ("local", "hosted"):
+                row_label = spec[f"{row_key}_row_label"]
+                self.assertIn(
+                    row_label,
+                    status_rows,
+                    f"{path.name}: release status missing {row_key} evidence row",
+                )
+                row = status_rows[row_label]
+                for signal in spec[f"{row_key}_row_signals"]:
+                    self.assertIn(
+                        signal,
+                        row,
+                        f"{path.name}: {row_key} release status row missing {signal}",
+                    )
 
 
 if __name__ == "__main__":

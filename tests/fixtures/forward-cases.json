@@ -227,5 +227,288 @@
       "resume applies to long or interrupted work",
       "short and Direct tasks do not generate a resume packet"
     ]
+  },
+  {
+    "id": "authorized-plan-not-stop",
+    "prompt": "$sol-luna: execute the authorized implementation after Sol publishes the plan.",
+    "expected": {
+      "route": "sol_then_luna",
+      "sol": "required",
+      "luna": "required",
+      "review": "PASS",
+      "capacity": "live",
+      "resume": "not_applicable"
+    },
+    "required_assertions": [
+      "an authorized execution plan is not a stopping point",
+      "execution continues unless new permission, an irreversible choice, or a real blocker appears",
+      "the plan remains a control artifact rather than a completion claim"
+    ]
+  },
+  {
+    "id": "status-inquiry-keeps-running",
+    "prompt": "$sol-luna: continue the authorized task while the user asks for a normal status update.",
+    "expected": {
+      "route": "sol_then_luna",
+      "sol": "required",
+      "luna": "required",
+      "review": "PASS",
+      "capacity": "live",
+      "resume": "not_applicable"
+    },
+    "required_assertions": [
+      "ordinary status questions do not pause authorized work",
+      "a status request is not new permission or a blocker",
+      "the existing plan and evidence loop continues"
+    ]
+  },
+  {
+    "id": "planning-timebox-converges",
+    "prompt": "$sol-luna: spend a bounded planning timebox and converge on a plan, determination, or evidence gap.",
+    "expected": {
+      "route": "sol",
+      "sol": "required",
+      "luna": "optional",
+      "review": "not_applicable",
+      "capacity": "not_applicable",
+      "resume": "not_applicable"
+    },
+    "required_assertions": [
+      "planning has a timebox",
+      "the timebox must produce a plan, determination, or concrete evidence gap",
+      "extended analysis without convergence is not progress"
+    ]
+  },
+  {
+    "id": "partial-stage-delivery-on-blocker",
+    "prompt": "$sol-luna: deliver the evidence-complete first stage even when a later dependent stage is blocked.",
+    "expected": {
+      "route": "sol_then_luna",
+      "sol": "required",
+      "luna": "required",
+      "review": "BLOCKED",
+      "capacity": "live",
+      "resume": "not_applicable"
+    },
+    "required_assertions": [
+      "a later stage blocker does not erase an evidence-complete earlier stage",
+      "the completed stage is delivered with its artifact and evidence",
+      "only the blocked downstream work remains unresolved"
+    ]
+  },
+  {
+    "id": "completed-no-result-one-recovery",
+    "prompt": "$sol-luna: recover a transport completed event that has no structured Luna result.",
+    "expected": {
+      "route": "sol_then_luna",
+      "sol": "required",
+      "luna": "required",
+      "review": "PASS",
+      "capacity": "live",
+      "resume": "not_applicable"
+    },
+    "required_assertions": [
+      "only the same worker receives one result-only follow-up",
+      "the follow-up cannot authorize new writes or re-execution",
+      "a bound structured result is required before Sol review can pass"
+    ]
+  },
+  {
+    "id": "completed-no-result-recovery-blocked",
+    "prompt": "$sol-luna: block safely when the one allowed result-only recovery still has no structured result bound to the final candidate.",
+    "expected": {
+      "route": "sol_then_luna",
+      "sol": "required",
+      "luna": "blocked",
+      "review": "BLOCKED",
+      "capacity": "live",
+      "resume": "not_applicable"
+    },
+    "required_assertions": [
+      "a second result retrieval is not allowed",
+      "no new write or re-execution is started",
+      "missing final-candidate-bound structure produces BLOCKED"
+    ]
+  },
+  {
+    "id": "urgency-does-not-lower-evidence",
+    "prompt": "$sol-luna: do not lower the evidence threshold because the user says hurry or do not stop.",
+    "expected": {
+      "route": "blocked",
+      "sol": "blocked",
+      "luna": "blocked",
+      "review": "BLOCKED",
+      "capacity": "not_applicable",
+      "resume": "not_applicable"
+    },
+    "required_assertions": [
+      "urgency cannot lower the verification or evidence threshold",
+      "the same safety gates remain in force",
+      "pressure to continue never substitutes for a structured result"
+    ]
+  },
+  {
+    "id": "explicit-user-steering-replans",
+    "prompt": "$sol-luna: stop the old plan and re-plan when the user explicitly cancels, replaces, or redirects the current request.",
+    "expected": {
+      "route": "sol",
+      "sol": "required",
+      "luna": "optional",
+      "review": "not_applicable",
+      "capacity": "not_applicable",
+      "resume": "not_applicable"
+    },
+    "required_assertions": [
+      "explicit cancellation, replacement, or redirection stops the old plan",
+      "substantive user steering is distinct from an ordinary status inquiry",
+      "Sol re-plans from the new request before any old-plan execution continues"
+    ]
+  },
+  {
+    "id": "luna-low-ambiguity-small-context",
+    "prompt": "$sol-luna: route a clear, low-ambiguity, falsifiable one-file task with a small context to Luna Max.",
+    "expected": {
+      "route": "sol_then_luna",
+      "sol": "required",
+      "luna": "required",
+      "terra": "none",
+      "review": "PASS",
+      "capacity": "live",
+      "resume": "forbidden"
+    },
+    "required_assertions": [
+      "Luna Max handles clear low-ambiguity work",
+      "the task is falsifiable and has a small context",
+      "Terra is not selected when the bounded Luna route is sufficient"
+    ]
+  },
+  {
+    "id": "terra-cross-module-long-context",
+    "prompt": "$sol-luna: route a cross-module implementation with long context, shared interfaces, and high risk to Terra High.",
+    "expected": {
+      "route": "sol_then_terra",
+      "sol": "required",
+      "luna": "none",
+      "terra": "required",
+      "review": "PASS",
+      "capacity": "live",
+      "resume": "not_applicable"
+    },
+    "required_assertions": [
+      "Terra High handles cross-module and long-context work",
+      "shared interfaces and high-risk implementation are Terra signals",
+      "Sol remains the only controller and final reviewer"
+    ]
+  },
+  {
+    "id": "model-identity-unavailable-fail-closed",
+    "prompt": "$sol-luna: reject dispatch when the selected model identity and reasoning effort cannot be proved.",
+    "expected": {
+      "route": "blocked",
+      "sol": "blocked",
+      "luna": "blocked",
+      "terra": "blocked",
+      "review": "BLOCKED",
+      "capacity": "not_applicable",
+      "resume": "not_applicable"
+    },
+    "required_assertions": [
+      "model identity and selection must be proved",
+      "Fail Closed prevents silent model substitution",
+      "no Luna or Terra dispatch occurs when identity is unavailable"
+    ]
+  },
+  {
+    "id": "luna-classification-error-escalates-terra",
+    "prompt": "$sol-luna: after Luna's first failure, before Luna writes any owned file, escalate the same task and scope once to Terra instead of retrying Luna indefinitely.",
+    "expected": {
+      "route": "sol_then_terra",
+      "sol": "required",
+      "luna": "required",
+      "terra": "required",
+      "review": "PASS",
+      "capacity": "live",
+      "resume": "not_applicable",
+      "upgrade": "same_task_same_scope_once"
+    },
+    "luna_state": {
+      "failed_before_owned_write": true,
+      "owned_files_written_before_failure": 0
+    },
+    "required_assertions": [
+      "a first Luna failure before any Luna-owned file write can escalate to Terra",
+      "a first Luna classification failure before any Luna-owned file write can escalate to Terra as a classification error route",
+      "the same task and unchanged scope are forwarded once",
+      "the escalation is bounded and not an infinite Luna retry",
+      "Sol reviews the re-routed result before delivery"
+    ]
+  },
+  {
+    "id": "luna-first-failure-before-write-escalates-terra",
+    "prompt": "$sol-luna: Luna fails before writing any owned file; upgrade the same task and unchanged scope to Terra exactly once.",
+    "expected": {
+      "route": "sol_then_terra",
+      "sol": "required",
+      "luna": "required",
+      "terra": "required",
+      "review": "PASS",
+      "capacity": "live",
+      "resume": "not_applicable",
+      "upgrade": "same_task_same_scope_once"
+    },
+    "luna_state": {
+      "failed_before_owned_write": true,
+      "owned_files_written_before_failure": 0
+    },
+    "required_assertions": [
+      "zero Luna-owned files were written before the first failure",
+      "Sol may upgrade the same task and unchanged scope to Terra once",
+      "Terra receives ownership only after the zero-write check",
+      "the escalation does not retry Luna indefinitely"
+    ]
+  },
+  {
+    "id": "luna-first-failure-after-write-keeps-luna-owner",
+    "prompt": "$sol-luna: Luna fails after writing an owned file; keep all ownership with Luna for one focused fix or return BLOCKED, never transfer that file to Terra.",
+    "expected": {
+      "route": "sol_then_luna",
+      "sol": "required",
+      "luna": "required",
+      "terra": "blocked",
+      "review": "FIX",
+      "capacity": "live",
+      "resume": "not_applicable",
+      "ownership": "luna_retains_scope",
+      "correction": "focused_fix_or_blocked"
+    },
+    "luna_state": {
+      "failed_before_owned_write": false,
+      "owned_files_written_before_failure": 1
+    },
+    "required_assertions": [
+      "Luna wrote an owned file before the first failure",
+      "Luna retains all ownership of the written file and scope",
+      "Terra is blocked and cannot receive the already-written file",
+      "only the original Luna owner may receive one focused fix",
+      "a second failure or failed focused fix is BLOCKED"
+    ]
+  },
+  {
+    "id": "single-file-unique-owner",
+    "prompt": "$sol-luna: assign one shared integration file to exactly one worker owner while routing the surrounding work to Terra.",
+    "expected": {
+      "route": "sol_then_terra",
+      "sol": "required",
+      "luna": "none",
+      "terra": "required",
+      "review": "PASS",
+      "capacity": "live",
+      "resume": "not_applicable"
+    },
+    "required_assertions": [
+      "one file has one owner for the entire run",
+      "a shared integration file is never written by two workers",
+      "Sol allocates exact write_scope and performs final review"
+    ]
   }
 ]

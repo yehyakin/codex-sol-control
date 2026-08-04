@@ -19,6 +19,7 @@ $OwnedRelativePaths = @(
     ".codex/agents/sol-controller.toml",
     ".codex/agents/sol-planner.toml",
     ".codex/agents/luna-max-worker.toml",
+    ".codex/agents/terra-high-worker.toml",
     ".codex/sol-luna/install-state",
     ".codex/orchestrate-sol-luna/install-state",
     ".codex/config.toml",
@@ -175,11 +176,13 @@ function Copy-SourceInstall {
     $skill = Join-Path $TestHome ".agents/skills/sol-luna"
     $sol = Join-Path $TestHome ".codex/agents/sol-controller.toml"
     $luna = Join-Path $TestHome ".codex/agents/luna-max-worker.toml"
+    $terra = Join-Path $TestHome ".codex/agents/terra-high-worker.toml"
     Ensure-Directory (Split-Path -Parent $skill)
     Ensure-Directory (Split-Path -Parent $sol)
     Copy-Item -LiteralPath (Join-Path $RepoRoot ".agents/skills/sol-luna") -Destination $skill -Recurse -Force
     Copy-Item -LiteralPath (Join-Path $RepoRoot ".codex/agents/sol-controller.toml") -Destination $sol -Force
     Copy-Item -LiteralPath (Join-Path $RepoRoot ".codex/agents/luna-max-worker.toml") -Destination $luna -Force
+    Copy-Item -LiteralPath (Join-Path $RepoRoot ".codex/agents/terra-high-worker.toml") -Destination $terra -Force
 }
 
 function Seed-V020Install {
@@ -188,18 +191,43 @@ function Seed-V020Install {
     $skill = Join-Path $TestHome ".agents/skills/sol-luna"
     $sol = Join-Path $TestHome ".codex/agents/sol-controller.toml"
     $luna = Join-Path $TestHome ".codex/agents/luna-max-worker.toml"
+    $terra = Join-Path $TestHome ".codex/agents/terra-high-worker.toml"
     $state = Join-Path $TestHome ".codex/sol-luna/install-state"
     $stateText = (@(
         "version=2",
         "backup_id=v020-seed",
         "skill_sha256=$(Get-TreeDigest $skill)",
         "sol_sha256=$(Get-FileDigest $sol)",
-        "luna_sha256=$(Get-FileDigest $luna)"
+        "luna_sha256=$(Get-FileDigest $luna)",
+        "terra_sha256=$(Get-FileDigest $terra)"
     ) -join "`n") + "`n"
     Write-TestText $state $stateText
     $backup = Join-Path $TestHome ".codex/sol-luna/backups/v020-seed"
     Ensure-Directory $backup
-    Write-TestText (Join-Path $backup "manifest") "version=2`n"
+    Ensure-Directory (Join-Path $backup "v020")
+    Copy-Item -LiteralPath $skill -Destination (Join-Path $backup "v020/skill") -Recurse -Force
+    Copy-Item -LiteralPath $sol -Destination (Join-Path $backup "v020/sol-controller.toml") -Force
+    Copy-Item -LiteralPath $luna -Destination (Join-Path $backup "v020/luna-max-worker.toml") -Force
+    Copy-Item -LiteralPath $terra -Destination (Join-Path $backup "v020/terra-high-worker.toml") -Force
+    Write-TestText (Join-Path $backup "manifest") ((@(
+        "version=2",
+        "legacy_skill_presence=absent",
+        "legacy_skill_sha256=",
+        "legacy_sol_presence=absent",
+        "legacy_sol_sha256=",
+        "legacy_luna_presence=absent",
+        "legacy_luna_sha256=",
+        "v020_skill_presence=present",
+        "v020_skill_sha256=$(Get-TreeDigest $skill)",
+        "v020_sol_presence=present",
+        "v020_sol_sha256=$(Get-FileDigest $sol)",
+        "v020_luna_presence=present",
+        "v020_luna_sha256=$(Get-FileDigest $luna)",
+        "v020_terra_presence=present",
+        "v020_terra_sha256=$(Get-FileDigest $terra)",
+        "config_presence=absent",
+        "config_sha256="
+    ) -join "`n") + "`n")
 }
 
 function Seed-V01Install {
@@ -343,16 +371,19 @@ function Assert-Installed {
     Assert-PathExists (Join-Path $TestHome ".agents/skills/sol-luna")
     Assert-PathExists (Join-Path $TestHome ".codex/agents/sol-controller.toml")
     Assert-PathExists (Join-Path $TestHome ".codex/agents/luna-max-worker.toml")
+    Assert-PathExists (Join-Path $TestHome ".codex/agents/terra-high-worker.toml")
     $state = Join-Path $TestHome ".codex/sol-luna/install-state"
     Assert-PathExists $state
     $stateText = Get-Content -LiteralPath $state -Raw
     Assert-True ($stateText -match "(?m)^version=2\s*$") "install state is not version 2"
+    Assert-True ($stateText -match "(?m)^terra_sha256=[0-9a-f]{64}\s*$") "install state has no Terra checksum"
 }
 
 function Assert-Uninstalled {
     param(
         [Parameter(Mandatory = $true)][string]$TestHome,
-        [switch]$ExpectSharedLuna
+        [switch]$ExpectSharedLuna,
+        [switch]$ExpectTerra
     )
     Assert-PathAbsent (Join-Path $TestHome ".agents/skills/sol-luna")
     Assert-PathAbsent (Join-Path $TestHome ".codex/agents/sol-controller.toml")
@@ -361,6 +392,12 @@ function Assert-Uninstalled {
     }
     else {
         Assert-PathAbsent (Join-Path $TestHome ".codex/agents/luna-max-worker.toml")
+    }
+    if ($ExpectTerra) {
+        Assert-PathExists (Join-Path $TestHome ".codex/agents/terra-high-worker.toml")
+    }
+    else {
+        Assert-PathAbsent (Join-Path $TestHome ".codex/agents/terra-high-worker.toml")
     }
     Assert-PathAbsent (Join-Path $TestHome ".codex/sol-luna/install-state")
 }
@@ -469,6 +506,24 @@ function Test-V020Upgrade {
     $markers = Seed-UserFiles $TestHome
     Seed-V020Install $TestHome
 
+    # A legacy v0.2 state may predate the Terra target and checksum.  Check
+    # must remain read-only (and report that an update is required), while a
+    # normal install is allowed to add the newly introduced owned target.
+    $terra = Join-Path $TestHome ".codex/agents/terra-high-worker.toml"
+    Assert-PathExists $terra
+    Remove-Item -LiteralPath $terra -Force
+    $state = Join-Path $TestHome ".codex/sol-luna/install-state"
+    $withoutTerra = @((Get-Content -LiteralPath $state) | Where-Object { $_ -notmatch "^terra_sha256=" })
+    Write-TestText $state (($withoutTerra -join "`n") + "`n")
+    Assert-PathAbsent $terra
+    $legacyState = Get-Content -LiteralPath $state -Raw
+    Assert-True ($legacyState -notmatch "(?m)^terra_sha256=") "legacy v0.2 state unexpectedly has a Terra checksum"
+    $before = Get-ContractSnapshot $TestHome
+
+    $checkExit = Invoke-CheckProcess -Path $Install -TestHome $TestHome
+    Assert-Equal 2 $checkExit "legacy v0.2 check did not report an update"
+    Assert-SnapshotEqual $before (Get-ContractSnapshot $TestHome) "legacy v0.2 check changed the installation"
+
     Invoke-Install $TestHome
     Assert-Installed $TestHome
     Assert-UserMarkersPreserved $TestHome $markers
@@ -499,6 +554,203 @@ function Test-V01MigrationAndRestoreLatest {
     Assert-UserMarkersPreserved $TestHome $markers
 }
 
+function Test-StateOnlyV01StateConvergence {
+    $TestHome = Join-Path $TestRoot "state-only v0.1 convergence home"
+    $markers = Seed-UserFiles $TestHome
+    Seed-V01Install $TestHome
+    $legacySkill = Join-Path $TestHome ".agents/skills/orchestrate-sol-luna"
+    $legacySol = Join-Path $TestHome ".codex/agents/sol-planner.toml"
+    $legacyState = Join-Path $TestHome ".codex/orchestrate-sol-luna/install-state"
+    $legacyStateDigest = Get-FileDigest $legacyState
+    Remove-Item -LiteralPath $legacySkill -Recurse -Force
+    Remove-Item -LiteralPath $legacySol -Force
+
+    Invoke-Install $TestHome
+    Assert-Installed $TestHome
+    Assert-PathAbsent $legacyState
+    $state = Join-Path $TestHome ".codex/sol-luna/install-state"
+    $backupId = ((Get-Content -LiteralPath $state) | Where-Object { $_ -match "^backup_id=" }) -replace "^backup_id=", ""
+    $backupState = Join-Path $TestHome (".codex/sol-luna/backups/{0}/legacy/install-state" -f $backupId)
+    Assert-PathExists $backupState
+    Assert-Equal $legacyStateDigest (Get-FileDigest $backupState) "legacy state backup was not byte-for-byte identical"
+    $manifest = Get-Content -LiteralPath (Join-Path $TestHome (".codex/sol-luna/backups/{0}/manifest" -f $backupId)) -Raw
+    Assert-True ($manifest -match "(?m)^legacy_state_presence=present\s*$") "manifest did not record legacy state presence"
+    Assert-True ($manifest -match ("(?m)^legacy_state_sha256={0}\s*$" -f $legacyStateDigest)) "manifest did not record legacy state checksum"
+    Assert-Equal 0 (Invoke-CheckProcess -Path $Install -TestHome $TestHome) "state-only migration did not converge check mode"
+
+    Invoke-Uninstall $TestHome -RestoreLatest
+    Assert-Equal $legacyStateDigest (Get-FileDigest $legacyState) "RestoreLatest did not restore the exact legacy install state"
+    Assert-UserMarkersPreserved $TestHome $markers
+}
+
+function Test-StateOnlyV01PlainUninstallDoesNotRestore {
+    $TestHome = Join-Path $TestRoot "state-only v0.1 plain uninstall home"
+    Seed-V01Install $TestHome
+    Remove-Item -LiteralPath (Join-Path $TestHome ".agents/skills/orchestrate-sol-luna") -Recurse -Force
+    Remove-Item -LiteralPath (Join-Path $TestHome ".codex/agents/sol-planner.toml") -Force
+    $legacyState = Join-Path $TestHome ".codex/orchestrate-sol-luna/install-state"
+
+    Invoke-Install $TestHome
+    Assert-PathAbsent $legacyState
+    Invoke-Uninstall $TestHome
+    Assert-PathAbsent $legacyState
+}
+
+function Test-StateOnlyV01RestoreRefusesExistingState {
+    $TestHome = Join-Path $TestRoot "state-only v0.1 restore conflict home"
+    Seed-V01Install $TestHome
+    Remove-Item -LiteralPath (Join-Path $TestHome ".agents/skills/orchestrate-sol-luna") -Recurse -Force
+    Remove-Item -LiteralPath (Join-Path $TestHome ".codex/agents/sol-planner.toml") -Force
+    Invoke-Install $TestHome
+    $legacyState = Join-Path $TestHome ".codex/orchestrate-sol-luna/install-state"
+    Write-TestText $legacyState "user-owned legacy state`n"
+    $before = Get-ContractSnapshot $TestHome
+
+    Assert-LifecycleFails -Path $Uninstall -TestHome $TestHome -Parameters @{ RestoreLatest = $true } -ExpectedError "(?i)legacy install state already exists" -Message "RestoreLatest overwrote an existing legacy state"
+    Assert-SnapshotEqual $before (Get-ContractSnapshot $TestHome) "RestoreLatest conflict changed the home"
+}
+
+function Test-OldManifestWithoutLegacyStateFields {
+    $TestHome = Join-Path $TestRoot "old manifest without legacy state fields"
+    Invoke-Install $TestHome
+    $state = Join-Path $TestHome ".codex/sol-luna/install-state"
+    $backupId = ((Get-Content -LiteralPath $state) | Where-Object { $_ -match "^backup_id=" }) -replace "^backup_id=", ""
+    $manifest = Join-Path $TestHome (".codex/sol-luna/backups/{0}/manifest" -f $backupId)
+    $withoutLegacyState = @((Get-Content -LiteralPath $manifest) | Where-Object { $_ -notmatch "^legacy_state_" })
+    Write-TestText $manifest (($withoutLegacyState -join "`n") + "`n")
+
+    Invoke-Uninstall $TestHome
+    Assert-Uninstalled $TestHome
+}
+
+function Test-LegacyStateManifestMalformedRefusal {
+    foreach ($kind in @("partial", "empty-pair")) {
+        $TestHome = Join-Path $TestRoot ("legacy state manifest " + $kind)
+        Seed-V01Install $TestHome
+        Remove-Item -LiteralPath (Join-Path $TestHome ".agents/skills/orchestrate-sol-luna") -Recurse -Force
+        Remove-Item -LiteralPath (Join-Path $TestHome ".codex/agents/sol-planner.toml") -Force
+        Invoke-Install $TestHome
+        $state = Join-Path $TestHome ".codex/sol-luna/install-state"
+        $backupId = ((Get-Content -LiteralPath $state) | Where-Object { $_ -match "^backup_id=" }) -replace "^backup_id=", ""
+        $manifest = Join-Path $TestHome (".codex/sol-luna/backups/{0}/manifest" -f $backupId)
+        $lines = @(Get-Content -LiteralPath $manifest)
+        if ($kind -eq "partial") {
+            $lines = @($lines | ForEach-Object {
+                if ($_ -match "^legacy_state_presence=") { "legacy_state_presence=" }
+                else { $_ }
+            } | Where-Object { $_ -notmatch "^legacy_state_sha256=" })
+        }
+        else {
+            $lines = @($lines | ForEach-Object {
+                if ($_ -match "^legacy_state_presence=") { "legacy_state_presence=" }
+                elseif ($_ -match "^legacy_state_sha256=") { "legacy_state_sha256=" }
+                else { $_ }
+            })
+        }
+        Write-TestText $manifest (($lines -join "`n") + "`n")
+        $before = Get-ContractSnapshot $TestHome
+
+        Assert-LifecycleFails -Path $Uninstall -TestHome $TestHome -Parameters @{ RestoreLatest = $true } -ExpectedError "(?i)(incomplete|presence|checksum)" -Message ("malformed legacy state manifest was accepted: " + $kind)
+        Assert-SnapshotEqual $before (Get-ContractSnapshot $TestHome) ("malformed legacy state manifest changed the home: " + $kind)
+    }
+}
+
+function Test-StateOnlyV01Rollback {
+    foreach ($failpoint in @("after-replace", "after-state")) {
+        $TestHome = Join-Path $TestRoot ("state-only v0.1 rollback " + $failpoint)
+        Seed-V01Install $TestHome
+        Remove-Item -LiteralPath (Join-Path $TestHome ".agents/skills/orchestrate-sol-luna") -Recurse -Force
+        Remove-Item -LiteralPath (Join-Path $TestHome ".codex/agents/sol-planner.toml") -Force
+        $before = Get-ContractSnapshot $TestHome
+
+        Assert-LifecycleFails -Path $Install -TestHome $TestHome -Failpoint $failpoint -Message ("state-only v0.1 " + $failpoint + " did not fail")
+        Assert-SnapshotEqual $before (Get-ContractSnapshot $TestHome) ("state-only v0.1 " + $failpoint + " rollback changed the home")
+    }
+}
+
+function Test-TerraBackupRestoreLatest {
+    $TestHome = Join-Path $TestRoot "Terra backup restore home"
+    $markers = Seed-UserFiles $TestHome
+    Seed-V020Install $TestHome
+    $skill = Join-Path $TestHome ".agents/skills/sol-luna"
+    $sol = Join-Path $TestHome ".codex/agents/sol-controller.toml"
+    $luna = Join-Path $TestHome ".codex/agents/luna-max-worker.toml"
+    $terra = Join-Path $TestHome ".codex/agents/terra-high-worker.toml"
+    Write-TestText $terra "name = 'previous-terra'`nmodel = 'previous-model'`n"
+    $oldSkill = Get-PathFingerprint $skill
+    $oldSol = Get-PathFingerprint $sol
+    $oldLuna = Get-PathFingerprint $luna
+    $oldTerraFingerprint = Get-PathFingerprint $terra
+    $oldTerra = Get-FileDigest $terra
+    $state = Join-Path $TestHome ".codex/sol-luna/install-state"
+    $stateLines = @((Get-Content -LiteralPath $state) | ForEach-Object {
+        if ($_ -match "^terra_sha256=") {
+            "terra_sha256=$oldTerra"
+        }
+        else {
+            $_
+        }
+    })
+    Write-TestText $state (($stateLines -join "`n") + "`n")
+    Assert-True ((Get-Content -LiteralPath $state -Raw) -match "(?m)^terra_sha256=$oldTerra\s*$") "seeded Terra ownership state does not match the existing target"
+
+    Invoke-Install $TestHome
+    Assert-Installed $TestHome
+    Assert-True ($oldTerra -ne (Get-FileDigest $terra)) "owned Terra target was not replaced by v0.2 install"
+
+    $stateText = Get-Content -LiteralPath $state -Raw
+    Assert-True ($stateText -match "(?m)^terra_sha256=[0-9a-f]{64}\s*$") "Terra install state checksum is missing"
+    $backupId = ((Get-Content -LiteralPath $state) | Where-Object { $_ -match "^backup_id=" }) -replace "^backup_id=", ""
+    Assert-True (-not [string]::IsNullOrWhiteSpace($backupId)) "Terra backup id is missing"
+    $manifest = Join-Path $TestHome (".codex/sol-luna/backups/{0}/manifest" -f $backupId)
+    Assert-PathExists $manifest
+    $manifestText = Get-Content -LiteralPath $manifest -Raw
+    Assert-True ($manifestText -match "(?m)^v020_terra_presence=present\s*$") "Terra backup manifest did not record a present target"
+
+    Invoke-Uninstall $TestHome -RestoreLatest
+    Assert-PathAbsent $state
+    Assert-PathExists $skill
+    Assert-PathExists $sol
+    Assert-PathExists $luna
+    Assert-PathExists $terra
+    Assert-Equal $oldSkill (Get-PathFingerprint $skill) "-RestoreLatest did not restore the original v2 skill"
+    Assert-Equal $oldSol (Get-PathFingerprint $sol) "-RestoreLatest did not restore the original v2 Sol target"
+    Assert-Equal $oldLuna (Get-PathFingerprint $luna) "-RestoreLatest did not restore the original v2 Luna target"
+    Assert-Equal $oldTerraFingerprint (Get-PathFingerprint $terra) "-RestoreLatest did not restore the original Terra target"
+    Assert-Equal $oldTerra (Get-FileDigest $terra) "-RestoreLatest did not restore the original Terra target"
+    Assert-UserMarkersPreserved $TestHome $markers
+}
+
+function Test-TerraOwnershipStateRefusal {
+    $TestHome = Join-Path $TestRoot "terra no ownership state home"
+    $markers = Seed-UserFiles $TestHome
+    $terra = Join-Path $TestHome ".codex/agents/terra-high-worker.toml"
+    Write-TestText $terra "name = 'user-owned-terra'`n"
+    $before = Get-ContractSnapshot $TestHome
+
+    $checkExit = Invoke-CheckProcess -Path $Install -TestHome $TestHome
+    Assert-True ($checkExit -ne 0) "check accepted Terra without ownership state"
+    Assert-SnapshotEqual $before (Get-ContractSnapshot $TestHome) "check changed Terra without ownership state"
+    Assert-LifecycleFails -Path $Install -TestHome $TestHome -ExpectedError "(?i)Terra.*ownership state" -Message "install accepted Terra without ownership state"
+    Assert-SnapshotEqual $before (Get-ContractSnapshot $TestHome) "install changed Terra without ownership state"
+    Assert-UserMarkersPreserved $TestHome $markers
+
+    $TestHome = Join-Path $TestRoot "terra missing checksum state home"
+    $markers = Seed-UserFiles $TestHome
+    Invoke-Install $TestHome
+    $state = Join-Path $TestHome ".codex/sol-luna/install-state"
+    $withoutTerra = @((Get-Content -LiteralPath $state) | Where-Object { $_ -notmatch "^terra_sha256=" })
+    Write-TestText $state (($withoutTerra -join "`n") + "`n")
+    $before = Get-ContractSnapshot $TestHome
+
+    $checkExit = Invoke-CheckProcess -Path $Install -TestHome $TestHome
+    Assert-True ($checkExit -ne 0) "check accepted a v0.2 Terra target without a checksum"
+    Assert-SnapshotEqual $before (Get-ContractSnapshot $TestHome) "check changed missing-Terra-checksum state"
+    Assert-LifecycleFails -Path $Install -TestHome $TestHome -ExpectedError "(?i)Terra.*checksum" -Message "install accepted a v0.2 Terra target without a checksum"
+    Assert-SnapshotEqual $before (Get-ContractSnapshot $TestHome) "install changed missing-Terra-checksum state"
+    Assert-UserMarkersPreserved $TestHome $markers
+}
+
 function Test-ModifiedCurrentTargetRefusal {
     $TestHome = Join-Path $TestRoot "modified target home"
     $markers = Seed-UserFiles $TestHome
@@ -509,6 +761,19 @@ function Test-ModifiedCurrentTargetRefusal {
 
     Assert-LifecycleFails -Path $Uninstall -TestHome $TestHome -Message "checksum-mismatched current target was removed"
     Assert-SnapshotEqual $before (Get-ContractSnapshot $TestHome) "modified-target refusal changed the home"
+    Assert-UserMarkersPreserved $TestHome $markers
+}
+
+function Test-ModifiedTerraTargetRefusal {
+    $TestHome = Join-Path $TestRoot "modified Terra target home"
+    $markers = Seed-UserFiles $TestHome
+    Invoke-Install $TestHome
+    $modified = Join-Path $TestHome ".codex/agents/terra-high-worker.toml"
+    [System.IO.File]::AppendAllText($modified, "`nuser modification`n")
+    $before = Get-ContractSnapshot $TestHome
+
+    Assert-LifecycleFails -Path $Uninstall -TestHome $TestHome -ExpectedError "(?i)Terra" -Message "checksum-mismatched Terra target was removed"
+    Assert-SnapshotEqual $before (Get-ContractSnapshot $TestHome) "modified Terra target refusal changed the home"
     Assert-UserMarkersPreserved $TestHome $markers
 }
 
@@ -569,8 +834,17 @@ try {
     Test-FreshRepeatInstallAndSpaces
     Test-V020Upgrade
     Test-V01MigrationAndRestoreLatest
+    Test-StateOnlyV01StateConvergence
+    Test-StateOnlyV01PlainUninstallDoesNotRestore
+    Test-StateOnlyV01RestoreRefusesExistingState
+    Test-OldManifestWithoutLegacyStateFields
+    Test-LegacyStateManifestMalformedRefusal
+    Test-StateOnlyV01Rollback
+    Test-TerraBackupRestoreLatest
+    Test-TerraOwnershipStateRefusal
     Test-ModifiedV01MigrationPreservesUserTargets
     Test-ModifiedCurrentTargetRefusal
+    Test-ModifiedTerraTargetRefusal
     Test-RollbackFailpoint
     Test-CheckModeReadOnly
     Test-IsolatedHomes

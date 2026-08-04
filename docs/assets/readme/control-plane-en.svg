@@ -1,96 +1,103 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 520" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', sans-serif" font-size="18">
-  <title>Control Orbit routing and evidence review plane</title>
-  <desc>Three horizontal lanes compare DIRECT, SOL-ONLY, and SOL → LUNA. Bounded tasks travel along independent paths; each Luna worker returns evidence to Sol for a final PASS, FIX, or BLOCKED decision.</desc>
+  <title>Control Orbit routing with Luna Max and Terra High</title>
+  <desc>Four routes compare DIRECT, SOL-ONLY, SOL → LUNA, and SOL → TERRA. Luna receives independent bounded tasks, Terra handles bounded complex execution for cross-module or high-risk work, and evidence returns to Sol before PASS, FIX, or BLOCKED.</desc>
 
   <rect width="1200" height="520" fill="#0B1020"/>
   <rect x="28" y="24" width="1144" height="472" rx="24" fill="#111A30" stroke="#9AA6B8" stroke-opacity="0.35" stroke-width="2"/>
   <text x="54" y="62" fill="#F7F3E8" font-size="30" font-weight="800" letter-spacing="2">CONTROL ORBIT · ROUTING PROOF</text>
   <path d="M52 78H1148" fill="none" stroke="#9AA6B8" stroke-opacity="0.35" stroke-width="2"/>
 
-  <rect x="52" y="94" width="1096" height="82" rx="16" fill="#0B1020" stroke="#9AA6B8" stroke-opacity="0.28" stroke-width="2"/>
-  <rect x="52" y="190" width="1096" height="82" rx="16" fill="#0B1020" stroke="#9AA6B8" stroke-opacity="0.28" stroke-width="2"/>
-  <rect x="52" y="286" width="1096" height="174" rx="16" fill="#0B1020" stroke="#65D6C4" stroke-opacity="0.55" stroke-width="2"/>
+  <rect x="52" y="94" width="1096" height="68" rx="16" fill="#0B1020" stroke="#9AA6B8" stroke-opacity="0.28" stroke-width="2"/>
+  <rect x="52" y="172" width="1096" height="68" rx="16" fill="#0B1020" stroke="#9AA6B8" stroke-opacity="0.28" stroke-width="2"/>
+  <rect x="52" y="250" width="1096" height="116" rx="16" fill="#0B1020" stroke="#65D6C4" stroke-opacity="0.55" stroke-width="2"/>
+  <rect x="52" y="376" width="1096" height="82" rx="16" fill="#0B1020" stroke="#9AA6B8" stroke-opacity="0.55" stroke-width="2"/>
 
-  <text x="76" y="132" fill="#F7F3E8" font-size="24" font-weight="800">DIRECT</text>
-  <text x="76" y="158" fill="#9AA6B8" font-size="18">Current Codex completes the task · Zero delegation</text>
-  <path d="M366 136H1090" fill="none" stroke="#9AA6B8" stroke-width="3" stroke-linecap="round"/>
-  <path d="M1090 136L1076 128V144Z" fill="#9AA6B8"/>
-  <text x="1112" y="142" text-anchor="end" fill="#F7F3E8" font-size="20" font-weight="700">DONE</text>
+  <text x="76" y="126" fill="#F7F3E8" font-size="24" font-weight="800">DIRECT</text>
+  <text x="76" y="148" fill="#9AA6B8" font-size="18">Current Codex · zero delegation</text>
+  <path d="M362 128H1030" fill="none" stroke="#9AA6B8" stroke-width="3" stroke-linecap="round"/>
+  <path d="M1030 128L1016 120V136Z" fill="#9AA6B8"/>
+  <text x="1110" y="134" text-anchor="end" fill="#F7F3E8" font-size="20" font-weight="700">DONE</text>
 
-  <text x="76" y="228" fill="#F7F3E8" font-size="24" font-weight="800">SOL-ONLY</text>
-  <text x="76" y="254" fill="#9AA6B8" font-size="18">Plan / decide / review · No Luna</text>
-  <path d="M366 232H1090" fill="none" stroke="#FF6B3D" stroke-width="3" stroke-linecap="round"/>
-  <circle cx="650" cy="232" r="8" fill="#FF6B3D"/>
-  <circle cx="860" cy="232" r="8" fill="#FF6B3D"/>
-  <path d="M1090 232L1076 224V240Z" fill="#FF6B3D"/>
+  <text x="76" y="204" fill="#F7F3E8" font-size="24" font-weight="800">SOL-ONLY</text>
+  <text x="76" y="226" fill="#9AA6B8" font-size="18">Plan · decide · review · No worker</text>
+  <path d="M362 206H1078" fill="none" stroke="#FF6B3D" stroke-width="3" stroke-linecap="round"/>
+  <circle cx="650" cy="206" r="8" fill="#FF6B3D"/>
+  <circle cx="860" cy="206" r="8" fill="#FF6B3D"/>
+  <path d="M1078 206L1064 198V214Z" fill="#FF6B3D"/>
 
-  <text x="76" y="324" fill="#F7F3E8" font-size="24" font-weight="800">SOL → LUNA</text>
-  <text x="76" y="344" fill="#65D6C4" font-size="18">Bounded task →</text>
-  <text x="76" y="362" fill="#65D6C4" font-size="18">unique owner →</text>
-  <text x="76" y="380" fill="#65D6C4" font-size="18">evidence return</text>
+  <text x="76" y="282" fill="#F7F3E8" font-size="24" font-weight="800">SOL → LUNA</text>
+  <text x="76" y="306" fill="#65D6C4" font-size="18">Bounded task</text>
+  <text x="76" y="326" fill="#65D6C4" font-size="18">unique owner</text>
+  <text x="76" y="346" fill="#65D6C4" font-size="18">evidence → Sol</text>
 
   <g fill="none" stroke="#FF6B3D" stroke-width="4" stroke-linecap="round">
-    <path id="task-path-1" data-flow="task" data-from="sol-controller" data-to="luna-worker-1" d="M340 378C390 354 440 346 492 346"/>
-    <path id="task-path-2" data-flow="task" data-from="sol-controller" data-to="luna-worker-2" d="M340 386H492"/>
-    <path id="task-path-3" data-flow="task" data-from="sol-controller" data-to="luna-worker-3" d="M340 394C390 418 440 432 492 432"/>
+    <path id="task-path-1" data-flow="task" data-from="sol-controller" data-to="luna-worker-1" d="M360 294C392 286 422 282 456 282"/>
+    <path id="task-path-2" data-flow="task" data-from="sol-controller" data-to="luna-worker-2" d="M360 308H596"/>
+    <path id="task-path-3" data-flow="task" data-from="sol-controller" data-to="luna-worker-3" d="M360 322C430 334 500 340 736 340"/>
   </g>
   <g fill="none" stroke="#8FA7FF" stroke-width="4" stroke-dasharray="6 10" stroke-linecap="round">
-    <path id="evidence-path-1" data-flow="evidence" data-from="luna-worker-1" data-to="sol-controller" d="M492 362C440 374 390 386 340 402"/>
-    <path id="evidence-path-2" data-flow="evidence" data-from="luna-worker-2" data-to="sol-controller" d="M492 389H342"/>
-    <path id="evidence-path-3" data-flow="evidence" data-from="luna-worker-3" data-to="sol-controller" d="M492 420C440 408 390 396 340 370"/>
+    <path id="evidence-path-1" data-flow="evidence" data-from="luna-worker-1" data-to="sol-controller" d="M456 294C424 300 392 310 360 322"/>
+    <path id="evidence-path-2" data-flow="evidence" data-from="luna-worker-2" data-to="sol-controller" d="M596 320C512 330 430 330 360 314"/>
+    <path id="evidence-path-3" data-flow="evidence" data-from="luna-worker-3" data-to="sol-controller" d="M736 352C570 360 438 352 360 330"/>
   </g>
   <g fill="#FF6B3D">
-    <path d="M492 342L504 346L492 350Z"/>
-    <path d="M492 385L504 389L492 393Z"/>
-    <path d="M492 428L504 432L492 436Z"/>
+    <path d="M456 278L468 282L456 286Z"/>
+    <path d="M596 304L608 308L596 312Z"/>
+    <path d="M736 336L748 340L736 344Z"/>
   </g>
   <g fill="#8FA7FF">
-    <path d="M340 398L328 402L340 406Z"/>
-    <path d="M342 385L330 389L342 393Z"/>
-    <path d="M340 366L328 370L340 374Z"/>
+    <path d="M360 318L348 322L360 326Z"/>
+    <path d="M360 310L348 314L360 318Z"/>
+    <path d="M360 326L348 330L360 334Z"/>
   </g>
 
   <g id="sol-controller">
-    <rect x="252" y="338" width="96" height="96" rx="16" fill="#FF6B3D" fill-opacity="0.16" stroke="#FF6B3D" stroke-width="2"/>
-    <rect x="264" y="350" width="72" height="72" rx="12" fill="#FF6B3D" stroke="#F7F3E8" stroke-width="3"/>
-    <rect x="276" y="368" width="48" height="36" rx="7" fill="#0B1020" stroke="#F7F3E8" stroke-width="2"/>
-    <circle cx="284" cy="376" r="3" fill="#65D6C4"/>
-    <path d="M294 376H316M284 398H316" stroke="#F7F3E8" stroke-width="3" stroke-linecap="round"/>
-    <text x="300" y="394" text-anchor="middle" fill="#F7F3E8" font-size="22" font-weight="800">SOL</text>
+    <rect x="264" y="282" width="96" height="72" rx="16" fill="#FF6B3D" fill-opacity="0.16" stroke="#FF6B3D" stroke-width="2"/>
+    <rect x="276" y="294" width="72" height="48" rx="12" fill="#FF6B3D" stroke="#F7F3E8" stroke-width="3"/>
+    <rect x="284" y="302" width="56" height="32" rx="7" fill="#0B1020" stroke="#F7F3E8" stroke-width="2"/>
+    <circle cx="294" cy="311" r="3" fill="#65D6C4"/>
+    <path d="M304 311H330M294 326H330" stroke="#F7F3E8" stroke-width="3" stroke-linecap="round"/>
+    <text x="312" y="326" text-anchor="middle" fill="#F7F3E8" font-size="20" font-weight="800">SOL</text>
   </g>
-  <text x="76" y="438" fill="#F7F3E8" font-size="20" font-weight="700">Sol plans ·</text>
-  <text x="76" y="454" fill="#F7F3E8" font-size="20" font-weight="700">decides · reviews</text>
 
   <g id="luna-worker-1">
-    <rect x="493" y="322" width="54" height="48" rx="10" fill="#65D6C4" fill-opacity="0.16" stroke="#65D6C4" stroke-width="2"/>
-    <rect x="500" y="328" width="40" height="36" rx="7" fill="#65D6C4" stroke="#F7F3E8" stroke-width="2"/>
-    <circle cx="508" cy="335" r="3" fill="#0B1020"/>
-    <path d="M516 335H533M508 346H533M508 357H527" stroke="#0B1020" stroke-width="3" stroke-linecap="round"/>
-    <text x="560" y="353" fill="#65D6C4" font-size="20" font-weight="700">Luna 1 · unique owner</text>
+    <rect x="456" y="264" width="112" height="48" rx="12" fill="#65D6C4" fill-opacity="0.16" stroke="#65D6C4" stroke-width="2"/>
+    <text x="512" y="285" text-anchor="middle" fill="#65D6C4" font-size="20" font-weight="800">LUNA 1</text>
+    <text x="512" y="304" text-anchor="middle" fill="#F7F3E8" font-size="18">owner</text>
   </g>
   <g id="luna-worker-2">
-    <rect x="493" y="365" width="54" height="48" rx="10" fill="#65D6C4" fill-opacity="0.16" stroke="#65D6C4" stroke-width="2"/>
-    <rect x="500" y="371" width="40" height="36" rx="7" fill="#65D6C4" stroke="#F7F3E8" stroke-width="2"/>
-    <circle cx="508" cy="378" r="3" fill="#0B1020"/>
-    <path d="M516 378H533M508 389H533M508 400H527" stroke="#0B1020" stroke-width="3" stroke-linecap="round"/>
-    <text x="560" y="396" fill="#65D6C4" font-size="20" font-weight="700">Luna 2 · unique owner</text>
+    <rect x="596" y="290" width="112" height="48" rx="12" fill="#65D6C4" fill-opacity="0.16" stroke="#65D6C4" stroke-width="2"/>
+    <text x="652" y="311" text-anchor="middle" fill="#65D6C4" font-size="20" font-weight="800">LUNA 2</text>
+    <text x="652" y="330" text-anchor="middle" fill="#F7F3E8" font-size="18">owner</text>
   </g>
   <g id="luna-worker-3">
-    <rect x="493" y="408" width="54" height="48" rx="10" fill="#65D6C4" fill-opacity="0.16" stroke="#65D6C4" stroke-width="2"/>
-    <rect x="500" y="414" width="40" height="36" rx="7" fill="#65D6C4" stroke="#F7F3E8" stroke-width="2"/>
-    <circle cx="508" cy="421" r="3" fill="#0B1020"/>
-    <path d="M516 421H533M508 432H533M508 443H527" stroke="#0B1020" stroke-width="3" stroke-linecap="round"/>
-    <text x="560" y="439" fill="#65D6C4" font-size="20" font-weight="700">Luna 3 · unique owner</text>
+    <rect x="736" y="316" width="112" height="48" rx="12" fill="#65D6C4" fill-opacity="0.16" stroke="#65D6C4" stroke-width="2"/>
+    <text x="792" y="337" text-anchor="middle" fill="#65D6C4" font-size="20" font-weight="800">LUNA 3</text>
+    <text x="792" y="356" text-anchor="middle" fill="#F7F3E8" font-size="18">owner</text>
   </g>
 
-  <rect x="820" y="316" width="270" height="32" rx="10" fill="#65D6C4" fill-opacity="0.12" stroke="#65D6C4" stroke-opacity="0.55" stroke-width="2"/>
-  <rect x="820" y="354" width="270" height="32" rx="10" fill="#FF6B3D" fill-opacity="0.12" stroke="#FF6B3D" stroke-opacity="0.55" stroke-width="2"/>
-  <rect x="820" y="392" width="270" height="32" rx="10" fill="#8FA7FF" fill-opacity="0.12" stroke="#8FA7FF" stroke-opacity="0.55" stroke-width="2"/>
-  <text x="955" y="339" text-anchor="middle" fill="#65D6C4" font-size="22" font-weight="800">PASS</text>
-  <text x="955" y="377" text-anchor="middle" fill="#FF6B3D" font-size="22" font-weight="800">FIX</text>
-  <text x="955" y="415" text-anchor="middle" fill="#8FA7FF" font-size="22" font-weight="800">BLOCKED</text>
+  <text x="978" y="274" text-anchor="middle" fill="#9AA6B8" font-size="18">evidence → Sol → outcome</text>
+  <rect x="878" y="282" width="200" height="22" rx="8" fill="#65D6C4" fill-opacity="0.12" stroke="#65D6C4" stroke-opacity="0.55" stroke-width="2"/>
+  <rect x="878" y="314" width="200" height="22" rx="8" fill="#FF6B3D" fill-opacity="0.12" stroke="#FF6B3D" stroke-opacity="0.55" stroke-width="2"/>
+  <rect x="878" y="346" width="200" height="22" rx="8" fill="#8FA7FF" fill-opacity="0.12" stroke="#8FA7FF" stroke-opacity="0.55" stroke-width="2"/>
+  <text x="978" y="300" text-anchor="middle" fill="#65D6C4" font-size="20" font-weight="800">PASS</text>
+  <text x="978" y="332" text-anchor="middle" fill="#FF6B3D" font-size="20" font-weight="800">FIX</text>
+  <text x="978" y="364" text-anchor="middle" fill="#8FA7FF" font-size="20" font-weight="800">BLOCKED</text>
 
-  <path d="M76 468H1124" fill="none" stroke="#9AA6B8" stroke-opacity="0.35" stroke-width="2"/>
-  <text x="76" y="488" fill="#F7F3E8" font-size="20" font-weight="700">One file, one owner · overlapping scopes never run concurrently</text>
+  <text x="76" y="408" fill="#F7F3E8" font-size="24" font-weight="800">SOL → TERRA</text>
+  <text x="76" y="432" fill="#9AA6B8" font-size="18">Cross-module / high-risk</text>
+  <path id="terra-task-orbit" data-tier="terra" d="M362 416H676" fill="none" stroke="#9AA6B8" stroke-width="3" stroke-linecap="round"/>
+  <path id="terra-evidence-orbit" data-tier="terra" d="M676 440H362" fill="none" stroke="#9AA6B8" stroke-width="3" stroke-dasharray="5 9" stroke-linecap="round"/>
+  <path d="M676 412L688 416L676 420Z" fill="#9AA6B8"/>
+  <path d="M362 436L350 440L362 444Z" fill="#9AA6B8"/>
+  <g id="terra-high-worker">
+    <rect x="688" y="398" width="216" height="48" rx="12" fill="#9AA6B8" fill-opacity="0.12" stroke="#9AA6B8" stroke-opacity="0.7" stroke-width="2"/>
+    <text x="796" y="420" text-anchor="middle" fill="#F7F3E8" font-size="20" font-weight="800">TERRA HIGH</text>
+    <text x="796" y="439" text-anchor="middle" fill="#9AA6B8" font-size="18">bounded complex execution</text>
+  </g>
+  <text x="1052" y="424" text-anchor="middle" fill="#9AA6B8" font-size="18">evidence returns to Sol</text>
+
+  <path d="M76 470H1124" fill="none" stroke="#9AA6B8" stroke-opacity="0.35" stroke-width="2"/>
+  <text x="76" y="490" fill="#F7F3E8" font-size="20" font-weight="700">One file, one owner · overlapping scopes never run concurrently</text>
 </svg>

@@ -63,7 +63,8 @@ function Assert-Regex {
 function Assert-TomlAgents {
     param(
         [Parameter(Mandatory = $true)][string]$SolPath,
-        [Parameter(Mandatory = $true)][string]$LunaPath
+        [Parameter(Mandatory = $true)][string]$LunaPath,
+        [Parameter(Mandatory = $true)][string]$TerraPath
     )
 
     $pythonCode = @'
@@ -71,7 +72,7 @@ import re
 import sys
 import tomllib
 
-sol_path, luna_path = sys.argv[1:3]
+sol_path, luna_path, terra_path = sys.argv[1:4]
 expected = {
     sol_path: {
         "name": "sol-controller",
@@ -85,6 +86,12 @@ expected = {
         "model_reasoning_effort": "max",
         "sandbox_mode": "workspace-write",
     },
+    terra_path: {
+        "name": "terra-high-worker",
+        "model": "gpt-5.6-terra",
+        "model_reasoning_effort": "high",
+        "sandbox_mode": "workspace-write",
+    },
 }
 
 for path, fields in expected.items():
@@ -96,7 +103,7 @@ for path, fields in expected.items():
     instructions = data.get("developer_instructions")
     if not isinstance(instructions, str) or not instructions.strip():
         raise SystemExit(1)
-    if path == luna_path and not re.search(
+    if path in (luna_path, terra_path) and not re.search(
         r"do not (?:spawn|create).*subagent", instructions, re.IGNORECASE | re.DOTALL
     ):
         raise SystemExit(1)
@@ -117,7 +124,7 @@ for path, fields in expected.items():
             if ($candidateName -eq "py") {
                 $arguments += "-3"
             }
-            $arguments += @($tempPath, $SolPath, $LunaPath)
+            $arguments += @($tempPath, $SolPath, $LunaPath, $TerraPath)
             try {
                 & $command.Source @arguments *> $null
                 if ($LASTEXITCODE -eq 0) {
@@ -283,6 +290,7 @@ $requiredFiles = @(
     ".agents/skills/sol-luna/references/runtime-notes.md",
     ".codex/agents/sol-controller.toml",
     ".codex/agents/luna-max-worker.toml",
+    ".codex/agents/terra-high-worker.toml",
     "scripts/install.sh",
     "scripts/validate.sh",
     "scripts/test.sh",
@@ -339,7 +347,8 @@ foreach ($marker in @("interface:", "display_name:", "short_description:", "defa
 
 $solPath = Join-Path $repoRoot ".codex/agents/sol-controller.toml"
 $lunaPath = Join-Path $repoRoot ".codex/agents/luna-max-worker.toml"
-Assert-TomlAgents $solPath $lunaPath
+$terraPath = Join-Path $repoRoot ".codex/agents/terra-high-worker.toml"
+Assert-TomlAgents $solPath $lunaPath $terraPath
 
 foreach ($markdown in @(Get-ChildItem -LiteralPath $repoRoot -Filter "*.md" -File -Force -Recurse)) {
     if ($markdown.FullName.IndexOf(([System.IO.Path]::DirectorySeparatorChar + ".git" + [System.IO.Path]::DirectorySeparatorChar), [System.StringComparison]::OrdinalIgnoreCase) -ge 0) {
@@ -392,7 +401,7 @@ foreach ($path in @(
     Assert-PowerShellSyntax $path
 }
 
-$forbiddenSkillTerms = @("IPZOR", "Buzz", "DeepSeek", "OpenPencil", "gpt-5.6-terra")
+$forbiddenSkillTerms = @("IPZOR", "Buzz", "DeepSeek", "OpenPencil")
 foreach ($path in @(Get-ChildItem -LiteralPath $skillRoot -File -Force -Recurse)) {
     $text = Read-Utf8Text $path.FullName
     foreach ($term in $forbiddenSkillTerms) {
