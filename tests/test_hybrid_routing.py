@@ -142,7 +142,7 @@ class TerraAgentContractTests(unittest.TestCase):
         require_pattern(
             self,
             text,
-            r"(?:Luna(?:\s+Max)?|Luna).{0,260}(?:first|首次).{0,120}(?:failure|失败).{0,260}"
+            r"(?:Luna(?:\s+Max)?|Luna).{0,260}(?:first|首次|第一次).{0,120}(?:failure|失败).{0,260}"
             r"(?:Terra(?:\s+High)?|Terra|升级).{0,260}(?:infinite|unbounded|无限).{0,100}(?:retry|重试)",
             "Skill must escalate a misclassified Luna task to Terra without unbounded Luna retries",
         )
@@ -372,7 +372,7 @@ class OwnershipTransferContractTests(unittest.TestCase):
             self.assertTrue(text, path)
             self.assertRegex(
                 text,
-                r"(?i)Luna.{0,220}(?:first|首次).{0,120}(?:failure|失败).{0,240}(?:"
+                r"(?i)Luna.{0,220}(?:first|首次|第一次).{0,120}(?:failure|失败).{0,240}(?:"
                 r"(?:before|without|prior to|在.{0,20}之前).{0,160}"
                 r"(?:write|written|wrote|写入).{0,120}(?:owned file|owned-file|owned_file|文件)"
                 r"|(?:write|written|wrote|写入).{0,120}(?:owned file|owned-file|owned_file|文件).{0,160}"
@@ -381,7 +381,7 @@ class OwnershipTransferContractTests(unittest.TestCase):
             )
             self.assertRegex(
                 text,
-                r"(?i)(?:Luna|露娜).{0,180}(?:wrote|written|写入).{0,180}"
+                r"(?i)(?:Luna|露娜).{0,180}(?:writes?|wrote|written|写入).{0,180}"
                 r"(?:owned file|owned-file|owned_file|文件).{0,240}"
                 r"(?:retains?|keeps?|remains?|保留|继续持有).{0,180}"
                 r"(?:ownership|owner|所有权|owner)",
@@ -429,8 +429,8 @@ class ReadmeCostContractTests(unittest.TestCase):
             self.assertTrue(text, path)
             for label, value in (
                 (r"(?:Sol|索尔)", r"1(?:\.0+)?"),
-                (r"(?:Terra(?:\s+High)?|Terra 高)", r"0\.4"),
-                (r"(?:Luna(?:\s+Max)?|Luna 高)", r"0\.04"),
+                (r"(?:Terra(?:\s+High)?|Terra 高)", r"0\.4(?:0+)?"),
+                (r"(?:Luna(?:\s+Max)?|Luna 高)", r"0\.04(?:0+)?"),
             ):
                 windows = self.nearby_windows(text, label)
                 self.assertTrue(windows, f"{path.name}: missing relative quota label {label}")
@@ -444,8 +444,7 @@ class ReadmeCostContractTests(unittest.TestCase):
         required_ranges = (
             (r"(?:ordinary|typical|普通)", r"72\s*%.*76\s*%"),
             (r"(?:mixed|hybrid|混合)", r"50\s*%.*60\s*%"),
-            (r"(?:complex\s+direct|direct.{0,30}complex|复杂.{0,20}直接)", r"33\s*%.*43\s*%"),
-            (r"(?:composite|combined|综合)", r"(?:about|around|约|≈)?\s*56\s*%"),
+            (r"(?:complex|复杂)", r"33\s*%.*43\s*%"),
         )
         unsafe_legacy_markers = re.compile(
             r"(?i)(?:historical|legacy|prior|previous|not\s+current|"

@@ -1,162 +1,70 @@
 [简体中文](README.md) · [English](README.en.md)
 
-![Sol single controller routes bounded work to Luna Max or Terra High and receives FILES, DIFF, and TEST evidence](docs/assets/readme/hero-en.svg)
+![Sol acts as the single controller, routes bounded work to Terra High or Luna Max, and performs the final review after evidence returns](docs/assets/readme/hero-en.svg)
 
 # Sol Luna
 
-**One Sol controller. Tiered Luna Max and Terra High execution. Delivery only after real files and evidence pass review.**
+**One Sol controller. Terra High and Luna Max as tiered executors. Real files and evidence before delivery.**
 
-`codex-sol-luna` is a small, general-purpose Codex orchestration Skill. Simple work
-stays with the current Codex; complex work is understood, planned, assigned, and reviewed
-by Sol, then sent to the appropriate bounded execution tier.
+`codex-sol-luna` is a lightweight orchestration Skill for Codex. It does not optimize for “more agents.” It gives each model the kind of work it is best suited to perform:
 
-| Ordinary clear task | Mixed project | Complex direct allocation | Composite center |
-| --- | --- | --- | --- |
-| **72%–76% budget saving** | **50%–60% budget saving** | **33%–43% budget saving** | **about 56%** |
+- **Sol** is the single controller: understand the goal, define completion criteria, plan, assign, schedule, and perform the final review.
+- **Terra High** is the complex execution tier: cross-module work, long-context investigation, ambiguous debugging, shared interfaces, and high-risk implementation.
+- **Luna Max** is the lightweight execution tier: clear, low-ambiguity, tightly bounded, independently verifiable work.
 
-These are budget ranges recomputed from official model ratios, routing workload, and
-orchestration overhead. They are not fixed outcomes and are not a guarantee for every task. Simple Direct work
-uses zero delegation and claims **0%** routing saving; the new mixed route has no completed
-matched A/B comparison. A lower credit budget does not mean the work is always faster:
-actual results depend on total tokens, repeated context, Sol review, and rework.
+Simple tasks stay with the current Codex session. Explicitly invoke `$sol-luna` for work that is complex, cross-module, parallelizable, or high-consequence.
 
-The canonical repository is [yehyakin/codex-sol-luna](https://github.com/yehyakin/codex-sol-luna).
-Invoke `$sol-luna` explicitly when work is complex, cross-module, or high consequence.
+Runtime output defaults to Simplified Chinese unless the user explicitly requests another language.
 
-## v0.3.0 release status
+> **One Sol, two execution tiers. Terra and Luna are leaf executors: neither may create subagents or approve the overall task.**
 
-| Verification surface | Result |
-| --- | --- |
-| Local repository | Skill Creator **PASS**; **106/106** tests PASS |
-| Hosted CI | POSIX **PASS**; Windows Server 2022 / `windows-latest` × Windows PowerShell 5.1 / PowerShell 7 **PASS** |
-| Orchestration mode | **Compatibility verified**; Native Nested, fresh-CLI child model/effort identity, and physical Windows 11 remain unproven |
+Canonical repository: [yehyakin/codex-sol-luna](https://github.com/yehyakin/codex-sol-luna)
 
-Evidence is bound to report commit `6895f06`: [POSIX CI](https://github.com/yehyakin/codex-sol-luna/actions/runs/30858707335) · [Windows CI](https://github.com/yehyakin/codex-sol-luna/actions/runs/30858707364) · [full implementation report](ORCHESTRATE_SOL_LUNA_V2_IMPLEMENTATION_REPORT.md)
+## Why it can reduce cost
 
-![Control Orbit shows Direct, Sol-only, Sol → Luna, and Sol → Terra routes with PASS, FIX, and BLOCKED evidence returning to Sol](docs/assets/readme/control-plane-en.svg)
+The cost strategy is straightforward:
 
-## 60-second quickstart
+> **Keep goal interpretation, boundary decisions, and final review with Sol; route implementation to Terra or Luna according to complexity.**
 
-From a [codex-sol-luna](https://github.com/yehyakin/codex-sol-luna) checkout, validate
-before installing:
+Using the official API prices and Codex token-based rate card checked on **2026-08-04**, the relative cost of the same token type is:
 
-```sh
-bash scripts/validate.sh
-bash scripts/install.sh
-```
+| Model | Relative cost | Responsibility in this project |
+| --- | ---: | --- |
+| **Sol** | **1.00×** | Understand, plan, assign, schedule, and review |
+| **Terra High** | **0.40×** | Complex, cross-module, long-context, or high-risk execution |
+| **Luna Max** | **0.04×** | Clear, low-ambiguity, high-throughput execution |
 
-Describe the goal, `done_when`, file ownership, and verification commands to Codex, then
-invoke `$sol-luna`. Small, independent, or explanation-only work stays Direct; the complete
-platform commands and uninstall/rollback path are in [Platforms and lifecycle](#platforms-and-lifecycle).
+For the same token type:
 
-## One controller, one execution workshop
+- Terra costs about **40%** of Sol;
+- Luna costs about **4%** of Sol;
+- Luna does not replace Sol—it moves large amounts of well-specified execution away from Sol while preserving Sol's judgment and review role.
 
-Sol is the only controller: it owns goal interpretation, completion criteria, stage planning,
-file ownership, routing, and final review. Luna Max handles clear, low-ambiguity, falsifiable
-tasks with a small context; it may edit only its assigned scope and must not create subagents.
-Terra High handles cross-module work, long context, ambiguous debugging, shared interfaces, or
-high-risk implementation; it also stays inside an exact `write_scope` and must not create
-subagents. Sol, Luna, and Terra are not a fixed three-agent team: runtime selection follows
-the task and live capacity.
+### Reproducible budget projections
 
-```text
-User goal → Sol single controller plans and routes
-          → Luna Max (low ambiguity) or Terra High (cross-module/high risk) executes bounded work
-          → Sol reviews real files, diff, and evidence → deliver or block
-```
+The table below uses an “all work performed by Sol” baseline of `1.00×`. Model token shares total 100%. `Orchestration overhead` represents additional Sol planning, review, coordination, and necessary rework as a fraction of the all-Sol baseline.
 
-| Role | Model / effort | Responsibility | Boundary |
-| --- | --- | --- | --- |
-| Sol | `gpt-5.6-sol` / `high` | controller, planner, router, final reviewer | orchestration and final decision only |
-| Luna Max | `gpt-5.6-luna` / `max` | implementation and self-check for clear work | assigned files only; no subagents |
-| Terra High | `gpt-5.6-terra` / `high` | cross-module, long-context, ambiguous-debugging, shared-interface, high-risk implementation | assigned files only; no subagents |
+| Scenario | Example token routing | Orchestration overhead | Projected saving |
+| --- | --- | ---: | ---: |
+| **Ordinary clear project** | Sol 10% · Terra 20% · Luna 70% | 3%–7% | **72.2%–76.2%** |
+| **Mixed project** | Sol 20% · Terra 40% · Luna 40% | 2%–12% | **50.4%–60.4%** |
+| **Complex project** | Sol 25% · Terra 60% · Luna 15% | 7%–17% | **33.4%–43.4%** |
+| **Direct small task** | The current Codex completes it without delegation | 0% | **0% routing saving** |
 
-## Choose the route
+These values are `scenario_model_projection`: they are planning estimates, **not matched A/B experiments, not per-task guarantees, and not latency promises**. Repeated context, poor decomposition, parallel waiting, output volume, Fast mode, and rework can reduce or reverse the saving.
 
-The Skill does not delegate everything. First decide whether planning, execution, and review
-are worth their coordination cost:
+A defensible public claim is therefore:
 
-| Route | Use it for | Delegation and result |
-| --- | --- | --- |
-| **Direct** | Small, independent, clearly specified work | Zero delegation, **0%** routing saving, current Codex completes it |
-| **Sol-only** | Clarification, planning, or review without file changes | Sol plans/reviews and stops before the execution workshop |
-| **Sol → Luna** | Low-ambiguity, falsifiable work with a small context and real changes | Luna works within a unique owner scope and returns evidence to Sol |
-| **Sol → Terra** | Cross-module, long-context, ambiguous debugging, shared interfaces, or high-risk implementation | Terra works within an exact owner scope and returns evidence to Sol |
+> **Ordinary clear projects can project roughly 72%–76% savings, typical mixed projects roughly 50%–60%, and complex projects roughly 33%–43%; actual results must be recalculated from real routing and token usage.**
 
-Parallelism is allowed only for disjoint owner scopes; one file has one owner for the entire run.
-Dependencies, shared interfaces, and uncertain boundaries wait or stay with one executor. Worker
-count follows live capacity, not a fixed public team size.
+It is not accurate to compress every workload into a fixed “56% average saving.”
 
-## Workflow
+<details>
+<summary><strong>View official rates, formula, and full calculation</strong></summary>
 
-Every delegated task follows an auditable loop:
+### API prices
 
-1. **Plan.** Sol records `goal`, `done_when`, dependencies, exact `write_scope`, exclusions, and verification.
-2. **Execute.** Luna or Terra receives `Task ID`, `Task`, `Context`, `Write scope`, `Do not touch`,
-   `Expected result`, and `Verification`, and edits only that scope.
-3. **Self-check.** The executor runs the requested checks and returns exact changed paths, diff, tests, and build evidence.
-4. **Review.** Sol inspects real files and fresh evidence and decides `PASS`, one focused `FIX`, or `BLOCKED`.
-
-Only when Luna's first failure happens before Luna writes any owned file may Sol escalate the same
-task and unchanged scope to Terra once; Luna must not be retried indefinitely. If Luna has written
-any owned file before failing, Luna retains all ownership; only the original Luna owner may receive
-one focused fix, otherwise return `BLOCKED`. Terra's write state is never the escalation gate. Sol
-reviews the re-routed result before delivery.
-
-## Reliability comes from boundaries
-
-Reliability comes from provable identity, ownership, evidence freshness, and bounded correction,
-not from a single configuration label.
-
-### Runtime identity and fail-closed behavior
-
-| Agent | Model | Reasoning effort | Effective sandbox |
-| --- | --- | --- | --- |
-| `sol-controller` | `gpt-5.6-sol` | `high` | `read-only` |
-| `luna-max-worker` | `gpt-5.6-luna` | `max` | `workspace-write`, constrained by parent boundary |
-| `terra-high-worker` | `gpt-5.6-terra` | `high` | `workspace-write`, constrained by parent boundary |
-
-Startup must prove the selected custom agent, exact model, reasoning effort, and effective
-permission boundary. If any identity or permission cannot be proved, runtime **fails closed**
-instead of silently substituting a similar model, role, effort, or sandbox. Luna Max and Terra
-High must not spawn or create subagents, widen their write scope, rewrite Sol's plan, approve
-the overall task, or present a partial result as delivery.
-
-### Stages, ownership, evidence, and correction
-
-A worker delivery is not final approval; completion requires Sol to review the real diff. Evidence
-must bind to the final candidate through commit+diff identity or an exact changed-file snapshot.
-If the candidate changes after verification, prior evidence is stale and affected checks rerun.
-A transport/spawn `completed` event only proves delivery lifecycle; it cannot replace a structured
-result or Sol review.
-
-Sol may send at most one focused correction to the original owner and scope. A second failure,
-missing dependency, or expanded scope is `BLOCKED`. A correction packet includes `Failure class`
-and `Delta`; an identical packet without new evidence must not relaunch. Long tasks may create a
-resume packet with only `goal`, `completed`, `in_flight`, `artifact_location`, and `next_action`;
-short tasks and Direct work do not create one.
-
-The machine-readable result packet is:
-
-```text
-Task ID: <stable task id>
-Status: PASS | BLOCKED
-Summary: <what happened>
-Changed: <exact files, or None>
-Verification: <commands, exit status, and concise output>
-Evidence: <diff, test, build, log, or artifact location bound to the final candidate>
-Failure class: runtime | model_identity | permission | dependency | scope | verification | conflict | none
-Blocker: <None or the concrete blocker>
-```
-
-## Cost model and evidence boundary
-
-This model separates API token dollars from the capacity represented by subscription credits. Official
-sources are the [OpenAI model comparison](https://developers.openai.com/api/docs/models/compare) and the
-official [Codex rate card](https://help.openai.com/en/articles/20001106-codex-rate-card). This snapshot is dated
-**2026-08-03**; recheck both sources before publication.
-
-### API price per 1M tokens
+Per 1M tokens:
 
 | Model | Input | Cached input | Output |
 | --- | ---: | ---: | ---: |
@@ -164,182 +72,356 @@ official [Codex rate card](https://help.openai.com/en/articles/20001106-codex-ra
 | GPT-5.6 Terra | $2.00 | $0.20 | $12.00 |
 | GPT-5.6 Luna | $0.20 | $0.02 | $1.20 |
 
-### Codex credits per 1M tokens
+### Codex token-based credits
+
+Per 1M tokens:
 
 | Model | Input | Cached input | Output |
 | --- | ---: | ---: | ---: |
-| GPT-5.6 Sol | 125 | 12.5 | 750 |
-| GPT-5.6 Terra | 50 | 5 | 300 |
-| GPT-5.6 Luna | 5 | 0.5 | 30 |
+| GPT-5.6 Sol | 125 credits | 12.5 credits | 750 credits |
+| GPT-5.6 Terra | 50 credits | 5 credits | 300 credits |
+| GPT-5.6 Luna | 5 credits | 0.5 credits | 30 credits |
 
-Relative to Sol, the current ratios are Sol `1.0x`, Terra `0.4x`, and Luna `0.04x`. A
-simple, reproducible blended formula is:
+The current relative ratios are identical across both accounting surfaces:
 
 ```text
-route_cost = sol_share * 1.0 + terra_share * 0.4 + luna_share * 0.04 + orchestration_overhead
+Sol = 1.00
+Terra = 0.40
+Luna = 0.04
+```
+
+That allows the same relative-cost formula:
+
+```text
+route_cost =
+  sol_share × 1.00
+  + terra_share × 0.40
+  + luna_share × 0.04
+  + orchestration_overhead
+
 saving = 1 - route_cost
 ```
 
-The `*_share` terms are token-based route shares (the three shares sum to 1 on every row), and
-`orchestration_overhead` is the extra relative cost of Sol planning, review, coordination, and
-necessary rework. Substitute the assumptions below to recompute each range independently; this
-is not a time guarantee.
+Ordinary clear project example:
 
-| Scenario | Reproducible assumptions (shares sum to 1) | route_cost → saving |
+```text
+route_cost
+= 0.10 × 1.00
++ 0.20 × 0.40
++ 0.70 × 0.04
++ 0.03–0.07
+= 0.238–0.278
+
+saving
+= 1 - 0.238–0.278
+= 72.2%–76.2%
+```
+
+API users see dollar charges; ChatGPT / Codex users usually see credits or included capacity. They are different accounting units, so API dollar savings should not be described as an identical subscription-bill saving.
+
+Official sources:
+
+- [OpenAI model comparison](https://developers.openai.com/api/docs/models/compare)
+- [OpenAI Codex rate card](https://help.openai.com/en/articles/20001106-codex-rate-card)
+
+A small subset of Enterprise workspaces still using the legacy rate card should use the rate card that actually applies to their workspace.
+
+</details>
+
+## 60-second quickstart
+
+### macOS / Linux
+
+```sh
+git clone https://github.com/yehyakin/codex-sol-luna.git
+cd codex-sol-luna
+
+bash scripts/validate.sh
+bash scripts/install.sh
+```
+
+### Windows
+
+Windows PowerShell 5.1:
+
+```powershell
+git clone https://github.com/yehyakin/codex-sol-luna.git
+Set-Location codex-sol-luna
+
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/validate.ps1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/install.ps1
+```
+
+PowerShell 7:
+
+```powershell
+pwsh -NoProfile -File scripts/validate.ps1
+pwsh -NoProfile -File scripts/install.ps1
+```
+
+After installation, open a new Codex session and explicitly invoke:
+
+```text
+$sol-luna
+
+Goal: Add account settings to the existing Next.js application.
+
+Done when:
+- Users can update their display name and avatar
+- Existing authentication APIs remain compatible
+- Required tests are added
+- Lint, test, and build all pass
+
+Do not:
+- Modify the payments module
+- Replace the existing UI framework
+```
+
+A one-line request also works:
+
+```text
+$sol-luna Refactor the authentication module, preserve the current API, and make sure tests and build pass.
+```
+
+You do not need to choose a worker count or decide which tasks belong to Terra or Luna. Provide the **goal, observable completion criteria, and important constraints**; Sol creates the smallest useful plan.
+
+## What it solves
+
+| Common problem | Sol Luna's response |
+| --- | --- |
+| One agent plans, implements, and verifies too much at once | Sol owns judgment and review; Terra / Luna own bounded execution |
+| Every task uses the highest-cost model | Execution is routed to Terra or Luna according to complexity |
+| Multiple executors touch shared files | **One file, one owner**; overlapping work runs sequentially |
+| “Done” is reported without inspectable proof | Results must include changed paths, diff, tests, builds, or artifacts |
+| A failed task is retried indefinitely | One bounded correction is allowed; otherwise it becomes `BLOCKED` |
+
+The goal is not a noisy multi-agent team. It is a clear, auditable control plane for complex work.
+
+## How it works
+
+![Direct, Sol-only, Sol to Luna, and optional Terra routing, with all execution evidence returning to Sol for final review](docs/assets/readme/control-plane-en.svg)
+
+```text
+User goal
+   │
+   ▼
+Sol: understand → plan → assign → schedule
+   │
+   ├─ Direct: the current Codex handles simple work
+   ├─ Sol-only: planning, analysis, or review without file changes
+   ├─ Luna Max: clear, low-ambiguity, independently verifiable execution
+   └─ Terra High: cross-module, long-context, or high-risk execution
+   │
+   ▼
+Real files + diff + test / build / artifact evidence
+   │
+   ▼
+Sol: PASS / FIX / BLOCKED
+```
+
+### Role hierarchy
+
+| Role | Configuration | Owns | Explicit boundary |
+| --- | --- | --- | --- |
+| **Sol** | `gpt-5.6-sol` / `high` / `read-only` | Goal understanding, `done_when`, task design, ownership, stages, final review | Does not perform bulk mechanical implementation |
+| **Terra High** | `gpt-5.6-terra` / `high` / `workspace-write` | Cross-module work, long context, ambiguous debugging, shared-interface judgment, high-risk implementation | Not a second controller; does not rewrite the plan or create subagents |
+| **Luna Max** | `gpt-5.6-luna` / `max` / `workspace-write` | Clear, low-ambiguity, small-context, mechanical, or high-throughput execution | Does not expand scope, create subagents, or approve the overall task |
+
+Role copy follows the capability hierarchy **Sol → Terra → Luna**. Routing follows increasing task complexity **Direct → Luna → Terra**.
+
+### Route selection
+
+| Route | Use it when | Cost implication |
 | --- | --- | --- |
-| Ordinary clear task | `sol=.10, terra=.20, luna=.70, overhead=.03-.07` | `.208+(.03-.07)=.238-.278` → **72.2%-76.2%** |
-| Mixed project | `sol=.20, terra=.40, luna=.40, overhead=.02-.12` | `.376+(.02-.12)=.396-.496` → **50.4%-60.4%** |
-| Complex direct allocation | `sol=.25, terra=.60, luna=.15, overhead=.07-.17` | `.496+(.07-.17)=.566-.666` → **33.4%-43.4%** |
+| **Direct** | The task is small, isolated, and clear | No orchestration overhead; 0% routing saving |
+| **Sol-only** | Planning, analysis, or review is needed without file changes | Uses only the controller layer |
+| **Sol → Luna** | Scope is precise and the result is independently verifiable | Preferred for large amounts of clear execution |
+| **Sol → Terra** | Work spans modules, needs long context or shared-interface judgment, or carries implementation risk | Uses the stronger execution tier for work that cannot safely go to Luna |
 
-| Scenario | Current public budget range |
-| --- | ---: |
-| Ordinary clear task | 72%–76% |
-| Mixed project | 50%–60% |
-| Complex direct allocation | 33%–43% |
-| Composite center | about 56% |
+Terra is not Luna's standing manager and is not a permanent second controller. Both are execution tiers selected by Sol according to task risk.
 
-These are planning ranges, not a completed matched A/B experiment, and not a guarantee for every task;
-the new mixed route must not be described as completed A/B evidence. Credit savings do not mean the work is always faster:
-actual outcomes depend on token volume, repeated context, Sol review, parallel waiting, and rework.
-API users see dollar amounts; subscription users mainly receive available capacity or credits.
-API dollar savings and subscription capacity are different claims.
+### How multiple executors cooperate
 
-Public evidence labels remain `measured` (routing or verification records), `scenario_model_projection`
-(budget ranges recomputed from official rates and scenario shares), and `unavailable` (not exposed in the source record). This page
-does not present a new matched A/B measurement or a sample-validated cost; measured routing records and cost projections stay separate.
+A complex run may use one or more Terra / Luna workers, but parallelism follows **file ownership**, not agent count:
 
-## Platforms and lifecycle
+```text
+Stage 1
+├─ Terra A → src/auth/core/*
+├─ Luna A  → src/account/ui/*
+└─ Luna B  → docs/account.md
 
-| Target | Shell | Status boundary |
-| --- | --- | --- |
-| macOS | POSIX shell | Supported by the `bash` lifecycle scripts |
-| Linux | POSIX shell | Supported by the `bash` lifecycle scripts |
-| Windows 11 | Windows PowerShell 5.1 and PowerShell 7.x | Supported target; native Windows 11 evidence is a separate release gate |
-| Windows Server 2022 | Windows PowerShell 5.1 and PowerShell 7.x | Supported target; GitHub-hosted CI is Server evidence only |
+Stage 2
+└─ original designated owner → src/shared/routes.ts
+```
 
-GitHub Actions uses `windows-latest` and pinned `windows-2022` in the Windows matrix. Those
-hosted runners provide Windows Server evidence and must not be described as native Windows 11 evidence.
+Only tasks with completely disjoint write scopes may run together. Shared files have one designated owner. If dependencies, interfaces, or overlap are uncertain, Sol merges the work or schedules it sequentially.
 
-### macOS and Linux
+No fixed worker count is promised. Sol launches the minimum useful number of executors in batches according to dependency order, live capacity, and safety boundaries.
+
+## One complete evidence loop
+
+1. **Plan.** Sol records the goal, `done_when`, tasks, dependencies, exact `write_scope`, exclusions, and verification.
+2. **Execute.** Terra or Luna changes only the assigned scope and does not rewrite the overall plan.
+3. **Self-check.** The executor runs required verification and returns real changed paths, diff, tests, builds, or artifact evidence.
+4. **Review.** Sol inspects real files, the complete diff, evidence freshness, and requirement coverage.
+5. **Decide.** Sol returns `PASS`, one focused `FIX`, or `BLOCKED`.
+
+A worker `PASS` applies only to its bounded task. Only Sol may approve the overall work.
+
+## Non-negotiable boundaries
+
+1. **One file, one owner.** Two workers never modify the same file in one run.
+2. **Executors do not create subagents.** Terra and Luna are leaf nodes.
+3. **No evidence, no completion.** Transport / spawn `completed` proves delivery only.
+4. **Verification binds to the final candidate.** A later file change invalidates stale evidence.
+5. **At most one focused fix.** The original owner repairs the original scope once; another failure becomes `BLOCKED`.
+6. **Fail closed.** The runtime does not silently substitute an unprovable custom agent, exact model, reasoning effort, or permission profile.
+7. **Review standards do not fall.** Urgency, parallelism, or cost goals never replace verification and evidence.
+
+### Bounded Luna-to-Terra escalation
+
+Only when Luna's first failure occurs **before** it writes any owned file may Sol escalate the same task and unchanged scope to Terra once.
+
+The gate is only Luna's zero-write state before its first failure; Terra's write state is not the gate.
+
+After Luna writes an owned file, it retains ownership for the run. Sol may issue one focused fix to the original Luna owner, but it may not hand the already-written file to Terra for replacement.
+
+## Review outcomes
+
+| Verdict | Meaning |
+| --- | --- |
+| `PASS` | Every completion criterion is supported by real files and fresh evidence |
+| `FIX` | The original owner can make one focused correction without expanding scope |
+| `BLOCKED` | Permissions, dependencies, runtime identity, scope, conflicts, or verification prevent a trustworthy delivery |
+
+## When not to use it
+
+The current Codex session is usually better for:
+
+- a small change to one well-understood function;
+- a localized typo, copy, or styling fix;
+- code explanation, question answering, or short-form writing;
+- work that cannot be divided into independent write scopes;
+- tasks where orchestration, repeated context, and review cost more than implementation.
+
+`$sol-luna` is not the default for everything. **Keep small work Direct; orchestrate only when complexity justifies it.**
+
+## Install, check, and uninstall
+
+### macOS / Linux
 
 ```sh
 bash scripts/validate.sh
+bash scripts/install.sh --check
 bash scripts/install.sh
+
 bash scripts/uninstall.sh
 bash scripts/uninstall.sh --restore-latest
 ```
 
-For an isolated test home, set `ORCHESTRATE_HOME` to a unique temporary directory. The installer
-validates source files before the first mutation, backs up exact targets, installs atomically, and
-leaves unrelated agents and `~/.codex/config.toml` alone.
-
-### Windows 11 and Windows Server 2022
-
-The Windows lifecycle uses native PowerShell and remains compatible with PowerShell 5.1 and 7.x.
-Windows PowerShell 5.1 uses `powershell.exe`; PowerShell 7 uses `pwsh`:
+### Windows
 
 ```powershell
+# Windows PowerShell 5.1
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/validate.ps1
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/install.ps1
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/uninstall.ps1
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/uninstall.ps1 -RestoreLatest
+
+# PowerShell 7
 pwsh -NoProfile -File scripts/validate.ps1
 pwsh -NoProfile -File scripts/install.ps1
 pwsh -NoProfile -File scripts/uninstall.ps1
 pwsh -NoProfile -File scripts/uninstall.ps1 -RestoreLatest
 ```
 
-Set `$env:ORCHESTRATE_HOME` to a unique temporary home for isolated Windows lifecycle tests.
-Windows Server CI proves Server behavior only; until a real Windows 11 run is recorded, this
-README does not claim native Windows 11 evidence. The lifecycle preserves `~/.codex/config.toml`
-and unrelated agents, removes only owned targets whose recorded `SHA256` still matches, and
-`-RestoreLatest` / `--restore-latest` restores the latest valid backup after owned installation
-removal. The release-time runtime surface and evidence status are documented in
-[`docs/release/runtime-surface-matrix.md`](docs/release/runtime-surface-matrix.md).
+The lifecycle scripts manage only project-owned Skill and agent files. They preserve unrelated agents and the user's `~/.codex/config.toml`. Set `ORCHESTRATE_HOME` to a temporary home for isolated lifecycle tests.
 
-## Real-project routing samples
+See [`docs/release/runtime-surface-matrix.md`](docs/release/runtime-surface-matrix.md) for platform and evidence coverage.
 
-These are anonymous local routing samples showing Direct, Sol-only, and bounded-worker paths;
-the local project samples are routing context rather than a cost claim, and they are not a cost A/B benchmark for the new mixed route. We used only minimum read-only probes
-to fill material gaps and did not modify any business project.
+## Current status
 
-| Anonymous category | Route | Luna / Terra | Verification | Sol review | Elapsed |
-| --- | --- | --- | --- | --- | ---: |
-| Codebase | `sol_then_luna` (routing sample) | unavailable | evidence present | `BLOCKED` | 2340 s |
-| Documentation | `sol_then_luna` (routing sample) | unavailable | evidence present | `PASS` | 379 s |
-| Infrastructure | `direct` (routing sample) | 0 | evidence present | not applicable | 859 s |
+The current release baseline is **v0.3.0**.
 
-These routing samples do not prove that the new Terra mixed path has completed A/B or turn a
-credit range into a time or production guarantee. See
-[`tests/real-project-benchmark.md`](tests/real-project-benchmark.md) for the complete method,
-anonymous results, and limitations.
+| Verification surface | Recorded evidence |
+| --- | --- |
+| Local repository | Skill Creator **PASS**; the evidence snapshot records **106/106** tests PASS |
+| Hosted CI | POSIX **PASS**; Windows Server 2022 / `windows-latest` × Windows PowerShell 5.1 / PowerShell 7 **PASS** |
+| Runtime surface | Compatibility verified; Native Nested, fresh-CLI child model/effort identity, and physical Windows 11 remain unproven |
 
-## Repository and development
+The v0.3.0 evidence-bound report is recorded at commit `6895f06`:
 
-### Repository layout
+- [POSIX CI](https://github.com/yehyakin/codex-sol-luna/actions/runs/30858707335)
+- [Windows CI](https://github.com/yehyakin/codex-sol-luna/actions/runs/30858707364)
+- [Full implementation report](ORCHESTRATE_SOL_LUNA_V2_IMPLEMENTATION_REPORT.md)
+
+These statements describe the recorded evidence boundary; they do not infer support for unverified runtime surfaces.
+
+## Repository layout
 
 ```text
-.agents/skills/sol-luna/       public Skill and operating references
-.codex/agents/                 exact Sol, Luna, and Terra custom-agent definitions
-  sol-controller.toml
-  luna-max-worker.toml
-  terra-high-worker.toml
-scripts/                       macOS/Linux lifecycle and validation scripts
-tests/                         contract, forward-case, and lifecycle tests
-docs/assets/readme/            repository-owned localized Control Orbit hero and control-plane SVGs
-README.md                      canonical Simplified Chinese guide
-README.en.md                   complete English peer
+.agents/skills/sol-luna/
+├─ SKILL.md                    public Skill
+└─ references/
+   ├─ orchestration.md         orchestration contract
+   └─ runtime-notes.md         runtime and dispatch notes
+
+.codex/agents/
+├─ sol-controller.toml
+├─ terra-high-worker.toml
+└─ luna-max-worker.toml
+
+scripts/
+├─ validate.*
+├─ install.*
+├─ uninstall.*
+└─ test.sh
+
+tests/                         contracts, lifecycle, and forward cases
+docs/                          release evidence, design records, and README assets
+README.md                      Simplified Chinese
+README.en.md                   English
 ```
 
-The public Skill is [`$sol-luna`](.agents/skills/sol-luna/SKILL.md). Exact agent definitions are
-[`sol-controller.toml`](.codex/agents/sol-controller.toml), [`luna-max-worker.toml`](.codex/agents/luna-max-worker.toml),
-and [`terra-high-worker.toml`](.codex/agents/terra-high-worker.toml). Global Skill and agent
-directories are installed copies; GitHub is the source of truth.
+## Documentation
 
-### Testing
+- [Public Skill](.agents/skills/sol-luna/SKILL.md)
+- [Orchestration contract](.agents/skills/sol-luna/references/orchestration.md)
+- [Runtime notes](.agents/skills/sol-luna/references/runtime-notes.md)
+- [Sol configuration](.codex/agents/sol-controller.toml)
+- [Terra High configuration](.codex/agents/terra-high-worker.toml)
+- [Luna Max configuration](.codex/agents/luna-max-worker.toml)
+- [Runtime surface matrix](docs/release/runtime-surface-matrix.md)
+- [Real-project routing samples](tests/real-project-benchmark.md)
+- [v0.3.0 implementation report](ORCHESTRATE_SOL_LUNA_V2_IMPLEMENTATION_REPORT.md)
 
-Use Python 3.11 or newer for the README, routing contract, and benchmark:
+## Development and testing
+
+Python 3.11 or newer is required.
 
 ```sh
-PYTHONDONTWRITEBYTECODE=1 python3 -B -m unittest tests.test_readme -v
-PYTHONDONTWRITEBYTECODE=1 python3 -B -m unittest tests.test_hybrid_routing.ReadmeCostContractTests -v
-python -m unittest tests/test_contract.py
-python -m unittest tests/test_benchmark.py
+bash scripts/validate.sh
+bash scripts/test.sh
 ```
 
-The documentation contract checks bilingual language switches and parity, canonical links, local
-image targets, accessible SVG metadata, section order, current price rows, the blended formula,
-budget ranges, and evidence boundaries. The benchmark report distinguishes `measured`,
-`scenario_model_projection`, and `unavailable` evidence; when PowerShell is available,
-lifecycle tests also exercise isolated homes with `ORCHESTRATE_HOME` and verify that
-`config.toml` and unrelated agents keep their hashes.
+`scripts/test.sh` selects an available Python 3.11+ interpreter and runs the complete `unittest` suite.
+
+When changing the README, update both languages and the documentation tests. Tests should protect facts, links, the rate snapshot, the formula, safety boundaries, and platform commands—not permanently lock one marketing message or one homepage section order.
 
 ## Limitations
 
-- Budget ranges guide routing and do not promise the same saving for every task or token mix.
-- Delegation adds planning, context, review, and possible retry tokens; retries can erase or reverse credit savings.
-- Credit savings do not mean the work is always faster; parallel waiting, repeated context, and rework change outcomes.
-- GitHub-hosted Windows runners establish Windows Server behavior, not native Windows 11 behavior.
-- The Skill has one Sol controller and risk-tiered Luna Max and Terra High bounded executors; it is not a fixed three-agent team or a general-purpose multi-agent framework.
-- Final decisions depend on real files and fresh verification; configuration labels alone cannot prove runtime identity.
+- The cost ranges are budget projections based on public rates and example token shares, not matched A/B benchmarks.
+- Real token volume may change because of planning, repeated context, verification, and rework.
+- Fast mode, very long prompts, and different output ratios can change actual consumption.
+- Exact custom-agent, model, reasoning-effort, and permission selection depends on the host runtime surface.
+- Parallelism depends on live capacity and disjoint write scopes; no fixed worker count is promised.
+- GitHub-hosted Windows runners prove Windows Server behavior, not physical Windows 11 behavior.
+- Terra High is the complex execution tier, not a second planner or controller.
+- Final delivery depends on real files, the complete diff, and fresh verification. Configuration labels alone are not runtime evidence.
 
-## Prior art and license
+## License
 
-### Prior art
-
-The design was informed by reviewed snapshots of projects exploring routing, bounded delegation,
-parallel scheduling, and evidence-based review; no prose or code was copied from them:
-
-- [orchestrate-sol-luna](https://github.com/joeke80215/orchestrate-sol-luna/tree/eba163a9d48f023aeb3638b6809f0f8fb343f472) — Apache-2.0.
-- [codex-parallel-subagent-planner](https://github.com/manhua-man/codex-parallel-subagent-planner/tree/ea3d8db9081e2f4159a6c40100fc1ca8d229e7dc) — no license file in the reviewed snapshot; ideas only.
-- [codex-dispatch-skill](https://github.com/yinguangyao/codex-dispatch-skill/tree/00630de4c8ad01cb51bae3a89044d55cc6433158) — no license file in the reviewed snapshot; ideas only.
-- [codex-orchestrate](https://github.com/douglasmonsky/codex-orchestrate/tree/f2954a066e2607deef3963465562193a220dee70) — MIT.
-- [subagent-orchestrator-skill](https://github.com/Glaicer/subagent-orchestrator-skill/tree/96eaeb16f19b789fd004b588858fb846cc674147) — MIT.
-
-### License
-
-This repository uses the [Apache License 2.0](LICENSE). Attribution for reviewed prior art is
-recorded in [NOTICE](NOTICE).
+This repository is licensed under the [Apache License 2.0](LICENSE). Attribution for reviewed prior art is recorded in [NOTICE](NOTICE).
 
 **致谢 / Thanks**
 

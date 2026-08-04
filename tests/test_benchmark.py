@@ -109,7 +109,7 @@ class RealProjectBenchmarkTests(unittest.TestCase):
             43.4,
         )
 
-    def test_report_and_readmes_publish_the_same_evidence_boundary(self) -> None:
+    def test_report_and_readmes_publish_their_documented_evidence_boundaries(self) -> None:
         self.assertTrue(REPORT.is_file(), REPORT)
         report = REPORT.read_text(encoding="utf-8")
         for signal in (
@@ -138,11 +138,10 @@ class RealProjectBenchmarkTests(unittest.TestCase):
             self.assertRegex(window, historical_markers)
         for path in README_FILES:
             text = path.read_text(encoding="utf-8")
-            for signal in ("72%", "76%", "50%", "60%", "33%", "43%", "56%", "0.4", "0.04"):
+            for signal in ("72%", "76%", "50%", "60%", "33%", "43%", "0.4", "0.04"):
                 self.assertIn(signal, text, path.name)
-            self.assertRegex(text, r"(?i)measured|实测")
-            self.assertRegex(text, r"(?i)sample.validated|样本验证")
-            self.assertRegex(text, r"(?i)unavailable|不可得")
+            self.assertIn("scenario_model_projection", text, path.name)
+            self.assertRegex(text, r"(?i)not matched A/B|不是匹配 A/B")
             self.assertNotRegex(text, r"(?i)(?:complex|复杂).{0,160}65%")
             self.assertNotRegex(text, r"1\s*/\s*25")
             self.assertNotIn("sample_validated_projection", text)

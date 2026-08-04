@@ -39,52 +39,9 @@ MARKDOWN_LINK_RE = re.compile(
 MARKDOWN_IMAGE_RE = re.compile(
     r"!\[(?P<alt>[^\]]*)\]\((?:<(?P<bracketed>[^>]+)>|(?P<plain>[^\s)]+))"
 )
-HEADING_RE = re.compile(r"(?im)^#{1,6}\s+(?P<title>.+?)\s*$")
-H2_HEADING_RE = re.compile(r"(?im)^## (?P<title>.+?)\s*$")
 FENCE_OPEN_RE = re.compile(r"^[ \t]{0,3}(?P<fence>`{3,}|~{3,})")
 HTML_COMMENT_RE = re.compile(r"(?s)<!--.*?-->")
 ACK_HEADING_RE = re.compile(r"(?im)^\*\*致谢 / Thanks\*\*\s*$")
-
-SECTION_HEADING_MAP = {
-    "60 秒开始": "quickstart",
-    "60-second quickstart": "quickstart",
-    "单一主控，一座执行工坊": "architecture",
-    "one controller, one execution workshop": "architecture",
-    "选择路径": "routing",
-    "choose the route": "routing",
-    "工作流": "workflow",
-    "workflow": "workflow",
-    "可靠性来自边界": "reliability",
-    "reliability comes from boundaries": "reliability",
-    "真实项目路由样本": "benchmark",
-    "real-project routing samples": "benchmark",
-    "成本测算与测试口径": "cost_details",
-    "成本模型与证据边界": "cost_details",
-    "cost projection and test method": "cost_details",
-    "cost model and evidence boundary": "cost_details",
-    "平台与生命周期": "platform",
-    "platforms and lifecycle": "platform",
-    "platform and lifecycle": "platform",
-    "仓库与开发验证": "repository",
-    "repository and development": "repository",
-    "限制": "limitations",
-    "limitations": "limitations",
-    "先例与许可证": "prior_art",
-    "prior art and license": "prior_art",
-}
-EXPECTED_SECTION_KEYS = (
-    "quickstart",
-    "architecture",
-    "routing",
-    "workflow",
-    "reliability",
-    "cost_details",
-    "platform",
-    "benchmark",
-    "repository",
-    "limitations",
-    "prior_art",
-)
 
 CONTROL_ORBIT_PALETTE = (
     "#0B1020",
@@ -94,7 +51,10 @@ CONTROL_ORBIT_PALETTE = (
     "#FF6B3D",
 )
 
-ENGLISH_DISCLAIMER_RE = re.compile(r"\bnot(?:\s+a)?\s+guarantee\b", re.IGNORECASE)
+ENGLISH_DISCLAIMER_RE = re.compile(
+    r"\bnot(?:\s+[\w-]+){0,3}\s+guarantees?\b",
+    re.IGNORECASE,
+)
 CHINESE_DISCLAIMER_RE = re.compile(
     r"(?:不构成保证|非保证|不是\s*保证|不是[^。！？；;\n]{1,40}?的\s*保证)"
 )
@@ -154,25 +114,6 @@ class ReadmeContractTests(unittest.TestCase):
             return newlines or " "
 
         return HTML_COMMENT_RE.sub(blank_comment, without_fences)
-
-    @classmethod
-    def normalize_heading_title(cls, title: str) -> str:
-        title = re.sub(r"\s+#+\s*$", "", title)
-        title = re.sub(r"[`*_~]", "", title)
-        return cls.normalize_soft_line(title).casefold()
-
-    @classmethod
-    def heading_key(cls, title: str) -> str | None:
-        return SECTION_HEADING_MAP.get(cls.normalize_heading_title(title))
-
-    @classmethod
-    def heading_sequence(cls, text: str) -> list[str]:
-        rendered = cls.rendered_markdown(text)
-        return [
-            key
-            for match in H2_HEADING_RE.finditer(rendered)
-            if (key := cls.heading_key(match.group("title"))) is not None
-        ]
 
     @staticmethod
     def table_cells(line: str) -> tuple[str, ...]:
@@ -257,15 +198,17 @@ class ReadmeContractTests(unittest.TestCase):
         )
 
     @classmethod
-    def has_direct_zero_in_blocks(cls, blocks: list[tuple[str, str, tuple[str, ...]]]) -> bool:
-        return any(
-            re.search(r"(?i)\bDirect\b|直接", unit) and "0%" in unit
-            for unit in cls.block_units(blocks)
-        )
-
-    @classmethod
     def has_direct_zero_pair(cls, text: str) -> bool:
-        return cls.has_direct_zero_in_blocks(cls.markdown_blocks(text))
+        rendered = cls.rendered_markdown(text)
+        paragraph_match = any(
+            kind != "table" and re.search(r"(?i)\bDirect\b|直接", block) and "0%" in block
+            for kind, block, _ in cls.markdown_blocks(rendered)
+        )
+        table_row_match = any(
+            "|" in line and re.search(r"(?i)\bDirect\b|直接", line) and "0%" in line
+            for line in rendered.splitlines()
+        )
+        return paragraph_match or table_row_match
 
     @classmethod
     def has_valid_disclaimer(cls, text: str, language: str | None = None) -> bool:
@@ -282,23 +225,6 @@ class ReadmeContractTests(unittest.TestCase):
         language: str | None = None,
     ) -> bool:
         return any(cls.has_valid_disclaimer(unit, language) for unit in cls.block_units(blocks))
-
-    def first_screen_blocks(self, text: str, readme_name: str) -> list[tuple[str, str, tuple[str, ...]]]:
-        rendered = self.rendered_markdown(text)
-        quickstart = next(
-            (
-                match
-                for match in HEADING_RE.finditer(rendered)
-                if re.match(r"^##(?!#)\s+", match.group(0))
-                and self.heading_key(match.group("title")) == "quickstart"
-            ),
-            None,
-        )
-        self.assertIsNotNone(
-            quickstart,
-            f"{readme_name}: missing rendered ## 60-second quickstart / ## 60 秒开始 boundary",
-        )
-        return self.markdown_blocks(rendered[: quickstart.start()])
 
     def trailing_acknowledgement(self, text: str, readme_name: str) -> str:
         rendered = self.rendered_markdown(text).rstrip()
@@ -345,15 +271,15 @@ class ReadmeContractTests(unittest.TestCase):
         english = ENGLISH_README.read_text(encoding="utf-8")
 
         for text, path in ((chinese, CHINESE_README), (english, ENGLISH_README)):
-            for signal in ("72%", "76%", "50%", "60%", "33%", "43%", "56%", "0.4", "0.04"):
+            for signal in ("72%", "76%", "50%", "60%", "33%", "43%", "0.4", "0.04"):
                 self.assertIn(signal, text, f"{path.name}: missing cost signal {signal}")
             self.assertIn("scenario_model_projection", text, path.name)
             self.assertNotIn("sample_validated_projection", text, path.name)
 
-        self.assertRegex(chinese, r"(?:场景|模型).{0,30}(?:投影|预算)")
-        self.assertRegex(english, r"(?i)scenario.{0,30}model.{0,30}projection")
+        self.assertIn("可复算的预算投影", chinese)
+        self.assertIn("Reproducible budget projections", english)
 
-    def test_rendered_markdown_helpers_ignore_fenced_code_and_html_comments(self) -> None:
+    def test_rendered_markdown_ignores_fenced_and_commented_images(self) -> None:
         fixture = """
 ```markdown
 ## Choose the route
@@ -367,42 +293,28 @@ class ReadmeContractTests(unittest.TestCase):
 ![visible](docs/assets/visible.svg)
 """
         self.assertEqual(
-            ["quickstart"],
-            self.heading_sequence(fixture),
-            "section fixture: fenced/commented headings must not enter rendered section keys",
-        )
-        self.assertEqual(
             [("visible", "docs/assets/visible.svg")],
             self.image_sequence(fixture),
             "docs/assets/visible.svg: only the rendered image may enter the asset sequence",
         )
 
-    def test_section_heading_map_assigns_one_key_to_each_overlapping_title(self) -> None:
-        fixture = """
-## Reliability comes from boundaries
-## Cost projection and test method
-## Real-project routing samples
-"""
-        self.assertEqual(
-            ["reliability", "cost_details", "benchmark"],
-            self.heading_sequence(fixture),
-            "section fixture: overlapping heading vocabulary must produce one key per heading",
+    def test_scenario_projection_math_is_reproducible(self) -> None:
+        scenarios = (
+            ("ordinary", 0.10, 0.20, 0.70, 0.03, 0.07, 72.2, 76.2, ("Sol 10%", "Terra 20%", "Luna 70%", "3%–7%", "72.2%–76.2%")),
+            ("mixed", 0.20, 0.40, 0.40, 0.02, 0.12, 50.4, 60.4, ("Sol 20%", "Terra 40%", "Luna 40%", "2%–12%", "50.4%–60.4%")),
+            ("complex", 0.25, 0.60, 0.15, 0.07, 0.17, 33.4, 43.4, ("Sol 25%", "Terra 60%", "Luna 15%", "7%–17%", "33.4%–43.4%")),
         )
-        self.assertEqual(
-            "benchmark",
-            self.heading_key("Real-project routing samples"),
-            "benchmark section must win over the routing word in its title",
-        )
-        self.assertEqual(
-            "cost_details",
-            self.heading_key("Cost projection and test method"),
-            "cost_details section must win over the boundary word in its title",
-        )
-        self.assertEqual(
-            ["routing"],
-            self.heading_sequence("# Choose the route\n### Choose the route\n## Choose the route"),
-            "section fixture: only a rendered ## heading may contribute a section key",
-        )
+        documents = self.readme_documents()
+        for name, sol, terra, luna, overhead_min, overhead_max, saving_min, saving_max, signals in scenarios:
+            self.assertAlmostEqual(sol + terra + luna, 1.0, msg=name)
+            base_cost = sol + terra * 0.40 + luna * 0.04
+            self.assertAlmostEqual((1 - base_cost - overhead_max) * 100, saving_min, msg=name)
+            self.assertAlmostEqual((1 - base_cost - overhead_min) * 100, saving_max, msg=name)
+            for path, text in documents.items():
+                self.assertTrue(
+                    self.block_contains_tokens(self.markdown_blocks(text), signals),
+                    f"{path.name}: {name} scenario shares, overhead, and saving must share one table block",
+                )
 
     def test_disclaimer_helper_rejects_a_contrary_guarantee_clause(self) -> None:
         self.assertTrue(self.has_valid_disclaimer("This is not a guarantee."))
@@ -432,73 +344,84 @@ class ReadmeContractTests(unittest.TestCase):
             self.has_direct_zero_pair("Direct tasks route here.\n\nThe separate route saves 0%."),
             "README first-screen fixture must reject a cross-paragraph Direct/0% pairing",
         )
+        self.assertTrue(
+            self.has_direct_zero_pair(
+                "| Direct tasks | 0% savings |\n| --- | --- |"
+            ),
+            "README fixture must accept Direct/0% within one table row",
+        )
         self.assertFalse(
             self.has_direct_zero_pair(
                 "| Direct tasks | ordinary route |\n| --- | --- |\n| no delegation | 0% savings |"
             ),
-            "README first-screen fixture must reject a cross-cell Direct/0% pairing",
+            "README fixture must reject Direct/0% split across table rows",
         )
 
-    def test_chinese_readme_is_cost_first_and_conditioned(self) -> None:
+    def test_chinese_readme_publishes_conditioned_scenarios_without_fixed_composite(self) -> None:
         text = CHINESE_README.read_text(encoding="utf-8")
-        blocks = self.first_screen_blocks(text, CHINESE_README.name)
+        blocks = self.markdown_blocks(text)
         block_texts = [block for _, block, _ in blocks]
         self.assertTrue(
             self.block_contains_tokens(blocks, ("普通", "72%", "76%")),
-            f"{CHINESE_README.name}: missing ordinary 72%-76% range in first-screen semantic block",
+            f"{CHINESE_README.name}: missing ordinary 72%-76% scenario",
         )
         self.assertTrue(
             self.block_contains_tokens(blocks, ("混合", "50%", "60%")),
-            f"{CHINESE_README.name}: missing mixed 50%-60% range in first-screen semantic block",
+            f"{CHINESE_README.name}: missing mixed 50%-60% scenario",
         )
         self.assertTrue(
             self.block_contains_tokens(blocks, ("复杂", "33%", "43%")),
-            f"{CHINESE_README.name}: missing complex-direct 33%-43% range in first-screen section/table",
+            f"{CHINESE_README.name}: missing complex 33%-43% scenario",
         )
-        self.assertTrue(
-            self.block_contains_tokens(blocks, ("综合", "56%")),
-            f"{CHINESE_README.name}: missing composite 56% range in first-screen section/table",
-        )
+        for block in block_texts:
+            if "56%" in block and re.search(r"综合|平均", block):
+                self.assertRegex(
+                    block,
+                    r"不是|不应|不准确|不能|不得|取消|删除",
+                    f"{CHINESE_README.name}: 56% may appear only as a rejected fixed-average claim",
+                )
         self.assertTrue(
             any("不是固定结果或保证" in block for block in block_texts)
             or self.has_valid_disclaimer_in_blocks(blocks, "chinese"),
-            f"{CHINESE_README.name}: missing current-range disclaimer in first screen",
+            f"{CHINESE_README.name}: missing current-range disclaimer",
         )
         self.assertTrue(
-            self.has_direct_zero_in_blocks(blocks),
-            f"{CHINESE_README.name}: Direct and 0% must share a first-screen paragraph/table cell",
+            self.has_direct_zero_pair(text),
+            f"{CHINESE_README.name}: Direct and 0% must share one paragraph/table cell",
         )
 
-    def test_english_readme_matches_the_conditioned_cost_first_screen(self) -> None:
+    def test_english_readme_publishes_conditioned_scenarios_without_fixed_composite(self) -> None:
         text = ENGLISH_README.read_text(encoding="utf-8")
-        blocks = self.first_screen_blocks(text, ENGLISH_README.name)
+        blocks = self.markdown_blocks(text)
         block_texts = [block for _, block, _ in blocks]
         self.assertTrue(
             self.block_contains_tokens(blocks, ("typical", "72%", "76%"))
             or self.block_contains_tokens(blocks, ("ordinary", "72%", "76%")),
-            f"{ENGLISH_README.name}: missing ordinary 72%-76% range in first-screen semantic block",
+            f"{ENGLISH_README.name}: missing ordinary 72%-76% scenario",
         )
         self.assertTrue(
             self.block_contains_tokens(blocks, ("mixed", "50%", "60%"))
             or self.block_contains_tokens(blocks, ("hybrid", "50%", "60%")),
-            f"{ENGLISH_README.name}: missing mixed 50%-60% range in first-screen semantic block",
+            f"{ENGLISH_README.name}: missing mixed 50%-60% scenario",
         )
         self.assertTrue(
             self.block_contains_tokens(blocks, ("complex", "33%", "43%")),
-            f"{ENGLISH_README.name}: missing complex-direct 33%-43% range in first-screen section/table",
+            f"{ENGLISH_README.name}: missing complex 33%-43% scenario",
         )
-        self.assertTrue(
-            self.block_contains_tokens(blocks, ("composite", "56%"))
-            or self.block_contains_tokens(blocks, ("combined", "56%")),
-            f"{ENGLISH_README.name}: missing composite 56% range in first-screen section/table",
-        )
+        for block in block_texts:
+            if "56%" in block and re.search(r"(?i)composite|combined|average|fixed", block):
+                self.assertRegex(
+                    block,
+                    r"(?i)not|inaccurate|do not|must not|remove|reject",
+                    f"{ENGLISH_README.name}: 56% may appear only as a rejected fixed-average claim",
+                )
         self.assertTrue(
             self.has_valid_disclaimer_in_blocks(blocks, "english"),
             f"{ENGLISH_README.name}: missing valid English not-guarantee disclaimer",
         )
         self.assertTrue(
-            self.has_direct_zero_in_blocks(blocks),
-            f"{ENGLISH_README.name}: Direct and 0% must share a first-screen paragraph/table cell",
+            self.has_direct_zero_pair(text),
+            f"{ENGLISH_README.name}: Direct and 0% must share one paragraph/table cell",
         )
 
     def test_readmes_use_the_canonical_repository_name(self) -> None:
@@ -598,27 +521,46 @@ class ReadmeContractTests(unittest.TestCase):
             for color in CONTROL_ORBIT_PALETTE:
                 self.assertIn(color, source, path.name)
 
-    def test_readme_section_order_matches_in_both_languages(self) -> None:
+    def test_readmes_publish_role_and_route_hierarchies(self) -> None:
         documents = self.readme_documents()
-        matched_sections: dict[Path, list[str]] = {}
+        specs = {
+            CHINESE_README: (
+                "### 角色层级",
+                "### 路由选择",
+                ("**Sol**", "**Terra High**", "**Luna Max**"),
+                ("**Direct**", "**Sol-only**", "**Sol → Luna**", "**Sol → Terra**"),
+            ),
+            ENGLISH_README: (
+                "### Role hierarchy",
+                "### Route selection",
+                ("**Sol**", "**Terra High**", "**Luna Max**"),
+                ("**Direct**", "**Sol-only**", "**Sol → Luna**", "**Sol → Terra**"),
+            ),
+        }
         for path, text in documents.items():
-            rendered = self.rendered_markdown(text)
-            self.assertTrue(
-                list(HEADING_RE.finditer(rendered)),
-                f"{path.name}: no rendered section headings found",
-            )
-            section_keys = self.heading_sequence(rendered)
+            role_heading, route_heading, role_order, route_order = specs[path]
+            self.assertIn(role_heading, text, f"{path.name}: missing role hierarchy section")
+            self.assertIn(route_heading, text, f"{path.name}: missing route selection section")
+            role_start = text.index(role_heading)
+            route_start = text.index(route_heading, role_start)
+            next_heading = text.find("\n### ", route_start + len(route_heading))
+            route_end = len(text) if next_heading == -1 else next_heading
+            role_block = text[role_start:route_start]
+            route_block = text[route_start:route_end]
+            for signal in role_order:
+                self.assertIn(signal, role_block, f"{path.name}: role hierarchy missing {signal}")
+            for signal in route_order:
+                self.assertIn(signal, route_block, f"{path.name}: route hierarchy missing {signal}")
             self.assertEqual(
-                list(EXPECTED_SECTION_KEYS),
-                section_keys,
-                f"{path.name}: rendered heading key sequence must match the expected sections",
+                sorted(role_order, key=role_block.index),
+                list(role_order),
+                f"{path.name}: role hierarchy must be Sol -> Terra -> Luna",
             )
-            matched_sections[path] = section_keys
-        self.assertEqual(
-            matched_sections[CHINESE_README],
-            matched_sections[ENGLISH_README],
-            "bilingual README sections must follow the same stable order",
-        )
+            self.assertEqual(
+                sorted(route_order, key=route_block.index),
+                list(route_order),
+                f"{path.name}: route hierarchy must be Direct -> Sol-only -> Sol/Luna -> Sol/Terra",
+            )
 
     def test_readmes_cover_layout_testing_limitations_prior_art_and_license(self) -> None:
         documents = self.readme_documents()
@@ -693,17 +635,17 @@ class ReadmeContractTests(unittest.TestCase):
                 text,
                 path.name,
             )
-            self.assertIn("2026-08-03", text, path.name)
+            self.assertIn("2026-08-04", text, path.name)
             blocks = self.markdown_blocks(text)
             for labels, value in (
-                (("Sol", "索尔"), "1"),
-                (("Terra", "Terra 高"), "0.4"),
-                (("Luna", "Luna 高"), "0.04"),
+                (("Sol", "索尔"), r"1(?:\.0+)?"),
+                (("Terra", "Terra 高"), r"0\.4(?:0+)?"),
+                (("Luna", "Luna 高"), r"0\.04(?:0+)?"),
             ):
                 self.assertTrue(
                     any(
                         any(label.casefold() in block.casefold() for label in labels)
-                        and re.search(rf"(?<![\d.]){re.escape(value)}(?![\d.])", block)
+                        and re.search(rf"(?<![\d.]){value}(?![\d.])", block)
                         for _, block, _ in blocks
                     ),
                     f"{path.name}: missing relative credit weight {labels[0]}={value}",
@@ -712,7 +654,6 @@ class ReadmeContractTests(unittest.TestCase):
                 (("ordinary", "typical", "普通"), ("72%", "76%")),
                 (("mixed", "hybrid", "混合"), ("50%", "60%")),
                 (("complex", "复杂"), ("33%", "43%")),
-                (("composite", "combined", "综合"), ("56%",)),
             ):
                 self.assertTrue(
                     any(
@@ -775,12 +716,6 @@ class ReadmeContractTests(unittest.TestCase):
     def test_readmes_state_disclaimers_and_api_subscription_distinction(self) -> None:
         documents = self.readme_documents()
         for path, text in documents.items():
-            self.assertRegex(
-                text,
-                r"(?i)(?:not\s+(?:a\s+)?(?:benchmark|guarantee)|no\s+(?:benchmark|guarantee)|"
-                r"不(?:是|作)?(?:基准|保证)|非(?:基准|保证))",
-                path.name,
-            )
             self.assertTrue(
                 any(
                     self.has_valid_disclaimer(
@@ -796,7 +731,14 @@ class ReadmeContractTests(unittest.TestCase):
             self.assertRegex(text, r"(?i)(?:dollar|monetary|capacity|credits|美元|金额|容量|额度)")
             self.assertRegex(text, r"(?i)(?:retry|retries|erase|reverse|重试|抵消|反转)")
             self.assertRegex(text, r"(?is)API.{0,180}(?:dollar|monetary|美元|金额|金钱)")
-            self.assertRegex(text, r"(?is)(?:subscription|订阅).{0,180}(?:capacity|credits|容量|额度)")
+            self.assertTrue(
+                any(
+                    re.search(r"(?i)subscription|订阅", unit)
+                    and re.search(r"(?i)capacity|credits|容量|额度", unit)
+                    for unit in self.semantic_units(text)
+                ),
+                f"{path.name}: subscription and capacity/credits must share one semantic unit",
+            )
 
     def test_bilingual_core_signals_have_parity(self) -> None:
         documents = self.readme_documents()
@@ -816,10 +758,11 @@ class ReadmeContractTests(unittest.TestCase):
             "60%",
             "33%",
             "43%",
-            "56%",
             "0.4",
             "0.04",
             "0%",
+            "route_cost",
+            "saving = 1 - route_cost",
             "config.toml",
             "RestoreLatest",
             "v0.3.0",
@@ -837,8 +780,7 @@ class ReadmeContractTests(unittest.TestCase):
 
         release_status_specs = {
             CHINESE_README: {
-                "title": "v0.3.0 发布状态",
-                "control_orbit": "docs/assets/readme/control-plane-zh.svg",
+                "title": "当前状态",
                 "compatibility": r"Compatibility\s+已验证",
                 "unproven": r"Native Nested.*全新 CLI child model/effort 身份.*物理 Windows 11 尚未证明",
                 "local_row_label": "本地仓库",
@@ -856,8 +798,7 @@ class ReadmeContractTests(unittest.TestCase):
                 ),
             },
             ENGLISH_README: {
-                "title": "v0.3.0 release status",
-                "control_orbit": "docs/assets/readme/control-plane-en.svg",
+                "title": "Current status",
                 "compatibility": r"Compatibility\s+verified",
                 "unproven": r"Native Nested, fresh-CLI child model/effort identity, and physical Windows 11 remain unproven",
                 "local_row_label": "Local repository",
@@ -893,24 +834,13 @@ class ReadmeContractTests(unittest.TestCase):
                 f"{path.name}: release status heading must be H2",
             )
 
-            control_orbit_matches = list(
-                re.finditer(
-                    rf"(?m)^!\[[^\n]*\]\({re.escape(spec['control_orbit'])}\)\s*$",
-                    rendered,
-                )
+            following_heading = re.search(r"(?m)^## (?!#)", rendered[release_heading.end() :])
+            release_end = (
+                len(rendered)
+                if following_heading is None
+                else release_heading.end() + following_heading.start()
             )
-            self.assertEqual(
-                len(control_orbit_matches),
-                1,
-                f"{path.name}: Control Orbit image must have exactly one target",
-            )
-            control_orbit = control_orbit_matches[0]
-            self.assertLess(
-                release_heading.end(),
-                control_orbit.start(),
-                f"{path.name}: release status must precede Control Orbit",
-            )
-            release_block = rendered[release_heading.start() : control_orbit.start()]
+            release_block = rendered[release_heading.start() : release_end]
             for signal in (
                 "v0.3.0",
                 "106/106",

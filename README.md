@@ -1,151 +1,70 @@
 [简体中文](README.md) · [English](README.en.md)
 
-![Sol 单一主控把有界任务路由给 Luna Max 或 Terra High，并接收 FILES、DIFF、TEST 证据](docs/assets/readme/hero-zh.svg)
+![Sol 作为唯一主控，将有边界的任务路由给 Terra High 或 Luna Max，并在证据返回后完成最终审核](docs/assets/readme/hero-zh.svg)
 
 # Sol Luna
 
-**Sol 单一主控。Luna Max 与 Terra High 分级执行。真实文件与证据通过后才交付。**
+**Sol 单一主控。Terra High 与 Luna Max 分层执行。真实文件与证据通过后才交付。**
 
-`codex-sol-luna` 是一个小型、通用的 Codex 编排 Skill。简单任务由当前 Codex
-直接完成；复杂任务由 Sol 理解、规划、分配和审核，再由合适的执行层处理有界工作。
+`codex-sol-luna` 是一个面向 Codex 的轻量级编排 Skill。它不追求“更多 Agent”，而是让不同模型只承担最适合自己的工作：
 
-| 普通明确任务 | 混合项目 | 复杂直接额度 | 综合中心 |
-| --- | --- | --- | --- |
-| **预算节省 72%–76%** | **预算节省 50%–60%** | **预算节省 33%–43%** | **约 56%** |
+- **Sol** 是唯一主控：理解目标、定义完成条件、规划、分配、调度并完成最终审核。
+- **Terra High** 是复杂执行层：处理跨模块、长上下文、模糊调试、共享接口与高风险实现。
+- **Luna Max** 是轻量执行层：承接清晰、低歧义、边界明确、可独立验证的任务。
 
-这些是基于官方模型比例、路由工作量与编排开销复算的预算区间，不是固定结果，也不是每个任务的保证。
-简单 Direct 任务零委派，路由节省为 **0%**；新混合路由尚未完成匹配的 A/B 对照。
-额度节省不等于时间一定更快，实际结果取决于 token 总量、上下文重复、Sol 审查和返工。
+简单任务仍由当前 Codex 直接完成。复杂、跨模块、可并行或高风险任务，再显式调用 `$sol-luna`。
 
-规范仓库地址是 [yehyakin/codex-sol-luna](https://github.com/yehyakin/codex-sol-luna)。
-当任务复杂、跨模块或高风险时，显式调用 `$sol-luna` 选择这个 Skill。
+运行时默认使用简体中文；如果用户明确指定其他语言，则遵循用户选择。
 
-## v0.3.0 发布状态
+> **一个 Sol，两级执行。Terra 与 Luna 都是叶子执行者，不得创建子代理，也不得批准整体任务。**
 
-| 验证面 | 结果 |
-| --- | --- |
-| 本地仓库 | Skill Creator **PASS**；**106/106** tests PASS |
-| 托管 CI | POSIX **PASS**；Windows Server 2022 / `windows-latest` × Windows PowerShell 5.1 / PowerShell 7 **PASS** |
-| 编排模式 | **Compatibility 已验证**；Native Nested、全新 CLI child model/effort 身份与物理 Windows 11 尚未证明 |
+规范仓库：[yehyakin/codex-sol-luna](https://github.com/yehyakin/codex-sol-luna)
 
-证据绑定报告提交 `6895f06`：[POSIX CI](https://github.com/yehyakin/codex-sol-luna/actions/runs/30858707335) · [Windows CI](https://github.com/yehyakin/codex-sol-luna/actions/runs/30858707364) · [完整实施报告](ORCHESTRATE_SOL_LUNA_V2_IMPLEMENTATION_REPORT.md)
+## 为什么能节省成本
 
-![Control Orbit 展示 Direct、Sol-only、Sol → Luna 与 Sol → Terra 路由，以及返回 Sol 的 PASS、FIX、BLOCKED 证据闭环](docs/assets/readme/control-plane-zh.svg)
+Sol Luna 的节省逻辑很直接：
 
-## 60 秒开始
+> **把高成本的目标理解、边界判断与最终审核留给 Sol；把实际执行按复杂度路由给 Terra 或 Luna。**
 
-在 [codex-sol-luna](https://github.com/yehyakin/codex-sol-luna) checkout 中，先
-验证再安装：
+按 **2026-08-04** 的官方 API 价格与 Codex token-based rate card，同一种 token 类型下，三个模型的相对成本为：
 
-```sh
-bash scripts/validate.sh
-bash scripts/install.sh
-```
+| 模型 | 相对成本 | 在本项目中的职责 |
+| --- | ---: | --- |
+| **Sol** | **1.00×** | 理解、规划、分配、调度、最终审核 |
+| **Terra High** | **0.40×** | 复杂、跨模块、长上下文或高风险执行 |
+| **Luna Max** | **0.04×** | 清晰、低歧义、高吞吐执行 |
 
-安装后，向 Codex 描述目标、`done_when`、文件所有权和验证命令，并显式调用
-`$sol-luna`。小型、独立或仅需说明的任务保持 Direct；完整的平台命令和卸载/回滚
-路径见[平台与生命周期](#平台与生命周期)。
+也就是说，在相同 token 类型下：
 
-## 单一主控，一座执行工坊
+- Terra 的成本约为 Sol 的 **40%**；
+- Luna 的成本约为 Sol 的 **4%**；
+- Luna 不是 Sol 的替代品，而是把大量明确执行从 Sol 上移走，从而保留 Sol 的判断与审核能力。
 
-Sol 是唯一的 controller，负责目标理解、完成条件、阶段计划、文件所有权、路由和最终审查。
-Luna Max 是低歧义、目标清楚、可证伪且小上下文任务的有界执行者；它只能修改分配的范围，
-不得创建子代理。Terra High 是跨模块、长上下文、模糊调试、共享接口或高风险实现的执行者；
-它同样只在精确 `write_scope` 内工作，不得创建子代理。Sol、Luna 与 Terra 不是固定三 Agent
-团队：运行时按任务与实时容量选择需要的路径。
+### 可复算的预算投影
 
-```text
-用户目标 → Sol 单一主控计划并路由
-          → Luna Max（低歧义）或 Terra High（跨模块/高风险）有界执行
-          → Sol 审查真实文件、diff 与证据 → 交付或阻断
-```
+下表以“同一任务全部使用 Sol”为 `1.00×` 基线。三个模型的 token 份额合计为 100%，`编排开销`表示额外的 Sol 规划、审核、协调和必要返工，相对于全 Sol 基线增加的成本。
 
-| 角色 | 模型 / effort | 职责 | 边界 |
-| --- | --- | --- | --- |
-| Sol | `gpt-5.6-sol` / `high` | controller、planner、router、最终 reviewer | 只做编排与最终决策 |
-| Luna Max | `gpt-5.6-luna` / `max` | 清晰低歧义任务的实现与自验证 | 只能修改分配文件；不得创建子代理 |
-| Terra High | `gpt-5.6-terra` / `high` | 跨模块、长上下文、模糊调试、共享接口、高风险实现 | 只能修改分配文件；不得创建子代理 |
+| 场景 | 示例 token 路由 | 编排开销 | 预计节省 |
+| --- | --- | ---: | ---: |
+| **普通明确型项目** | Sol 10% · Terra 20% · Luna 70% | 3%–7% | **72.2%–76.2%** |
+| **混合型项目** | Sol 20% · Terra 40% · Luna 40% | 2%–12% | **50.4%–60.4%** |
+| **复杂型项目** | Sol 25% · Terra 60% · Luna 15% | 7%–17% | **33.4%–43.4%** |
+| **Direct 小任务** | 当前 Codex 直接完成，不委派 | 0% | **路由节省 0%** |
 
-## 选择路径
+这些数字属于 `scenario_model_projection`：它们用于预算规划，**不是匹配 A/B 实验、不是每个任务的保证，也不代表一定更快**。上下文重复、错误拆分、并行等待、输出量、Fast mode 和返工都可能降低甚至反转节省。
 
-Skill 不会把每件事都委派出去。先判断任务是否值得规划、执行和复核的额外成本：
+因此，更准确的公开说法是：
 
-| 路径 | 适用情况 | 委派与结果 |
-| --- | --- | --- |
-| **Direct** | 小型、独立、目标清楚的工作 | 零委派，路由节省 **0%**，当前 Codex 直接完成 |
-| **Sol-only** | 需要澄清、计划或审查，但不需要改文件 | Sol 规划/复核，停在执行工坊之前 |
-| **Sol → Luna** | 低歧义、可分界、上下文较小且需要真实变更 | Luna 在独立 owner 范围内执行，返回证据给 Sol |
-| **Sol → Terra** | 跨模块、长上下文、模糊调试、共享接口或高风险实现 | Terra 在精确 owner 范围内执行，返回证据给 Sol |
+> **普通明确型项目可投影节省约 72%–76%，典型混合项目约 50%–60%，复杂项目约 33%–43%；实际结果必须按真实路由和 token 使用复算。**
 
-并行只发生在互不重叠的 owner 范围内；同一文件在整个运行期间只有一个 owner。依赖、共享
-接口和不确定边界必须等待或交给同一个执行者。worker 数量由实时容量决定，而不是一个
-对外承诺的固定上限。
+而不是把所有任务概括成一个固定的“平均节省 56%”。
 
-## 工作流
+<details>
+<summary><strong>查看官方费率、公式与完整计算</strong></summary>
 
-每个委派工作走一条可审查的闭环：
+### API 价格
 
-1. **计划。** Sol 写下 `goal`、`done_when`、依赖、精确 `write_scope`、排除项和验证。
-2. **执行。** Luna 或 Terra 收到包含 `Task ID`、`Task`、`Context`、`Write scope`、
-   `Do not touch`、`Expected result` 和 `Verification` 的任务包，只改分配范围。
-3. **自检。** 执行者运行指定验证，返回确切的 changed paths、diff、测试和构建证据。
-4. **审核。** Sol 检查真实文件和新鲜证据，决定 `PASS`、一次 focused `FIX` 或 `BLOCKED`。
-
-只有在 Luna 首次失败发生于 Luna 写入任何 owned file 之前，Sol 才能把同一任务、同一 scope
-一次升级到 Terra；不得无限重试 Luna。若 Luna 在失败前写入过任一 owned file，Luna 保留全部
-ownership；只能给原 Luna owner 一次 focused fix，否则返回 `BLOCKED`。Terra 的写入状态不是
-升级门槛，升级仍由 Sol 复核且不能绕过证据门槛。
-
-## 可靠性来自边界
-
-可靠性来自可证明的身份、所有权、证据新鲜度和有界修正，而不是来自配置里的一行标签。
-
-### 运行时身份与失败关闭
-
-| Agent | Model | Reasoning effort | Effective sandbox |
-| --- | --- | --- | --- |
-| `sol-controller` | `gpt-5.6-sol` | `high` | `read-only` |
-| `luna-max-worker` | `gpt-5.6-luna` | `max` | `workspace-write`，受 parent 边界限制 |
-| `terra-high-worker` | `gpt-5.6-terra` | `high` | `workspace-write`，受 parent 边界限制 |
-
-启动时必须证明所选 custom agent、精确 model、reasoning effort 和有效权限边界。如果任一
-身份或权限无法证明，runtime 会**失败关闭（Fail Closed）**，不会静默替换成相近的 model、
-角色、effort 或 sandbox。Luna Max 与 Terra High 都不得 spawn 或 create subagents，不得
-扩大写入范围、重写 Sol 的计划、批准整体任务，或把部分结果当作交付。
-
-### 阶段、所有权、证据与修正
-
-worker 交付不是最终批准；只有 Sol 审核过真实 diff 后才算完成。Evidence 必须绑定最终候选
-身份，可以使用 commit+diff identity 或精确的 changed-file snapshot。验证后候选发生变化时，
-旧证据立即失效，必须重跑受影响的验证。transport/spawn 的 `completed` 只表示投递生命周期
-完成，不能替代结构化结果或 Sol review。
-
-Sol 最多可以向原 owner、原 scope 发出一次 focused correction。第二次失败、缺少依赖或扩大
-scope 都是 `BLOCKED`。Correction Packet 必须带 `Failure class` 与 `Delta`；相同任务包且
-没有新证据时不得重新 launch。长任务才生成含 `goal`、`completed`、`in_flight`、
-`artifact_location`、`next_action` 的 resume packet；短任务和 Direct 任务不生成。
-
-结果包保持可机器解析并且可证伪：
-
-```text
-Task ID: <stable task id>
-Status: PASS | BLOCKED
-Summary: <what happened>
-Changed: <exact files, or None>
-Verification: <commands, exit status, and concise output>
-Evidence: <diff, test, build, log, or artifact location bound to the final candidate>
-Failure class: runtime | model_identity | permission | dependency | scope | verification | conflict | none
-Blocker: <None or the concrete blocker>
-```
-
-## 成本模型与证据边界
-
-这个模型区分 API token 的美元价格与 subscription credit 所代表的容量。官方来源是
-[OpenAI model comparison](https://developers.openai.com/api/docs/models/compare)和官方
-[Codex rate card](https://help.openai.com/en/articles/20001106-codex-rate-card)。本快照日期为
-**2026-08-03**；发布前请重新检查两个来源。
-
-### 每 1M tokens 的 API 价格
+每 1M tokens：
 
 | Model | Input | Cached input | Output |
 | --- | ---: | ---: | ---: |
@@ -153,174 +72,356 @@ Blocker: <None or the concrete blocker>
 | GPT-5.6 Terra | $2.00 | $0.20 | $12.00 |
 | GPT-5.6 Luna | $0.20 | $0.02 | $1.20 |
 
-### 每 1M tokens 的 Codex credits
+### Codex token-based credits
+
+每 1M tokens：
 
 | Model | Input | Cached input | Output |
 | --- | ---: | ---: | ---: |
-| GPT-5.6 Sol | 125 | 12.5 | 750 |
-| GPT-5.6 Terra | 50 | 5 | 300 |
-| GPT-5.6 Luna | 5 | 0.5 | 30 |
+| GPT-5.6 Sol | 125 credits | 12.5 credits | 750 credits |
+| GPT-5.6 Terra | 50 credits | 5 credits | 300 credits |
+| GPT-5.6 Luna | 5 credits | 0.5 credits | 30 credits |
 
-以 Sol 为基线，当前相对比例是：Sol `1.0x`、Terra `0.4x`、Luna `0.04x`。简单可复算的
-混合公式为：
+当前两套口径的相对比例相同：
 
 ```text
-route_cost = sol_share * 1.0 + terra_share * 0.4 + luna_share * 0.04 + orchestration_overhead
+Sol = 1.00
+Terra = 0.40
+Luna = 0.04
+```
+
+因此可以使用同一条相对成本公式：
+
+```text
+route_cost =
+  sol_share × 1.00
+  + terra_share × 0.40
+  + luna_share × 0.04
+  + orchestration_overhead
+
 saving = 1 - route_cost
 ```
 
-其中三种 `*_share` 是按 token 口径分解的路由份额（每行合计为 1），
-`orchestration_overhead` 是额外的 Sol 规划、审查、协调和必要返工相对成本。将下表各份额与
-开销代入即可独立复算区间，不把额度比例误读成时间承诺：
+普通明确型项目示例：
 
-| 场景 | 可复算假设（shares 合计 1） | route_cost → saving |
+```text
+route_cost
+= 0.10 × 1.00
++ 0.20 × 0.40
++ 0.70 × 0.04
++ 0.03–0.07
+= 0.238–0.278
+
+saving
+= 1 - 0.238–0.278
+= 72.2%–76.2%
+```
+
+API 用户看到的是美元金额；ChatGPT / Codex 用户通常看到的是 credits 或订阅容量。两者是不同计费单位，不能把 API 美元节省直接描述成订阅账单节省。
+
+官方来源：
+
+- [OpenAI model comparison](https://developers.openai.com/api/docs/models/compare)
+- [OpenAI Codex rate card](https://help.openai.com/en/articles/20001106-codex-rate-card)
+
+少量仍使用 legacy rate card 的 Enterprise 工作区，应以其实际适用费率为准。
+
+</details>
+
+## 60 秒开始
+
+### macOS / Linux
+
+```sh
+git clone https://github.com/yehyakin/codex-sol-luna.git
+cd codex-sol-luna
+
+bash scripts/validate.sh
+bash scripts/install.sh
+```
+
+### Windows
+
+Windows PowerShell 5.1：
+
+```powershell
+git clone https://github.com/yehyakin/codex-sol-luna.git
+Set-Location codex-sol-luna
+
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/validate.ps1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/install.ps1
+```
+
+PowerShell 7：
+
+```powershell
+pwsh -NoProfile -File scripts/validate.ps1
+pwsh -NoProfile -File scripts/install.ps1
+```
+
+安装后，打开新的 Codex 会话并显式调用：
+
+```text
+$sol-luna
+
+目标：为现有 Next.js 项目增加账号设置功能。
+
+完成条件：
+- 用户可以修改昵称和头像
+- 保持现有认证 API 兼容
+- 新增必要测试
+- lint、test 和 build 全部通过
+
+不要做：
+- 不修改支付模块
+- 不更换现有 UI 框架
+```
+
+也可以直接写：
+
+```text
+$sol-luna 重构认证模块，保持现有 API 兼容，测试和构建必须通过。
+```
+
+你不需要指定 worker 数量，也不需要自己判断哪些任务交给 Terra 或 Luna。提供**目标、可观察的完成条件与明确限制**即可；Sol 负责形成最小可执行计划。
+
+## 它解决什么问题
+
+| 常见问题 | Sol Luna 的处理方式 |
+| --- | --- |
+| 同一个 Agent 同时规划、实现和验证，容易顾此失彼 | Sol 专注判断与审核，Terra / Luna 专注有界执行 |
+| 所有工作都使用最高成本模型 | 按复杂度把执行路由到 Terra 或 Luna |
+| 多个执行者同时修改共享文件 | **一个文件，一个 owner**；重叠范围必须串行 |
+| “完成”只有口头总结，没有真实证据 | 必须返回 changed paths、diff、测试、构建或产物 |
+| 错误任务被无限重试 | 只允许一次有边界的修正，否则 `BLOCKED` |
+
+它的目标不是制造一个热闹的多 Agent 团队，而是为复杂任务建立一个清晰、可审核的控制面。
+
+## 工作方式
+
+![Direct、Sol-only、Sol 到 Luna，以及按需路由到 Terra 的执行路径，所有证据最终返回 Sol 审核](docs/assets/readme/control-plane-zh.svg)
+
+```text
+用户目标
+   │
+   ▼
+Sol：理解 → 规划 → 分配 → 调度
+   │
+   ├─ Direct：简单任务由当前 Codex 直接完成
+   ├─ Sol-only：只做计划、分析或审核
+   ├─ Luna Max：清晰、低歧义、可独立验证的执行
+   └─ Terra High：跨模块、长上下文或高风险执行
+   │
+   ▼
+真实文件 + Diff + 测试 / 构建 / 产物证据
+   │
+   ▼
+Sol：PASS / FIX / BLOCKED
+```
+
+### 角色层级
+
+| 角色 | 配置 | 负责什么 | 明确边界 |
+| --- | --- | --- | --- |
+| **Sol** | `gpt-5.6-sol` / `high` / `read-only` | 理解目标、定义 `done_when`、拆分任务、分配 owner、安排阶段、最终审核 | 不承担大批量机械实现 |
+| **Terra High** | `gpt-5.6-terra` / `high` / `workspace-write` | 跨模块、长上下文、模糊调试、共享接口判断、高风险实现 | 不是第二个主控；不改计划、不创建子代理 |
+| **Luna Max** | `gpt-5.6-luna` / `max` / `workspace-write` | 清晰、低歧义、小上下文、机械或高吞吐任务 | 不扩大 scope、不创建子代理、不批准整体任务 |
+
+角色介绍按能力层级使用 **Sol → Terra → Luna**；任务路由按复杂度递进使用 **Direct → Luna → Terra**。
+
+### 路由选择
+
+| 路径 | 什么时候使用 | 成本含义 |
 | --- | --- | --- |
-| 普通明确任务 | `sol=.10, terra=.20, luna=.70, overhead=.03-.07` | `.208+(.03-.07)=.238-.278` → **72.2%-76.2%** |
-| 混合项目 | `sol=.20, terra=.40, luna=.40, overhead=.02-.12` | `.376+(.02-.12)=.396-.496` → **50.4%-60.4%** |
-| 复杂直接额度 | `sol=.25, terra=.60, luna=.15, overhead=.07-.17` | `.496+(.07-.17)=.566-.666` → **33.4%-43.4%** |
+| **Direct** | 单文件、小改动、目标清楚 | 不承担编排开销，路由节省为 0% |
+| **Sol-only** | 需要规划、分析或审核，但不改文件 | 只使用主控能力 |
+| **Sol → Luna** | scope 可精确划分，结果可独立验证 | 优先承接大量明确执行 |
+| **Sol → Terra** | 跨模块、长上下文、共享接口、模糊调试或高风险实现 | 用更强执行层处理不能安全下放给 Luna 的工作 |
 
-| 场景 | 当前公开预算区间 |
-| --- | ---: |
-| 普通明确任务 / Ordinary clear task | 72%–76% |
-| 混合项目 / Mixed project | 50%–60% |
-| 复杂直接额度 / Complex direct allocation | 33%–43% |
-| 综合中心 / Composite center | 约 56% / about 56% |
+Terra 不是 Luna 的固定上级，也不是常驻第二主控。两者都是 Sol 根据任务风险选择的执行层。
 
-这些区间是预算规划口径，不是匹配 A/B 的已完成实验，也不是每个任务的保证；新混合路由不能被描述为已完成 A/B。
-额度节省不等于时间一定更快，实际取决于 token 总量、上下文重复、Sol 审查、并行等待和返工。
-API 用户看到的是美元金额；subscription（订阅）用户主要获得可用容量或 credits，API 美元
-节省与订阅容量不是同一个结论。
+### 多个执行者如何协作
 
-公开证据标签保持 `measured`（已有路由/验证记录）、`scenario_model_projection`（基于官方费率与场景份额复算的预算区间）和
-`unavailable`（资料未暴露）。本页成本不是新匹配 A/B 实测，也不是样本验证成本；路由样本的实测记录与成本投影分开。
+复杂任务可以同时使用一个或多个 Terra / Luna worker，但并行由**文件所有权**决定，而不是由 Agent 数量决定：
 
-## 平台与生命周期
+```text
+Stage 1
+├─ Terra A → src/auth/core/*
+├─ Luna A  → src/account/ui/*
+└─ Luna B  → docs/account.md
 
-| 目标 | Shell | 状态边界 |
-| --- | --- | --- |
-| macOS | POSIX shell | 由 `bash` 生命周期脚本支持 |
-| Linux | POSIX shell | 由 `bash` 生命周期脚本支持 |
-| Windows 11 | Windows PowerShell 5.1 与 PowerShell 7.x | 支持目标；原生 Windows 11 证据仍是独立发布门槛 |
-| Windows Server 2022 | Windows PowerShell 5.1 与 PowerShell 7.x | 支持目标；GitHub 托管 CI 只属于 Server 证据 |
+Stage 2
+└─ 原指定 owner → src/shared/routes.ts
+```
 
-GitHub Actions 使用 `windows-latest` 和固定的 `windows-2022` Windows 矩阵。这些托管
-runner 提供 Windows Server 证据，不能被描述为原生 Windows 11 证据。
+只有 write scope 完全不重叠的任务才能同时执行。共享文件必须指定唯一 owner；依赖、共享接口或边界不确定时，Sol 会合并任务或改为串行执行。
 
-### macOS 与 Linux
+worker 数量没有固定承诺。Sol 根据依赖关系、实时容量和安全边界分批启动最少数量的执行者。
+
+## 一条完整的证据闭环
+
+1. **计划。** Sol 写下目标、`done_when`、任务、依赖、精确 `write_scope`、排除项与验证方法。
+2. **执行。** Terra 或 Luna 只修改分配范围，不改整体计划。
+3. **自检。** 执行者运行指定验证并返回真实 changed paths、diff、测试、构建或产物证据。
+4. **审核。** Sol 检查真实文件、完整 diff、证据新鲜度和需求覆盖。
+5. **结论。** Sol 返回 `PASS`、一次 focused `FIX` 或 `BLOCKED`。
+
+worker 的 `PASS` 只代表它自己的任务通过。只有 Sol 可以批准整体工作。
+
+## 不可妥协的边界
+
+1. **一个文件，一个 owner。** 同一轮执行中，不允许两个 worker 修改同一文件。
+2. **执行者不能创建子代理。** Terra 与 Luna 都是叶子节点。
+3. **没有证据，不算完成。** transport / spawn 的 `completed` 只表示投递结束。
+4. **验证必须绑定最终候选。** 验证后文件发生变化，旧证据立即失效。
+5. **最多一次 focused fix。** 原 owner 只能在原 scope 内修正一次；再次失败则 `BLOCKED`。
+6. **失败关闭。** 无法证明 custom agent、精确 model、reasoning effort 或有效权限时，不静默替换。
+7. **不降低审核门槛。** 用户催促、并行需求或成本目标都不能替代验证与证据。
+
+### Luna 到 Terra 的有界升级
+
+只有当 Luna 的第一次失败发生在它写入任何 owned file **之前**，Sol 才能把同一任务、同一 scope 一次升级给 Terra。
+
+升级门槛只看 Luna 首次失败前是否零写入；Terra 的写入状态不是门槛。
+
+一旦 Luna 已经写入 owned file，它保留该文件在本轮运行中的 ownership。Sol 只能把一次 focused fix 交回原 Luna owner，不能把已经写过的文件转交给 Terra 覆盖。
+
+## 审核结果
+
+| 结果 | 含义 |
+| --- | --- |
+| `PASS` | 所有完成条件均由真实文件和新鲜证据支持 |
+| `FIX` | 原 owner 可以在不扩大 scope 的前提下完成一次精确修正 |
+| `BLOCKED` | 权限、依赖、运行时身份、scope、冲突或验证问题阻止可信交付 |
+
+## 什么时候不该使用
+
+以下情况通常直接交给当前 Codex 更合适：
+
+- 修改一个明确的小函数；
+- 修复已定位的拼写、文案或样式；
+- 只需要解释代码、回答问题或生成短文本；
+- 无法划分独立 write scope；
+- 编排、重复上下文与审核成本明显高于实现本身。
+
+`$sol-luna` 不是默认模式。**小任务保持 Direct，复杂任务才进入编排。**
+
+## 安装、检查与卸载
+
+### macOS / Linux
 
 ```sh
 bash scripts/validate.sh
+bash scripts/install.sh --check
 bash scripts/install.sh
+
 bash scripts/uninstall.sh
 bash scripts/uninstall.sh --restore-latest
 ```
 
-在隔离测试目录运行前，将 `ORCHESTRATE_HOME` 设置为唯一的临时目录。安装器会在首次
-修改前验证源文件，备份精确目标并原子安装，保留无关 agent 与 `~/.codex/config.toml`。
-
-### Windows 11 与 Windows Server 2022
-
-Windows 生命周期使用原生 PowerShell，兼容 PowerShell 5.1 和 PowerShell 7.x。Windows
-PowerShell 5.1 使用 `powershell.exe`，PowerShell 7 使用 `pwsh`：
+### Windows
 
 ```powershell
+# Windows PowerShell 5.1
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/validate.ps1
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/install.ps1
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/uninstall.ps1
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/uninstall.ps1 -RestoreLatest
+
+# PowerShell 7
 pwsh -NoProfile -File scripts/validate.ps1
 pwsh -NoProfile -File scripts/install.ps1
 pwsh -NoProfile -File scripts/uninstall.ps1
 pwsh -NoProfile -File scripts/uninstall.ps1 -RestoreLatest
 ```
 
-运行隔离的 Windows 生命周期测试时，将 `$env:ORCHESTRATE_HOME` 设置为唯一临时 home。
-Windows Server CI 只证明 Server 行为；在记录真实 Windows 11 运行结果以前，本 README
-不宣称已有原生 Windows 11 证据。生命周期会保留 `~/.codex/config.toml` 和无关 agent，
-卸载只删除记录的 `SHA256` 仍匹配的 owned targets；`-RestoreLatest` / `--restore-latest`
-在移除 owned installation 后恢复最近一次有效备份。发布时的运行表面与证据状态见
-[`docs/release/runtime-surface-matrix.md`](docs/release/runtime-surface-matrix.md)。
+安装器只管理本项目拥有的 Skill 与 agent 文件，并保留无关 agent 和用户自己的 `~/.codex/config.toml`。隔离生命周期测试时可使用 `ORCHESTRATE_HOME` 指定临时 home。
 
-## 真实项目路由样本
+平台与证据覆盖详见 [`docs/release/runtime-surface-matrix.md`](docs/release/runtime-surface-matrix.md)。
 
-这些是匿名的本地真实项目路由样本，用于说明 Direct、Sol-only 和有界 worker 路径；本地项目测试样本验证仅用于路由上下文，它们不是
-新混合路由的成本 A/B 基准。我们只允许最少的只读探针补齐材料，没有修改任何业务项目。
+## 当前状态
 
-| 匿名类别 | 路由 | Luna / Terra | 验证 | Sol 终审 | 耗时 |
-| --- | --- | --- | --- | --- | ---: |
-| 代码项目 | `sol_then_luna`（路由样本） | 不可得 | 有证据 | `BLOCKED` | 2340 秒 |
-| 文档项目 | `sol_then_luna`（路由样本） | 不可得 | 有证据 | `PASS` | 379 秒 |
-| 基础设施项目 | `direct`（路由样本） | 0 | 有证据 | 不适用 | 859 秒 |
+当前发布基线为 **v0.3.0**。
 
-路由样本不证明新 Terra 混合路径已经完成 A/B，也不把额度区间升级为时间或生产保证。
-完整方法、匿名结果和限制见 [`tests/real-project-benchmark.md`](tests/real-project-benchmark.md)。
+| 验证面 | 已记录证据 |
+| --- | --- |
+| 本地仓库 | Skill Creator **PASS**；证据快照记录 **106/106** tests PASS |
+| 托管 CI | POSIX **PASS**；Windows Server 2022 / `windows-latest` × Windows PowerShell 5.1 / PowerShell 7 **PASS** |
+| 运行表面 | Compatibility 已验证；Native Nested、全新 CLI child model/effort 身份与物理 Windows 11 尚未证明 |
 
-## 仓库与开发验证
+v0.3.0 的证据绑定报告记录于提交 `6895f06`：
 
-### 仓库布局
+- [POSIX CI](https://github.com/yehyakin/codex-sol-luna/actions/runs/30858707335)
+- [Windows CI](https://github.com/yehyakin/codex-sol-luna/actions/runs/30858707364)
+- [完整实施报告](ORCHESTRATE_SOL_LUNA_V2_IMPLEMENTATION_REPORT.md)
+
+这些状态描述的是已记录证据范围，不推断未验证运行表面。
+
+## 仓库结构
 
 ```text
-.agents/skills/sol-luna/       public Skill 与运行参考
-.codex/agents/                 精确的 Sol、Luna 与 Terra custom-agent 定义
-  sol-controller.toml
-  luna-max-worker.toml
-  terra-high-worker.toml
-scripts/                       macOS/Linux 生命周期与验证脚本
-tests/                         contract、forward-case 与生命周期测试
-docs/assets/readme/            仓库自有本地化 Control Orbit hero 与 control-plane SVG
-README.md                      默认简体中文指南
-README.en.md                   完整的 English peer
+.agents/skills/sol-luna/
+├─ SKILL.md                    public Skill
+└─ references/
+   ├─ orchestration.md         编排契约
+   └─ runtime-notes.md         运行时与调度说明
+
+.codex/agents/
+├─ sol-controller.toml
+├─ terra-high-worker.toml
+└─ luna-max-worker.toml
+
+scripts/
+├─ validate.*
+├─ install.*
+├─ uninstall.*
+└─ test.sh
+
+tests/                         contract、生命周期与 forward-case 测试
+docs/                          发布证据、设计记录与 README 资源
+README.md                      简体中文
+README.en.md                   English
 ```
 
-公开 Skill 是 [`$sol-luna`](.agents/skills/sol-luna/SKILL.md)。精确的 agent 定义见
-[`sol-controller.toml`](.codex/agents/sol-controller.toml)、[`luna-max-worker.toml`](.codex/agents/luna-max-worker.toml)
-与 [`terra-high-worker.toml`](.codex/agents/terra-high-worker.toml)。全局 Skill 与 agent 目录
-只是安装副本；GitHub 是事实来源。
+## 文档入口
 
-### 测试
+- [Public Skill](.agents/skills/sol-luna/SKILL.md)
+- [编排契约](.agents/skills/sol-luna/references/orchestration.md)
+- [运行时说明](.agents/skills/sol-luna/references/runtime-notes.md)
+- [Sol 配置](.codex/agents/sol-controller.toml)
+- [Terra High 配置](.codex/agents/terra-high-worker.toml)
+- [Luna Max 配置](.codex/agents/luna-max-worker.toml)
+- [运行表面矩阵](docs/release/runtime-surface-matrix.md)
+- [真实项目路由样本](tests/real-project-benchmark.md)
+- [v0.3.0 实施报告](ORCHESTRATE_SOL_LUNA_V2_IMPLEMENTATION_REPORT.md)
 
-使用 Python 3.11 或更高版本运行文档、路由 contract 和 benchmark：
+## 开发与测试
+
+需要 Python 3.11 或更高版本。
 
 ```sh
-PYTHONDONTWRITEBYTECODE=1 python3 -B -m unittest tests.test_readme -v
-PYTHONDONTWRITEBYTECODE=1 python3 -B -m unittest tests.test_hybrid_routing.ReadmeCostContractTests -v
-python -m unittest tests/test_contract.py
-python -m unittest tests/test_benchmark.py
+bash scripts/validate.sh
+bash scripts/test.sh
 ```
 
-文档 contract 检查双语语言切换与 parity、规范仓库链接、本地图片目标、可访问 SVG
-元数据、章节顺序、当前价格行、混合公式、预算区间和适用边界。benchmark 报告区分
-`measured`、`scenario_model_projection`、`unavailable` 三类证据；若 PowerShell 可用，
-生命周期测试还会使用 `ORCHESTRATE_HOME` 验证隔离 home，并确认 `config.toml` 与无关 agent
-的 hash 保持不变。
+`scripts/test.sh` 会选择可用的 Python 3.11+，并运行完整 `unittest` 测试集。
+
+修改 README 时应同步更新双语版本与文档测试。测试应保护事实、链接、费率快照、公式、安全边界和平台命令，不应把某一种营销文案或首页章节顺序永久锁死。
 
 ## 限制
 
-- 预算区间用于路由规划，不保证每项任务或每个 token 组合得到相同节省。
-- 委派会增加计划、上下文、审查和可能的 retry token；重试可能抵消或反转额度节省。
-- 额度节省不等于时间一定更快；并行等待、上下文重复和返工会改变实际结果。
-- GitHub 托管 Windows runner 建立的是 Windows Server 行为，不是原生 Windows 11 行为。
-- Skill 只有一个 Sol controller，Luna Max 与 Terra High 是按风险分级的有界执行者；它不是固定
-  三 Agent 团队，也不是通用的多 agent team 框架。
-- 最终决策依赖真实文件和新鲜验证；仅凭配置中的标签无法证明运行时身份。
+- 成本区间是基于公开费率与示例 token 份额的预算投影，不是匹配 A/B benchmark。
+- 真实 token 总量可能因规划、上下文重复、验证和返工而变化。
+- Fast mode、超长上下文和不同输出比例可能改变实际消耗。
+- 精确 custom agent、model、reasoning effort 与权限选择取决于宿主运行表面。
+- 并行能力取决于实时容量和互不重叠的 write scope，不承诺固定 worker 数量。
+- GitHub 托管 Windows runner 证明的是 Windows Server 行为，不等同于物理 Windows 11。
+- Terra High 是复杂执行层，不是第二 planner 或 controller。
+- 最终交付依赖真实文件、完整 diff 与新鲜验证；配置标签本身不是运行证据。
 
-## 先例与许可证
+## 许可证
 
-### 先例
-
-本设计参考了若干项目的已审查快照，它们探索了路由、有边界委派、并行调度和基于证据
-的审查；没有复制这些项目的 prose 或 code：
-
-- [orchestrate-sol-luna](https://github.com/joeke80215/orchestrate-sol-luna/tree/eba163a9d48f023aeb3638b6809f0f8fb343f472) — Apache-2.0。
-- [codex-parallel-subagent-planner](https://github.com/manhua-man/codex-parallel-subagent-planner/tree/ea3d8db9081e2f4159a6c40100fc1ca8d229e7dc) — 审查快照未发现许可证文件；仅作思想参考。
-- [codex-dispatch-skill](https://github.com/yinguangyao/codex-dispatch-skill/tree/00630de4c8ad01cb51bae3a89044d55cc6433158) — 审查快照未发现许可证文件；仅作思想参考。
-- [codex-orchestrate](https://github.com/douglasmonsky/codex-orchestrate/tree/f2954a066e2607deef3963465562193a220dee70) — MIT。
-- [subagent-orchestrator-skill](https://github.com/Glaicer/subagent-orchestrator-skill/tree/96eaeb16f19b789fd004b588858fb846cc674147) — MIT。
-
-### 许可证
-
-本仓库采用 [Apache License 2.0](LICENSE)。审查过的先例的归属说明记录在
-[NOTICE](NOTICE) 中。
+本仓库采用 [Apache License 2.0](LICENSE)。相关先例与归属记录见 [NOTICE](NOTICE)。
 
 **致谢 / Thanks**
 
