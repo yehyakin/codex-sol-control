@@ -20,6 +20,17 @@ Runtime output defaults to Simplified Chinese unless the user explicitly request
 
 Canonical repository: [yehyakin/codex-sol-luna](https://github.com/yehyakin/codex-sol-luna)
 
+## Core routing and projected savings
+
+The table below uses an “all work performed by Sol” baseline of `1.00×`. Model token shares total 100%. `Orchestration overhead` represents additional Sol planning, review, coordination, and necessary rework as a fraction of the all-Sol baseline.
+
+| Scenario | Example token routing | Orchestration overhead | Projected saving |
+| --- | --- | ---: | ---: |
+| **Ordinary clear project** | Sol 10% · Terra 20% · Luna 70% | 3%–7% | **72.2%–76.2%** |
+| **Mixed project** | Sol 20% · Terra 40% · Luna 40% | 2%–12% | **50.4%–60.4%** |
+| **Complex project** | Sol 25% · Terra 60% · Luna 15% | 7%–17% | **33.4%–43.4%** |
+| **Direct small task** | The current Codex completes it without delegation | 0% | **0% routing saving** |
+
 ## Why it can reduce cost
 
 The cost strategy is straightforward:
@@ -39,17 +50,6 @@ For the same token type:
 - Terra costs about **40%** of Sol;
 - Luna costs about **4%** of Sol;
 - Luna does not replace Sol—it moves large amounts of well-specified execution away from Sol while preserving Sol's judgment and review role.
-
-### Reproducible budget projections
-
-The table below uses an “all work performed by Sol” baseline of `1.00×`. Model token shares total 100%. `Orchestration overhead` represents additional Sol planning, review, coordination, and necessary rework as a fraction of the all-Sol baseline.
-
-| Scenario | Example token routing | Orchestration overhead | Projected saving |
-| --- | --- | ---: | ---: |
-| **Ordinary clear project** | Sol 10% · Terra 20% · Luna 70% | 3%–7% | **72.2%–76.2%** |
-| **Mixed project** | Sol 20% · Terra 40% · Luna 40% | 2%–12% | **50.4%–60.4%** |
-| **Complex project** | Sol 25% · Terra 60% · Luna 15% | 7%–17% | **33.4%–43.4%** |
-| **Direct small task** | The current Codex completes it without delegation | 0% | **0% routing saving** |
 
 These values are `scenario_model_projection`: they are planning estimates, **not matched A/B experiments, not per-task guarantees, and not latency promises**. Repeated context, poor decomposition, parallel waiting, output volume, Fast mode, and rework can reduce or reverse the saving.
 

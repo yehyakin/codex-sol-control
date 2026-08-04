@@ -276,8 +276,36 @@ class ReadmeContractTests(unittest.TestCase):
             self.assertIn("scenario_model_projection", text, path.name)
             self.assertNotIn("sample_validated_projection", text, path.name)
 
-        self.assertIn("可复算的预算投影", chinese)
-        self.assertIn("Reproducible budget projections", english)
+        first_screen_specs = (
+            (
+                CHINESE_README,
+                chinese,
+                "## 核心路由与预计节省",
+                "| 场景 | 示例 token 路由 | 编排开销 | 预计节省 |",
+                "## 为什么能节省成本",
+            ),
+            (
+                ENGLISH_README,
+                english,
+                "## Core routing and projected savings",
+                "| Scenario | Example token routing | Orchestration overhead | Projected saving |",
+                "## Why it can reduce cost",
+            ),
+        )
+        for path, text, projection_heading, table_header, explanation_heading in first_screen_specs:
+            self.assertIn(projection_heading, text, path.name)
+            self.assertIn(table_header, text, path.name)
+            self.assertIn(explanation_heading, text, path.name)
+            self.assertLess(
+                text.index(projection_heading),
+                text.index(table_header),
+                f"{path.name}: projection heading must introduce the scenario table",
+            )
+            self.assertLess(
+                text.index(table_header),
+                text.index(explanation_heading),
+                f"{path.name}: scenario table must appear before the cost explanation",
+            )
 
     def test_rendered_markdown_ignores_fenced_and_commented_images(self) -> None:
         fixture = """
