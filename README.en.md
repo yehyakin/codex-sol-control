@@ -23,7 +23,7 @@ actual results depend on total tokens, repeated context, Sol review, and rework.
 The canonical repository is [yehyakin/codex-sol-luna](https://github.com/yehyakin/codex-sol-luna).
 Invoke `$sol-luna` explicitly when work is complex, cross-module, or high consequence.
 
-### v0.3.0 release status
+## v0.3.0 release status
 
 | Verification surface | Result |
 | --- | --- |

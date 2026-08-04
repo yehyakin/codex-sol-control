@@ -20,7 +20,7 @@
 规范仓库地址是 [yehyakin/codex-sol-luna](https://github.com/yehyakin/codex-sol-luna)。
 当任务复杂、跨模块或高风险时，显式调用 `$sol-luna` 选择这个 Skill。
 
-### v0.3.0 发布状态
+## v0.3.0 发布状态
 
 | 验证面 | 结果 |
 | --- | --- |

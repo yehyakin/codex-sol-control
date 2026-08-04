@@ -835,6 +835,80 @@ class ReadmeContractTests(unittest.TestCase):
             for path, text in documents.items():
                 self.assertIn(signal, text, f"{path.name}: parity signal missing: {signal}")
 
+        release_status_specs = {
+            CHINESE_README: {
+                "title": "v0.3.0 发布状态",
+                "control_orbit": "docs/assets/readme/control-plane-zh.svg",
+                "compatibility": r"Compatibility\s+已验证",
+                "unproven": r"Native Nested.*全新 CLI child model/effort 身份.*物理 Windows 11 尚未证明",
+            },
+            ENGLISH_README: {
+                "title": "v0.3.0 release status",
+                "control_orbit": "docs/assets/readme/control-plane-en.svg",
+                "compatibility": r"Compatibility\s+verified",
+                "unproven": r"Native Nested, fresh-CLI child model/effort identity, and physical Windows 11 remain unproven",
+            },
+        }
+        for path, text in documents.items():
+            spec = release_status_specs[path]
+            rendered = self.rendered_markdown(text)
+            release_heading_matches = list(
+                re.finditer(rf"(?m)^## {re.escape(spec['title'])}\s*$", rendered)
+            )
+            self.assertEqual(
+                len(release_heading_matches),
+                1,
+                f"{path.name}: release status must have exactly one H2 heading",
+            )
+            release_heading = release_heading_matches[0]
+            self.assertEqual(
+                release_heading.group(0).split(maxsplit=1)[0],
+                "##",
+                f"{path.name}: release status heading must be H2",
+            )
+
+            control_orbit_matches = list(
+                re.finditer(
+                    rf"(?m)^!\[[^\n]*\]\({re.escape(spec['control_orbit'])}\)\s*$",
+                    rendered,
+                )
+            )
+            self.assertEqual(
+                len(control_orbit_matches),
+                1,
+                f"{path.name}: Control Orbit image must have exactly one target",
+            )
+            control_orbit = control_orbit_matches[0]
+            self.assertLess(
+                release_heading.end(),
+                control_orbit.start(),
+                f"{path.name}: release status must precede Control Orbit",
+            )
+            release_block = rendered[release_heading.start() : control_orbit.start()]
+            for signal in (
+                "v0.3.0",
+                "106/106",
+                "6895f06",
+                "(ORCHESTRATE_SOL_LUNA_V2_IMPLEMENTATION_REPORT.md)",
+                "https://github.com/yehyakin/codex-sol-luna/actions/runs/30858707335",
+                "https://github.com/yehyakin/codex-sol-luna/actions/runs/30858707364",
+            ):
+                self.assertIn(
+                    signal,
+                    release_block,
+                    f"{path.name}: release status block missing {signal}",
+                )
+            self.assertRegex(
+                release_block,
+                spec["compatibility"],
+                f"{path.name}: release status must positively verify Compatibility",
+            )
+            self.assertRegex(
+                release_block,
+                spec["unproven"],
+                f"{path.name}: release status must mark unsupported surfaces unproven",
+            )
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
