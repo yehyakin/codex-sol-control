@@ -125,7 +125,11 @@ An external pre-change backup was created before repository edits at:
 
 `/var/folders/4_/6qbh_56x08q9kk1thgr6b5yr0000gn/T/sol-control-migration.KpbhoT`
 
-The final global installation result is recorded after release installation.
+The stable source was installed globally at `~/.agents/skills/sol-control`, with the v0.4.x alias
+at `~/.agents/skills/sol-luna` and state version 3 at `~/.codex/sol-control`. The final installer
+backup is `~/.codex/sol-control/backups/20260804T223305Z-24556`. Installed files match the source,
+`install.sh --check` returns success, and the complete `config.toml` hash is unchanged from the
+pre-migration value.
 
 ## 9. Forward tests
 
@@ -138,10 +142,16 @@ The v0.4 local candidate currently records **113/113 tests PASS** through `scrip
 
 ## 10. Real model calls
 
-Compatibility routing was previously exercised with the configured Sol, Terra, and Luna agent
-roles. A fresh-session discovery and invocation check for the renamed `$sol-control` surface is
-performed only after the stable source is installed globally. Native Nested remains unproven until
-the runtime returns exact child model and reasoning identity evidence.
+Codex CLI `0.146.0-alpha.9.2` completed a fresh Native Nested run with two-turn identity gates:
+
+- `/root/sol_native_identity`: `gpt-5.6-sol`, effort `high`, read-only;
+- `/root/sol_native_identity/luna_native_identity`: `gpt-5.6-luna`, effort `max`, read-only;
+- Luna returned structured `PASS` evidence for `3*3=9`, then Sol returned final `PASS`.
+
+The persisted runtime contexts and parent launch records prove `fork_turns="none"`, the nested
+agent path, exact models, exact efforts, inherited read-only permission, result retrieval, and Sol
+review. Compatibility remains the fallback when nested identity proof is unavailable. Terra High
+was configuration- and lifecycle-tested but was not invoked in this rename acceptance run.
 
 ## 11. Parallel and write-conflict tests
 
@@ -165,24 +175,27 @@ The installer never changes the complete Codex configuration and never silently 
 
 ## 13. Fresh-session discovery
 
-Pending final global installation. The acceptance check requires a new Codex session to discover
-`$sol-control`, keep `$sol-luna` as an explicit compatibility alias, and avoid implicit invocation.
+PASS. A fresh `codex exec` session discovered `$sol-control`, loaded Chinese as the default language,
+kept `$sol-luna` as an explicit-only v0.4.x compatibility alias, and preserved disabled implicit
+invocation. A separate persistent session completed the Native Nested Sol-to-Luna acceptance run.
 
 ## 14. GitHub commit and version
 
 Release target: `v0.4.0` on `main` at
-https://github.com/yehyakin/codex-sol-control. The rename and lifecycle implementation candidate is
-[`d204003`](https://github.com/yehyakin/codex-sol-control/commit/d2040035c02ae1e6aab4394ffd58152dba6dd309).
-Hosted evidence is [POSIX PASS](https://github.com/yehyakin/codex-sol-control/actions/runs/30954375350)
-and [Windows PASS](https://github.com/yehyakin/codex-sol-control/actions/runs/30954375332). The final
-repository rename and annotated tag are recorded after they exist.
+https://github.com/yehyakin/codex-sol-control. The repository rename is complete. The rename,
+lifecycle, and identity-handshake implementation is
+[`848b210`](https://github.com/yehyakin/codex-sol-control/commit/848b210691fcfd91ec8b5374ba7b35c19c48e18e).
+Hosted evidence is [POSIX PASS](https://github.com/yehyakin/codex-sol-control/actions/runs/30956811267)
+and [Windows PASS](https://github.com/yehyakin/codex-sol-control/actions/runs/30956811107). The
+annotated `v0.4.0` tag is created after this final evidence update.
 
 ## 15. Known limitations
 
 - Cost ranges are scenario-model projections, not matched A/B elapsed-time benchmarks.
 - Runtime identity proof depends on the active Codex surface.
 - Hosted Windows runners do not prove physical Windows 11 behavior.
-- Native Nested remains unproven unless exact nested model and effort identity are returned.
+- Terra High was not freshly invoked in the rename acceptance run; its TOML and lifecycle surfaces
+  are covered by local and hosted validation.
 - `$sol-luna` is temporary compatibility and will be removed in v0.5.0.
 
 ## 16. Follow-up recommendations

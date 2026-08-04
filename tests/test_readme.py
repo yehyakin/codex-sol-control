@@ -813,8 +813,8 @@ class ReadmeContractTests(unittest.TestCase):
         release_status_specs = {
             CHINESE_README: {
                 "title": "当前状态",
-                "compatibility": r"Compatibility\s+已验证",
-                "unproven": r"Native Nested.*全新 CLI child model/effort 身份.*物理 Windows 11 尚未证明",
+                "compatibility": r"Compatibility\s+保留为回退",
+                "unproven": r"Native Nested\s+已.*gpt-5\.6-sol/high/read-only.*gpt-5\.6-luna/max/read-only.*物理 Windows 11 尚未证明",
                 "local_row_label": "本地仓库",
                 "hosted_row_label": "托管 CI",
                 "physical_windows_row_label": "Windows 实机安装",
@@ -838,8 +838,8 @@ class ReadmeContractTests(unittest.TestCase):
             },
             ENGLISH_README: {
                 "title": "Current status",
-                "compatibility": r"Compatibility\s+verified",
-                "unproven": r"Native Nested, fresh-CLI child model/effort identity, and physical Windows 11 remain unproven",
+                "compatibility": r"Compatibility\s+remains the fallback",
+                "unproven": r"Native Nested verified.*gpt-5\.6-sol/high/read-only.*gpt-5\.6-luna/max/read-only.*physical Windows 11 remains unproven",
                 "local_row_label": "Local repository",
                 "hosted_row_label": "Hosted CI",
                 "physical_windows_row_label": "Physical Windows install",

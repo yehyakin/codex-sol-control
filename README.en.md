@@ -350,11 +350,11 @@ The current release baseline is **v0.4.0**.
 | Verification surface | Recorded evidence |
 | --- | --- |
 | Local repository | Skill Creator **PASS**; the v0.4.0 candidate records **113/113 tests PASS** |
-| Hosted CI | [POSIX PASS](https://github.com/yehyakin/codex-sol-control/actions/runs/30954375350): Ubuntu/macOS × Python 3.11/3.13; [Windows PASS](https://github.com/yehyakin/codex-sol-control/actions/runs/30954375332): Windows Server 2022 / `windows-latest` × Windows PowerShell 5.1 / PowerShell 7 |
+| Hosted CI | [POSIX PASS](https://github.com/yehyakin/codex-sol-control/actions/runs/30956811267): Ubuntu/macOS × Python 3.11/3.13; [Windows PASS](https://github.com/yehyakin/codex-sol-control/actions/runs/30956811107): Windows Server 2022 / `windows-latest` × Windows PowerShell 5.1 / PowerShell 7 |
 | Physical Windows install | User-reported installation success; the Windows version, install log, and runtime identity payload were not captured, so this does not establish Native Nested |
-| Runtime surface | Compatibility verified; Native Nested, fresh-CLI child model/effort identity, and physical Windows 11 remain unproven |
+| Runtime surface | Native Nested verified on Codex CLI `0.146.0-alpha.9.2`: `gpt-5.6-sol/high/read-only` → `gpt-5.6-luna/max/read-only` → Sol `PASS`; Compatibility remains the fallback; physical Windows 11 remains unproven |
 
-The rename and lifecycle implementation candidate is [`d204003`](https://github.com/yehyakin/codex-sol-control/commit/d2040035c02ae1e6aab4394ffd58152dba6dd309). See the [full implementation report](SOL_CONTROL_IMPLEMENTATION_REPORT.md) for the current evidence.
+The rename, lifecycle, and identity-handshake implementation is [`848b210`](https://github.com/yehyakin/codex-sol-control/commit/848b210691fcfd91ec8b5374ba7b35c19c48e18e). See the [full implementation report](SOL_CONTROL_IMPLEMENTATION_REPORT.md) for the current evidence.
 
 These statements describe the recorded evidence boundary; they do not infer support for unverified runtime surfaces.
 

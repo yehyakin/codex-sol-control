@@ -20,16 +20,15 @@ Date: 2026-08-05
 | CLI | nested dispatch | UNVERIFIED | No CLI nested dispatch result captured | 2026-08-03 |
 | CLI | result retrieval | UNVERIFIED | No CLI result retrieval payload captured | 2026-08-03 |
 | CLI | candidate binding | UNVERIFIED | No CLI final-candidate snapshot captured | 2026-08-03 |
-| codex exec | Agent selection | UNVERIFIED | No codex exec runtime identity payload captured | 2026-08-03 |
-| codex exec | exact model | UNVERIFIED | Configuration names are not runtime proof | 2026-08-03 |
-| codex exec | reasoning | UNVERIFIED | No codex exec reasoning-effort payload captured | 2026-08-03 |
-| codex exec | nested dispatch | UNVERIFIED | No codex exec nested dispatch result captured | 2026-08-03 |
-| codex exec | result retrieval | UNVERIFIED | No codex exec result retrieval payload captured | 2026-08-03 |
-| codex exec | candidate binding | UNVERIFIED | No codex exec final-candidate snapshot captured | 2026-08-03 |
+| codex exec | Agent selection | VERIFIED | Parent launch records and child paths `sol_native_identity` / `luna_native_identity` | 2026-08-05 |
+| codex exec | exact model | VERIFIED | Child contexts: `gpt-5.6-sol` and `gpt-5.6-luna` | 2026-08-05 |
+| codex exec | reasoning | VERIFIED | Child contexts: Sol `high`, Luna `max` | 2026-08-05 |
+| codex exec | nested dispatch | VERIFIED | Agent path `/root/sol_native_identity/luna_native_identity` | 2026-08-05 |
+| codex exec | result retrieval | VERIFIED | Luna structured `PASS`; Sol final `PASS` | 2026-08-05 |
+| codex exec | candidate binding | UNVERIFIED | Read-only arithmetic acceptance had no changed-file candidate | 2026-08-05 |
 
-The Compatibility workflow shape was exercised in the earlier release, but the
-individual identity rows remain `UNVERIFIED` because no checkable runtime
-identity payload was captured. The renamed `$sol-control` fresh-session check is
-recorded separately after v0.4 installation. Agent selection, exact model,
-reasoning effort, nested dispatch, result retrieval, and candidate binding stay
-`UNVERIFIED` until a runtime payload and its evidence location are available.
+The renamed `$sol-control` fresh-session and Native Nested checks were captured
+after the v0.4 global installation. The persistent `codex exec` runtime records
+prove the Sol-to-Luna path, exact child models and efforts, inherited read-only
+boundary, structured Luna result, and Sol review. Candidate binding remains
+`UNVERIFIED` because this acceptance case intentionally changed no file.
