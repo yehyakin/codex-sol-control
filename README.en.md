@@ -345,16 +345,17 @@ See [`docs/release/runtime-surface-matrix.md`](docs/release/runtime-surface-matr
 
 ## Current status
 
-The current release baseline is **v0.4.0**.
+The current release baseline is **[v0.4.1](https://github.com/yehyakin/codex-sol-control/releases/tag/v0.4.1)**.
 
 | Verification surface | Recorded evidence |
 | --- | --- |
-| Local repository | Skill Creator **PASS**; the v0.4.0 candidate records **113/113 tests PASS** |
-| Hosted CI | [POSIX PASS](https://github.com/yehyakin/codex-sol-control/actions/runs/30956811267): Ubuntu/macOS × Python 3.11/3.13; [Windows PASS](https://github.com/yehyakin/codex-sol-control/actions/runs/30956811107): Windows Server 2022 / `windows-latest` × Windows PowerShell 5.1 / PowerShell 7 |
+| Local repository | Skill Creator **PASS**; the v0.4.1 candidate records **113/113 tests PASS** |
+| Hosted CI | [POSIX PASS](https://github.com/yehyakin/codex-sol-control/actions/runs/31254093412): Ubuntu/macOS × Python 3.11/3.13; [Windows PASS](https://github.com/yehyakin/codex-sol-control/actions/runs/31254093408): Windows Server 2022 / `windows-latest` × Windows PowerShell 5.1 / PowerShell 7 |
 | Physical Windows install | User-reported installation success; the Windows version, install log, and runtime identity payload were not captured, so this does not establish Native Nested |
+| Desktop Sol handshake | v0.4.1 verifies the authoritative Host/tool role mapping + `fork_turns="none"` launch record + child permission/no-side-effect receipt; the same Sol completed final review with `PASS`; Desktop nested worker dispatch remains unproven |
 | Runtime surface | Native Nested verified on Codex CLI `0.146.0-alpha.9.2`: `gpt-5.6-sol/high/read-only` → `gpt-5.6-luna/max/read-only` → Sol `PASS`; Compatibility remains the fallback; physical Windows 11 remains unproven |
 
-The rename, lifecycle, and identity-handshake implementation is [`848b210`](https://github.com/yehyakin/codex-sol-control/commit/848b210691fcfd91ec8b5374ba7b35c19c48e18e). See the [full implementation report](SOL_CONTROL_IMPLEMENTATION_REPORT.md) for the current evidence.
+v0.4.1 fixes the Desktop handshake deadlock that occurred when a child agent could not observe its model or reasoning effort: exact identity now comes from the authoritative Host/tool role mapping and parent launch record, while the child reports only permissions, operational constraints, and zero side effects. The fix is [`05793db`](https://github.com/yehyakin/codex-sol-control/commit/05793dbbcace73230eeef51ff13eb3e4ca82b74e); see the [full implementation report](SOL_CONTROL_IMPLEMENTATION_REPORT.md) for the v0.4.0 architecture and migration background.
 
 These statements describe the recorded evidence boundary; they do not infer support for unverified runtime surfaces.
 

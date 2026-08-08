@@ -363,7 +363,7 @@ class RepositoryContractTests(unittest.TestCase):
             r"(?is)(?:requires|must).{0,100}re-?plan.{0,180}(?:new|updated).{0,100}(?:request|goal)",
         )
 
-    def test_v040_runtime_surface_matrix_is_release_time_only(self) -> None:
+    def test_v041_runtime_surface_matrix_is_release_time_only(self) -> None:
         path = ROOT / "docs" / "release" / "runtime-surface-matrix.md"
         self.assertTrue(path.is_file(), path)
         text = path.read_text(encoding="utf-8")
@@ -381,6 +381,14 @@ class RepositoryContractTests(unittest.TestCase):
         for status in ("VERIFIED", "FAILED", "UNVERIFIED"):
             self.assertIn(status, text, status)
         self.assertRegex(text, r"(?i)release[- ]time|release documentation|per-task")
+        self.assertIn("| Desktop | Agent selection | VERIFIED |", text)
+        self.assertIn("| Desktop | exact model | VERIFIED |", text)
+        self.assertIn("| Desktop | reasoning | VERIFIED |", text)
+        self.assertIn("| Desktop | nested dispatch | UNVERIFIED |", text)
+        self.assertRegex(
+            text,
+            r"(?is)does not ask the child to self-report.{0,180}Host/tool role mapping.{0,180}launch record",
+        )
 
     def test_runtime_notes_preserve_host_safety_checkpoints_and_environment_hygiene(self) -> None:
         text = self.contract_text()
