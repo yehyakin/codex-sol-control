@@ -413,7 +413,8 @@
       "resume": "not_applicable"
     },
     "required_assertions": [
-      "the launch record and child handshake must prove model identity and selection",
+      "the authoritative Host/tool role mapping and launch record must prove model identity and selection",
+      "the child handshake proves permissions and no side effects without inventing an unobservable model self-report",
       "Fail Closed prevents silent model substitution",
       "no Luna or Terra task execution or write occurs when identity is unavailable"
     ]
