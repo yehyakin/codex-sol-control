@@ -153,8 +153,18 @@ class TerraAgentContractTests(unittest.TestCase):
         self.assertRegex(text, r"(?i)Fail\s+Closed|失败关闭")
         self.assertRegex(
             text,
+            r"(?is)authoritative\s+(?:Host/tool|Host|tool)\s+(?:contract|role\s+mapping).{0,320}"
+            r"(?:parent\s+)?launch\s+record",
+        )
+        self.assertRegex(
+            text,
             r"(?is)(?:exact\s+model|model\s+identity|模型(?:身份|选择)).{0,240}"
             r"(?:cannot|unable|unprovable|无法|不可证明).{0,240}(?:blocked|fail\s+closed|关闭)",
+        )
+        self.assertRegex(
+            text,
+            r"(?is)child.{0,120}(?:not\s+asked|unsupported|cannot\s+observe).{0,220}"
+            r"(?:runtime\s+model|runtime\s+identity|model)",
         )
         self.assertRegex(
             text,

@@ -53,12 +53,20 @@ or review contract.
 
 ## Exact runtime proof
 
-Configuration text and agent names alone are not proof of execution identity.
-Every custom agent uses a two-turn gate. Its first turn is an identity-only
-handshake: the parent retains the requested `agent_type` and `fork_turns="none"`
-launch record, while the child reports the actual runtime model, reasoning
-effort, and effective permission boundary. The parent sends the real plan or
-task packet to that same agent only after the combined evidence matches:
+Configuration text, agent names, and unsupported child identity claims are not
+proof of execution identity. Every custom agent uses a two-turn gate. Its first
+turn is an identity-only handshake. Exact selection proof is the combination of:
+
+- an authoritative Host/tool contract that exposes the fixed custom-role model
+  and reasoning-effort mapping;
+- the parent launch record containing the requested `agent_type` and
+  `fork_turns="none"`; and
+- the child's report of its effective permission boundary, operational
+  constraint, and zero task/write/subagent activity.
+
+The child is not asked to self-report a runtime model or reasoning effort that
+its surface cannot observe. The parent sends the real plan or task packet to the
+same agent only after the combined evidence matches:
 
 - `sol-controller`: exact model `gpt-5.6-sol`, reasoning effort `high`,
   read-only;
@@ -69,10 +77,18 @@ task packet to that same agent only after the combined evidence matches:
   with effective access no broader than the inherited parent boundary and the
   `workspace-write` ceiling.
 
-No task execution or file write is allowed during the identity handshake. If
-any exact selection cannot be proved, **Fail Closed** without sending the task.
-Do not silently substitute a nearby model, effort, role, or permission profile,
-and do not use an agent label to spoof identity.
+Sol remains operationally read-only. Prefer an enforced read-only sandbox. If a
+surface inherits broader technical access, the Host must own the repository
+baseline and perform a before/after changed-path check after every Sol turn; any
+Sol-authored change fails closed. A child promise alone is not sufficient
+no-write evidence.
+
+No task execution, file write, or subagent launch is allowed during the identity
+handshake. If the Host/tool contract does not expose an authoritative exact
+role-to-model mapping, or if any selection, permission, fork, or no-write proof
+cannot be established, **Fail Closed** without sending the task. Do not silently
+substitute a nearby model, effort, role, or permission profile, and do not use
+an agent label or a child's unobservable self-report to spoof identity.
 
 Luna and Terra must not spawn or create subagents. Every custom-agent launch,
 including the initial `sol-controller`, must use `fork_turns="none"` plus the

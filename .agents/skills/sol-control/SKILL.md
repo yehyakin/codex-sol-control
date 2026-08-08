@@ -39,15 +39,23 @@ a permanent agent team.
 - Route to **Terra High** for cross-module work, long-context investigation,
   ambiguous debugging, shared interface judgment, or high-risk implementation.
 - Start every custom agent with a fresh context: set `fork_turns="none"` and use
-  the first turn only as an identity handshake. The parent launch record proves
-  the requested `agent_type` and fork mode; the child reports its runtime model,
-  reasoning effort, and effective permission boundary. No task execution or
-  file write is allowed during this handshake.
-- After the handshake matches the expected custom-agent configuration, send the
-  complete minimal plan or task packet to that same agent. Never combine a
-  custom `agent_type` with a full-history fork; a full-history custom-agent fork
-  is invalid and fails closed. If the exact model identity, reasoning effort,
-  selected agent, fork mode, or permission is mismatched or unprovable, do not
+  the first turn only as an identity handshake. The authoritative Host/tool
+  contract plus the parent launch record must prove the selected `agent_type`,
+  fork mode, model, and reasoning effort. The child is not asked to self-report
+  runtime identity that its surface cannot observe; it reports the effective
+  permission boundary, its operational constraint, and that it performed no
+  task, write, or subagent launch. No task execution or file write is allowed
+  during this handshake.
+- After the combined proof matches the expected custom-agent configuration,
+  send the complete minimal plan or task packet to that same agent. Sol must be
+  operationally read-only: require either an enforced read-only sandbox or a
+  Host-owned before/after changed-path check proving zero Sol writes. Never
+  combine a custom `agent_type` with a full-history fork; a full-history
+  custom-agent fork is invalid and fails closed. Configuration text, an agent
+  label, or a child's unsupported identity claim is not authoritative proof. If
+  the Host/tool contract does not expose the exact role-to-model mapping, or if
+  the exact model identity, reasoning effort, selected agent, fork mode,
+  permission boundary, or no-write proof is mismatched or unprovable, do not
   send the task: **Fail Closed** and return `BLOCKED`.
 - One file has one owner for the whole run. Only when Luna's first failure
   happens before Luna writes any owned file may Sol escalate the same task and

@@ -7,12 +7,14 @@ completion decision; Luna Max or Terra High owns bounded execution.
 
 - Explicit `$sol-control` invocation starts Sol.
 - The Host starts `sol-controller` with `fork_turns="none"` for an identity-only
-  handshake. The launch record proves requested `agent_type` and fork mode; Sol
-  reports its actual runtime model, effort, and permission boundary without
-  planning or writing. Only after they match does the Host send the plan request
-  to that same Sol. Every worker uses the same two-turn handshake before it
-  receives a task packet. A full-history custom-agent fork is invalid and fails
-  closed.
+  handshake. The authoritative Host/tool contract and launch record prove the
+  requested `agent_type`, fork mode, model, and reasoning effort. Sol reports
+  its effective permission boundary, operational read-only constraint, and zero
+  task/write/subagent activity without planning or writing. The child is not
+  asked to self-report runtime identity that the surface cannot expose. Only
+  after the combined proof matches does the Host send the plan request to that
+  same Sol. Every worker uses the same two-turn handshake before it receives a
+  task packet. A full-history custom-agent fork is invalid and fails closed.
 - Ordinary simple work without explicit invocation remains direct.
 - Planning-only or review-only work may stop after Sol and use zero workers (and therefore zero Luna workers).
 - Execution work uses the minimum useful number of workers selected by Sol.
@@ -23,11 +25,16 @@ mechanical, or high-throughput work. Route Terra High to cross-module work,
 long-context investigation, ambiguous debugging, shared interface judgment, or
 high-risk implementation. Terra never plans or approves the overall task.
 
-Before task execution or any write, combine the parent launch record with the
-child's identity-handshake result to prove exact model identity, reasoning
-effort, selected custom agent, and effective inherited permission boundary. If
-that proof is unavailable, do not send the task: **Fail Closed** and return
-`BLOCKED` rather than substituting a nearby model.
+Before task execution or any write, combine the authoritative Host/tool role
+mapping, parent launch record, and child's permission/no-side-effect handshake
+to prove exact model identity, reasoning effort, selected custom agent, fork
+mode, and effective inherited permission boundary. Configuration text, an agent
+label, or a child's unsupported identity claim is not authoritative proof. Sol
+must have either an enforced read-only sandbox or a Host-owned before/after
+changed-path check proving zero Sol writes after every Sol turn. If any required
+proof is unavailable or mismatched, do not send the task: **Fail Closed** and
+return `BLOCKED` rather than substituting a nearby model or silently weakening
+the read-only boundary.
 
 For authorized execution, a plan is not a stop point. Stop or pause only for a
 new permission request, an irreversible choice requiring confirmation, or a
