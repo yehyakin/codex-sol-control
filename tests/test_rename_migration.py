@@ -59,7 +59,12 @@ class RenameMigrationContractTests(unittest.TestCase):
         for relative in ("README.md", "README.en.md"):
             text = read(ROOT / relative)
             self.assertIn(CANONICAL_REPOSITORY, text, relative)
-            self.assertIn("v0.4.0", text, relative)
+            self.assertRegex(
+                text,
+                r"(?i)current release baseline.*v0\.4\.1|当前发布基线.*v0\.4\.1",
+                relative,
+            )
+            self.assertIn("05793db", text, relative)
             self.assertIn("$sol-control", text, relative)
             self.assertNotIn("https://github.com/yehyakin/codex-sol-luna", text, relative)
 

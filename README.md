@@ -345,16 +345,17 @@ pwsh -NoProfile -File scripts/uninstall.ps1 -RestoreLatest
 
 ## 当前状态
 
-当前发布基线为 **v0.4.0**。
+当前发布基线为 **[v0.4.1](https://github.com/yehyakin/codex-sol-control/releases/tag/v0.4.1)**。
 
 | 验证面 | 已记录证据 |
 | --- | --- |
-| 本地仓库 | Skill Creator **PASS**；v0.4.0 候选版本 **113/113 tests PASS** |
-| 托管 CI | [POSIX PASS](https://github.com/yehyakin/codex-sol-control/actions/runs/30956811267)：Ubuntu/macOS × Python 3.11/3.13；[Windows PASS](https://github.com/yehyakin/codex-sol-control/actions/runs/30956811107)：Windows Server 2022 / `windows-latest` × Windows PowerShell 5.1 / PowerShell 7 |
+| 本地仓库 | Skill Creator **PASS**；v0.4.1 候选版本 **113/113 tests PASS** |
+| 托管 CI | [POSIX PASS](https://github.com/yehyakin/codex-sol-control/actions/runs/31254093412)：Ubuntu/macOS × Python 3.11/3.13；[Windows PASS](https://github.com/yehyakin/codex-sol-control/actions/runs/31254093408)：Windows Server 2022 / `windows-latest` × Windows PowerShell 5.1 / PowerShell 7 |
 | Windows 实机安装 | 用户报告安装成功；未收集 Windows 版本、安装日志或运行时身份载荷，因此不扩展为 Native Nested 证明 |
+| Desktop Sol 握手 | v0.4.1 已验证 Host/tool 权威角色映射 + `fork_turns="none"` 启动记录 + child 权限/零副作用回执；同一个 Sol 完成最终审核并返回 `PASS`；Desktop 嵌套 worker 调度仍未证明 |
 | 运行表面 | Native Nested 已在 Codex CLI `0.146.0-alpha.9.2` 验证：`gpt-5.6-sol/high/read-only` → `gpt-5.6-luna/max/read-only` → Sol `PASS`；Compatibility 保留为回退；物理 Windows 11 尚未证明 |
 
-更名、生命周期与身份握手实现提交为 [`848b210`](https://github.com/yehyakin/codex-sol-control/commit/848b210691fcfd91ec8b5374ba7b35c19c48e18e)；当前详见[完整实施报告](SOL_CONTROL_IMPLEMENTATION_REPORT.md)。
+v0.4.1 修复了 Desktop 子 Agent 无法观察模型和 reasoning effort 时的握手死锁：精确身份由 Host/tool 权威角色映射与父线程启动记录证明，child 只回报权限边界、运行约束和零副作用。修复提交为 [`05793db`](https://github.com/yehyakin/codex-sol-control/commit/05793dbbcace73230eeef51ff13eb3e4ca82b74e)；v0.4.0 的架构与迁移背景见[完整实施报告](SOL_CONTROL_IMPLEMENTATION_REPORT.md)。
 
 这些状态描述的是已记录证据范围，不推断未验证运行表面。
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Contract tests for the v0.4.0 bilingual documentation surface."""
+"""Contract tests for the v0.4.x bilingual documentation surface."""
 
 from __future__ import annotations
 
@@ -799,7 +799,7 @@ class ReadmeContractTests(unittest.TestCase):
             "saving = 1 - route_cost",
             "config.toml",
             "RestoreLatest",
-            "v0.4.0",
+            "v0.4.1",
             "tests PASS",
             "Compatibility",
             "Native Nested",
@@ -888,7 +888,7 @@ class ReadmeContractTests(unittest.TestCase):
             )
             release_block = rendered[release_heading.start() : release_end]
             for signal in (
-                "v0.4.0",
+                "v0.4.1",
                 "tests PASS",
                 "(SOL_CONTROL_IMPLEMENTATION_REPORT.md)",
             ):
