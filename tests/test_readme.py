@@ -602,6 +602,9 @@ class ReadmeContractTests(unittest.TestCase):
             r"(?i)limitations?|限制",
             r"(?i)prior\s+art|先例",
             r"(?i)license|许可证|许可",
+            r"(?i)maintainer|维护者",
+            r"(?i)support|支持",
+            r"(?i)security|安全",
         )
         for path, text in documents.items():
             for topic in required_topics:
@@ -805,6 +808,11 @@ class ReadmeContractTests(unittest.TestCase):
             "Native Nested",
             "SOL_CONTROL_IMPLEMENTATION_REPORT.md",
             "v0.5.0",
+            "CONTRIBUTING.md",
+            "CODE_OF_CONDUCT.md",
+            "SECURITY.md",
+            "SUPPORT.md",
+            "@yehyakin",
         )
         for signal in parity_signals:
             for path, text in documents.items():

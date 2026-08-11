@@ -117,6 +117,16 @@ class ReleaseEngineeringTests(unittest.TestCase):
             self.assertIn("scripts/test.sh", text)
             self.assertIn("posix-validation.yml", text)
             self.assertIn("windows-validation.yml", text)
+            for community_file in (
+                "CONTRIBUTING.md",
+                "CODE_OF_CONDUCT.md",
+                "SECURITY.md",
+                "SUPPORT.md",
+                "bug_report.yml",
+                "feature_request.yml",
+                "pull_request_template.md",
+            ):
+                self.assertIn(community_file, text)
 
     def test_python_entrypoints_cover_named_311_through_314_candidates(self) -> None:
         for relative in (Path("scripts/test.sh"), Path("scripts/validate.sh")):

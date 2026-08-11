@@ -1,0 +1,60 @@
+name: Feature request
+description: Propose a focused improvement to Codex Sol Control
+title: "[Feature]: "
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Describe the user problem before the implementation. Proposals should preserve the single-controller architecture and avoid adding roles without clear evidence.
+  - type: checkboxes
+    id: preflight
+    attributes:
+      label: Preflight
+      options:
+        - label: I searched existing issues and pull requests for this proposal.
+          required: true
+        - label: This request is about Codex Sol Control rather than a downstream business project.
+          required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What concrete limitation or repeated failure are you trying to solve?
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Desired outcome
+      description: Describe observable acceptance criteria.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed change
+      description: Keep this focused; implementation details are optional.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+    validations:
+      required: true
+  - type: textarea
+    id: routing-impact
+    attributes:
+      label: Routing and safety impact
+      description: Note effects on Sol control, worker selection, permissions, write ownership, evidence, or fail-closed behavior.
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope boundaries
+      description: State what this proposal intentionally does not change.
+    validations:
+      required: true

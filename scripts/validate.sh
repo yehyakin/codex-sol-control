@@ -20,6 +20,9 @@ WINDOWS_LIFECYCLE_FILE="$ROOT_DIR/tests/windows-lifecycle.ps1"
 WINDOWS_WORKFLOW_FILE="$ROOT_DIR/.github/workflows/windows-validation.yml"
 TEST_ENTRYPOINT_FILE="$SCRIPT_DIR/test.sh"
 POSIX_WORKFLOW_FILE="$ROOT_DIR/.github/workflows/posix-validation.yml"
+BUG_TEMPLATE_FILE="$ROOT_DIR/.github/ISSUE_TEMPLATE/bug_report.yml"
+FEATURE_TEMPLATE_FILE="$ROOT_DIR/.github/ISSUE_TEMPLATE/feature_request.yml"
+ISSUE_CONFIG_FILE="$ROOT_DIR/.github/ISSUE_TEMPLATE/config.yml"
 
 failures=0
 fail() {
@@ -45,6 +48,14 @@ required_files=(
   "scripts/uninstall.ps1"
   "README.md"
   "README.en.md"
+  "CONTRIBUTING.md"
+  "CODE_OF_CONDUCT.md"
+  "SECURITY.md"
+  "SUPPORT.md"
+  ".github/ISSUE_TEMPLATE/bug_report.yml"
+  ".github/ISSUE_TEMPLATE/feature_request.yml"
+  ".github/ISSUE_TEMPLATE/config.yml"
+  ".github/pull_request_template.md"
   "docs/assets/readme/hero-zh.svg"
   "docs/assets/readme/hero-en.svg"
   "docs/assets/readme/control-plane-zh.svg"
@@ -59,6 +70,17 @@ required_files=(
 for relative in "${required_files[@]}"; do
   [[ -f "$ROOT_DIR/$relative" ]] || fail "missing required file: $relative"
 done
+
+grep -Fq 'bash scripts/test.sh' "$ROOT_DIR/CONTRIBUTING.md" || fail 'CONTRIBUTING.md is missing the test command'
+grep -Fq 'Apache License 2.0' "$ROOT_DIR/CONTRIBUTING.md" || fail 'CONTRIBUTING.md is missing the contribution license'
+grep -Fq 'Contributor Covenant' "$ROOT_DIR/CODE_OF_CONDUCT.md" || fail 'CODE_OF_CONDUCT.md is missing its upstream attribution'
+grep -Fq '/security/advisories/new' "$ROOT_DIR/SECURITY.md" || fail 'SECURITY.md is missing private vulnerability reporting'
+grep -Fq 'Do not open a public issue' "$ROOT_DIR/SECURITY.md" || fail 'SECURITY.md is missing its public disclosure warning'
+grep -Fq 'SUPPORT.md' "$ROOT_DIR/README.md" || fail 'README.md is missing the support entry'
+grep -Fq 'SUPPORT.md' "$ROOT_DIR/README.en.md" || fail 'README.en.md is missing the support entry'
+grep -Fq 'blank_issues_enabled: false' "$ISSUE_CONFIG_FILE" || fail 'issue template config permits blank issues'
+grep -Fq 'Security vulnerability' "$ISSUE_CONFIG_FILE" || fail 'issue template config is missing private security routing'
+grep -Fq 'Validation and evidence' "$ROOT_DIR/.github/pull_request_template.md" || fail 'pull request template is missing evidence guidance'
 [[ -d "$SKILL_ROOT" ]] || fail 'missing canonical v0.4 skill directory'
 [[ -d "$COMPAT_SKILL_ROOT" ]] || fail 'missing v0.4 compatibility skill directory'
 
@@ -488,11 +510,14 @@ PY
 fi
 
 if command -v ruby >/dev/null 2>&1; then
-  if ! ruby -r yaml - "$SKILL_FILE" "$OPENAI_FILE" "$COMPAT_SKILL_FILE" "$COMPAT_OPENAI_FILE" <<'RUBY' >/dev/null 2>&1
+  if ! ruby -r yaml - "$SKILL_FILE" "$OPENAI_FILE" "$COMPAT_SKILL_FILE" "$COMPAT_OPENAI_FILE" "$BUG_TEMPLATE_FILE" "$FEATURE_TEMPLATE_FILE" "$ISSUE_CONFIG_FILE" <<'RUBY' >/dev/null 2>&1
 skill_path = ARGV[0]
 openai_path = ARGV[1]
 compat_skill_path = ARGV[2]
 compat_openai_path = ARGV[3]
+bug_template_path = ARGV[4]
+feature_template_path = ARGV[5]
+issue_config_path = ARGV[6]
 
 def load_yaml(text)
   YAML.safe_load(text, permitted_classes: [], permitted_symbols: [], aliases: false)
@@ -530,6 +555,19 @@ compat_openai = load_yaml(File.read(compat_openai_path, encoding: "UTF-8"))
 raise unless compat_openai.dig("policy", "allow_implicit_invocation") == false
 compat_prompt = compat_openai.dig("interface", "default_prompt")
 raise unless compat_prompt.is_a?(String) && compat_prompt.include?("$sol-luna") && compat_prompt.include?("$sol-control")
+
+[bug_template_path, feature_template_path].each do |path|
+  form = load_yaml(File.read(path, encoding: "UTF-8"))
+  raise unless form.is_a?(Hash)
+  raise unless form["name"].is_a?(String) && !form["name"].strip.empty?
+  raise unless form["description"].is_a?(String) && !form["description"].strip.empty?
+  raise unless form["body"].is_a?(Array) && !form["body"].empty?
+end
+
+issue_config = load_yaml(File.read(issue_config_path, encoding: "UTF-8"))
+raise unless issue_config.is_a?(Hash)
+raise unless issue_config["blank_issues_enabled"] == false
+raise unless issue_config["contact_links"].is_a?(Array) && !issue_config["contact_links"].empty?
 RUBY
   then
     fail 'YAML parsing or interface validation failed'
