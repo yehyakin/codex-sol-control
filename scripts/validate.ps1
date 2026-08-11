@@ -302,6 +302,14 @@ $requiredFiles = @(
     "scripts/uninstall.ps1",
     "README.md",
     "README.en.md",
+    "CONTRIBUTING.md",
+    "CODE_OF_CONDUCT.md",
+    "SECURITY.md",
+    "SUPPORT.md",
+    ".github/ISSUE_TEMPLATE/bug_report.yml",
+    ".github/ISSUE_TEMPLATE/feature_request.yml",
+    ".github/ISSUE_TEMPLATE/config.yml",
+    ".github/pull_request_template.md",
     "docs/assets/readme/hero-zh.svg",
     "docs/assets/readme/hero-en.svg",
     "docs/assets/readme/control-plane-zh.svg",
@@ -317,6 +325,29 @@ $requiredFiles = @(
 foreach ($relative in $requiredFiles) {
     Assert-File (Join-Path $repoRoot $relative)
 }
+
+$contributingText = Read-Utf8Text (Join-Path $repoRoot "CONTRIBUTING.md")
+Assert-Regex $contributingText 'bash scripts/test\.sh' "CONTRIBUTING.md is missing the test command"
+Assert-Regex $contributingText 'Apache License 2\.0' "CONTRIBUTING.md is missing the contribution license"
+
+$codeOfConductText = Read-Utf8Text (Join-Path $repoRoot "CODE_OF_CONDUCT.md")
+Assert-Regex $codeOfConductText 'Contributor Covenant' "CODE_OF_CONDUCT.md is missing its upstream attribution"
+
+$securityText = Read-Utf8Text (Join-Path $repoRoot "SECURITY.md")
+Assert-Regex $securityText '/security/advisories/new' "SECURITY.md is missing private vulnerability reporting"
+Assert-Regex $securityText 'Do not open a public issue' "SECURITY.md is missing its public disclosure warning"
+
+$readmeText = Read-Utf8Text (Join-Path $repoRoot "README.md")
+$englishReadmeText = Read-Utf8Text (Join-Path $repoRoot "README.en.md")
+Assert-Regex $readmeText 'SUPPORT\.md' "README.md is missing the support entry"
+Assert-Regex $englishReadmeText 'SUPPORT\.md' "README.en.md is missing the support entry"
+
+$issueConfigText = Read-Utf8Text (Join-Path $repoRoot ".github/ISSUE_TEMPLATE/config.yml")
+Assert-Regex $issueConfigText '(?m)^blank_issues_enabled:\s*false\s*$' "issue template config permits blank issues"
+Assert-Regex $issueConfigText 'Security vulnerability' "issue template config is missing private security routing"
+
+$pullRequestTemplateText = Read-Utf8Text (Join-Path $repoRoot ".github/pull_request_template.md")
+Assert-Regex $pullRequestTemplateText 'Validation and evidence' "pull request template is missing evidence guidance"
 
 $skillRoot = Join-Path $repoRoot ".agents/skills/sol-control"
 Assert-PlainTree $skillRoot

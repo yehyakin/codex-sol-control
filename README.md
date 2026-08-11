@@ -399,6 +399,14 @@ README.en.md                   English
 - [真实项目路由样本](tests/real-project-benchmark.md)
 - [v0.4.0 实施报告](SOL_CONTROL_IMPLEMENTATION_REPORT.md)
 
+## 维护与支持
+
+主要维护者：[@yehyakin](https://github.com/yehyakin)。项目支持最新发布版本与当前 `main`；具体环境边界和求助渠道见 [SUPPORT.md](SUPPORT.md)。提交改进前请阅读 [CONTRIBUTING.md](CONTRIBUTING.md) 和 [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)，可复现问题请使用仓库的结构化 [Issue 模板](https://github.com/yehyakin/codex-sol-control/issues/new/choose)。
+
+## 安全
+
+安全问题不要提交公开 Issue，也不要附带 Token、私有路径或私有仓库内容。请阅读 [SECURITY.md](SECURITY.md)，并通过 GitHub [私密漏洞报告](https://github.com/yehyakin/codex-sol-control/security/advisories/new)提交。
+
 ## 开发与测试
 
 需要 Python 3.11 或更高版本。

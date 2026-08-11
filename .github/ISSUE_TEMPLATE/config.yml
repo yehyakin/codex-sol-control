@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/yehyakin/codex-sol-control/security/advisories/new
+    about: Report suspected vulnerabilities privately. Do not open a public issue.
+  - name: Support guide
+    url: https://github.com/yehyakin/codex-sol-control/blob/main/SUPPORT.md
+    about: Check supported versions, environments, and the correct help channel.

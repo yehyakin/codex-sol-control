@@ -399,6 +399,14 @@ README.en.md                   English
 - [Real-project routing samples](tests/real-project-benchmark.md)
 - [v0.4.0 implementation report](SOL_CONTROL_IMPLEMENTATION_REPORT.md)
 
+## Maintainer and support
+
+Primary maintainer: [@yehyakin](https://github.com/yehyakin). The project supports the latest tagged release and current `main`; see [SUPPORT.md](SUPPORT.md) for environment boundaries and help channels. Read [CONTRIBUTING.md](CONTRIBUTING.md) and [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) before contributing, and use the structured [issue templates](https://github.com/yehyakin/codex-sol-control/issues/new/choose) for reproducible repository defects.
+
+## Security
+
+Do not open a public issue for security-sensitive behavior or attach tokens, private paths, or private repository content. Read [SECURITY.md](SECURITY.md) and submit a [private vulnerability report](https://github.com/yehyakin/codex-sol-control/security/advisories/new).
+
 ## Development and testing
 
 Python 3.11 or newer is required.

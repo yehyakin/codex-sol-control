@@ -1,0 +1,88 @@
+name: Bug report
+description: Report a reproducible defect in Codex Sol Control
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a defect. Search existing issues first and remove credentials, private paths, and private repository content. Security-sensitive reports must use private vulnerability reporting.
+  - type: checkboxes
+    id: preflight
+    attributes:
+      label: Preflight
+      options:
+        - label: I searched existing issues and reproduced this on the latest release or current main.
+          required: true
+        - label: This report contains no secrets or private project data.
+          required: true
+        - label: This is not a security vulnerability.
+          required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit
+      description: Provide the release tag or commit SHA you tested.
+      placeholder: v0.4.1
+    validations:
+      required: true
+  - type: dropdown
+    id: operating-system
+    attributes:
+      label: Operating system
+      options:
+        - macOS
+        - Linux
+        - Windows
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: codex-surface
+    attributes:
+      label: Codex surface and version
+      description: For example, Codex CLI or Codex Desktop and its version.
+    validations:
+      required: true
+  - type: dropdown
+    id: installation
+    attributes:
+      label: Installation method
+      options:
+        - install.sh
+        - install.ps1
+        - Repository checkout only
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction steps
+      placeholder: |
+        1. Run ...
+        2. Invoke ...
+        3. Observe ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Redacted evidence
+      description: Include exact commands, exit codes, or logs after removing sensitive data.
+      render: shell
+    validations:
+      required: true
