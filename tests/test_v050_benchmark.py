@@ -6,6 +6,7 @@ from __future__ import annotations
 import importlib.util
 import json
 import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -105,7 +106,7 @@ class BenchmarkABTests(unittest.TestCase):
         with tempfile.TemporaryDirectory(prefix="sol-control-ab.") as raw:
             output = Path(raw) / "validation.json"
             run = subprocess.run(
-                [str(SCRIPT), "validate", str(MANIFEST), "--output", str(output)],
+                [sys.executable, str(SCRIPT), "validate", str(MANIFEST), "--output", str(output)],
                 cwd=ROOT,
                 text=True,
                 stdout=subprocess.PIPE,
