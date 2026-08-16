@@ -218,8 +218,19 @@ Sol: understand → plan → assign → schedule
 Real files + diff + test / build / artifact evidence
    │
    ▼
-Sol: PASS / FIX / BLOCKED
+Sol: artifact-first review by REQ-ID → PASS / FIX / BLOCKED
 ```
+
+### Evidence-first control
+
+The v0.5 contract in development keeps one Sol controller and does not add a
+second Sol reviewer. It adds five quality controls:
+
+1. **Requirement-to-evidence graph.** Every `done_when` item has a stable `REQ-ID`; tasks, verification, and final evidence map back to it.
+2. **Artifact-first review.** Sol reads the original requirements, real changed paths, files, complete diff, and verification artifacts before worker `PASS` claims or summaries.
+3. **Verify the verifier.** Exit zero is insufficient. The check must target the final candidate, correct scope, and intended requirement; wrong-module and existence-only checks do not pass.
+4. **Selective challenge.** Ordinary work has zero extra challenge calls. High-consequence, cross-module, shared-interface, conflicting-evidence, or uncovered-requirement work may receive at most one read-only challenge. It returns findings; Sol retains the verdict.
+5. **Recoverable execution.** Long runs preserve owners, candidate identity, requirement coverage, and attempt counts; resume does not redispatch completed work or reset the correction budget.
 
 ### Role hierarchy
 
@@ -262,11 +273,12 @@ No fixed worker count is promised. Sol launches the minimum useful number of exe
 
 ## One complete evidence loop
 
-1. **Plan.** Sol records the goal, `done_when`, tasks, dependencies, exact `write_scope`, exclusions, and verification.
-2. **Execute.** Terra or Luna changes only the assigned scope and does not rewrite the overall plan.
-3. **Self-check.** The executor runs required verification and returns real changed paths, diff, tests, builds, or artifact evidence.
-4. **Review.** Sol inspects real files, the complete diff, evidence freshness, and requirement coverage.
-5. **Decide.** Sol returns `PASS`, one focused `FIX`, or `BLOCKED`.
+1. **Extract requirements.** Sol gives every completion criterion a stable `REQ-ID` and required evidence.
+2. **Plan.** Sol maps each task to Requirement IDs, exact `write_scope`, exclusions, verification procedure, passing condition, and required evidence.
+3. **Execute.** Terra or Luna changes only the assigned scope and does not rewrite the overall plan.
+4. **Self-check.** The executor returns changed paths, Requirement coverage, tests, builds, or artifact evidence.
+5. **Review.** Sol checks real files, the complete diff, verification quality, and requirement coverage before worker summaries.
+6. **Decide.** Sol returns the closed verdict `PASS`, one focused `FIX`, or `BLOCKED`; non-gating suggestions remain separate.
 
 A worker `PASS` applies only to its bounded task. Only Sol may approve the overall work.
 
@@ -277,8 +289,11 @@ A worker `PASS` applies only to its bounded task. Only Sol may approve the overa
 3. **No evidence, no completion.** Transport / spawn `completed` proves delivery only.
 4. **Verification binds to the final candidate.** A later file change invalidates stale evidence.
 5. **At most one focused fix.** The original owner repairs the original scope once; another failure becomes `BLOCKED`.
-6. **Fail closed.** The runtime does not silently substitute an unprovable custom agent, exact model, reasoning effort, or permission profile.
+6. **Capability is not authorization.** Broader technical runtime access never expands user authorization or `write_scope`; disclose it and use Host-owned before/after snapshots to detect scope violations.
 7. **Review standards do not fall.** Urgency, parallelism, or cost goals never replace verification and evidence.
+8. **Worker PASS is not proof.** Sol reconstructs the success claim from real artifacts.
+9. **A challenge is not a second controller.** It is read-only, cannot approve, and adds no fixed call cost to ordinary tasks.
+10. **High-risk work still fails closed.** Block when model identity, fork, or required scope evidence is unprovable. Destructive, production, or irreversible external work additionally requires an enforceable matching boundary or explicit user approval for the broader capability.
 
 ### Bounded Luna-to-Terra escalation
 
@@ -295,6 +310,8 @@ After Luna writes an owned file, it retains ownership for the run. Sol may issue
 | `PASS` | Every completion criterion is supported by real files and fresh evidence |
 | `FIX` | The original owner can make one focused correction without expanding scope |
 | `BLOCKED` | Permissions, dependencies, runtime identity, scope, conflicts, or verification prevent a trustworthy delivery |
+
+The three outcomes form a closed verdict vocabulary. Optional improvements and residual suggestions remain outside the verdict, but an unsatisfied `REQ-ID` can never be downgraded to a suggestion.
 
 ## When not to use it
 
@@ -350,6 +367,7 @@ The current release baseline is **[v0.4.1](https://github.com/yehyakin/codex-sol
 | Verification surface | Recorded evidence |
 | --- | --- |
 | Local repository | Skill Creator **PASS**; the v0.4.1 candidate records **113/113 tests PASS** |
+| v0.5 development candidate | **135/135 tests PASS**; the candidate passed one live matched smoke pair while the v0.4.1 baseline did not, but the full 48-cell × 3-repetition run is incomplete, so no overall quality, cost, or latency improvement is claimed |
 | Hosted CI | [POSIX PASS](https://github.com/yehyakin/codex-sol-control/actions/runs/31254093412): Ubuntu/macOS × Python 3.11/3.13; [Windows PASS](https://github.com/yehyakin/codex-sol-control/actions/runs/31254093408): Windows Server 2022 / `windows-latest` × Windows PowerShell 5.1 / PowerShell 7 |
 | Physical Windows install | User-reported installation success; the Windows version, install log, and runtime identity payload were not captured, so this does not establish Native Nested |
 | Desktop Sol handshake | v0.4.1 verifies the authoritative Host/tool role mapping + `fork_turns="none"` launch record + child permission/no-side-effect receipt; the same Sol completed final review with `PASS`; Desktop nested worker dispatch remains unproven |
@@ -397,6 +415,9 @@ README.en.md                   English
 - [Luna Max configuration](.codex/agents/luna-max-worker.toml)
 - [Runtime surface matrix](docs/release/runtime-surface-matrix.md)
 - [Real-project routing samples](tests/real-project-benchmark.md)
+- [v0.5 matched A/B protocol](tests/v050-ab-benchmark.md)
+- [v0.5 live matched smoke evidence](tests/v050-live-smoke.md)
+- [v0.5 evidence-first implementation report](SOL_CONTROL_V050_IMPLEMENTATION_REPORT.md)
 - [v0.4.0 implementation report](SOL_CONTROL_IMPLEMENTATION_REPORT.md)
 
 ## Maintainer and support
@@ -414,9 +435,11 @@ Python 3.11 or newer is required.
 ```sh
 bash scripts/validate.sh
 bash scripts/test.sh
+python3 scripts/benchmark_ab.py validate tests/fixtures/v050-ab-benchmark.json
 ```
 
 `scripts/test.sh` selects an available Python 3.11+ interpreter and runs the complete `unittest` suite.
+`benchmark_ab.py` only freezes the experiment, produces counterbalanced ordering, and summarizes complete cells. It never launches a model or declares a winner without measured cells.
 
 When changing the README, update both languages and the documentation tests. Tests should protect facts, links, the rate snapshot, the formula, safety boundaries, and platform commands—not permanently lock one marketing message or one homepage section order.
 

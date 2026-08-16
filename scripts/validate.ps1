@@ -296,6 +296,7 @@ $requiredFiles = @(
     "scripts/install.sh",
     "scripts/validate.sh",
     "scripts/test.sh",
+    "scripts/benchmark_ab.py",
     "scripts/uninstall.sh",
     "scripts/install.ps1",
     "scripts/validate.ps1",
@@ -316,6 +317,12 @@ $requiredFiles = @(
     "docs/assets/readme/control-plane-en.svg",
     "tests/windows-lifecycle.ps1",
     "tests/test_release_engineering.py",
+    "tests/test_v050_benchmark.py",
+    "tests/test_v050_evidence_control.py",
+    "tests/fixtures/v050-ab-benchmark.json",
+    "tests/v050-ab-benchmark.md",
+    "tests/v050-live-smoke.md",
+    "SOL_CONTROL_V050_IMPLEMENTATION_REPORT.md",
     ".github/workflows/windows-validation.yml",
     ".github/workflows/posix-validation.yml",
     "NOTICE",
@@ -324,6 +331,23 @@ $requiredFiles = @(
 
 foreach ($relative in $requiredFiles) {
     Assert-File (Join-Path $repoRoot $relative)
+}
+
+$abManifestPath = Join-Path $repoRoot "tests/fixtures/v050-ab-benchmark.json"
+try {
+    $abManifest = Read-Utf8Text $abManifestPath | ConvertFrom-Json -ErrorAction Stop
+}
+catch {
+    throw "Validation: v0.5 A/B benchmark manifest is not valid JSON"
+}
+if ($abManifest.schema_version -ne 1 -or
+    $abManifest.evidence_class -ne "protocol_only" -or
+    $abManifest.repetitions -lt 3 -or
+    -not $abManifest.counterbalanced_order -or
+    -not $abManifest.fresh_isolated_checkout -or
+    -not $abManifest.hidden_grader_after_run -or
+    @($abManifest.cases).Count -lt 6) {
+    throw "Validation: v0.5 A/B benchmark manifest contract is incomplete"
 }
 
 $contributingText = Read-Utf8Text (Join-Path $repoRoot "CONTRIBUTING.md")

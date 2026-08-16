@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "evidence_class": "protocol_only",
+  "baseline_ref": "v0.4.1",
+  "candidate_ref": "v0.5.0-working-tree",
+  "arms": [
+    {"id": "baseline", "label": "Current Sol Control"},
+    {"id": "candidate", "label": "Evidence-first Sol Control"}
+  ],
+  "repetitions": 3,
+  "counterbalanced_order": true,
+  "fresh_isolated_checkout": true,
+  "hidden_grader_after_run": true,
+  "cases": [
+    {"id": "direct-small", "forward_case_id": "ordinary-simple-direct"},
+    {"id": "parallel-disjoint", "forward_case_id": "live-capacity-batching"},
+    {"id": "requirement-gap", "forward_case_id": "v050-requirement-evidence-gap"},
+    {"id": "wrong-scope-verifier", "forward_case_id": "v050-wrong-scope-verifier"},
+    {"id": "high-risk-challenge", "forward_case_id": "v050-high-risk-selective-challenge"},
+    {"id": "resume-interruption", "forward_case_id": "v050-resume-no-duplicate-dispatch"},
+    {"id": "dirty-worktree", "forward_case_id": "dirty-worktree-preserved"},
+    {"id": "ownership-timeout", "forward_case_id": "v050-timeout-after-write-keeps-owner"}
+  ],
+  "metrics": [
+    "held_out_pass",
+    "integrity_pass",
+    "false_pass",
+    "input_tokens",
+    "output_tokens",
+    "elapsed_seconds",
+    "cost_value",
+    "cost_unit",
+    "subagent_count",
+    "retry_count"
+  ]
+}

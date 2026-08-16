@@ -19,6 +19,8 @@ PS_UNINSTALL_FILE="$SCRIPT_DIR/uninstall.ps1"
 WINDOWS_LIFECYCLE_FILE="$ROOT_DIR/tests/windows-lifecycle.ps1"
 WINDOWS_WORKFLOW_FILE="$ROOT_DIR/.github/workflows/windows-validation.yml"
 TEST_ENTRYPOINT_FILE="$SCRIPT_DIR/test.sh"
+AB_BENCHMARK_FILE="$SCRIPT_DIR/benchmark_ab.py"
+AB_MANIFEST_FILE="$ROOT_DIR/tests/fixtures/v050-ab-benchmark.json"
 POSIX_WORKFLOW_FILE="$ROOT_DIR/.github/workflows/posix-validation.yml"
 BUG_TEMPLATE_FILE="$ROOT_DIR/.github/ISSUE_TEMPLATE/bug_report.yml"
 FEATURE_TEMPLATE_FILE="$ROOT_DIR/.github/ISSUE_TEMPLATE/feature_request.yml"
@@ -42,6 +44,7 @@ required_files=(
   "scripts/install.sh"
   "scripts/validate.sh"
   "scripts/test.sh"
+  "scripts/benchmark_ab.py"
   "scripts/uninstall.sh"
   "scripts/install.ps1"
   "scripts/validate.ps1"
@@ -62,6 +65,12 @@ required_files=(
   "docs/assets/readme/control-plane-en.svg"
   "tests/windows-lifecycle.ps1"
   "tests/test_release_engineering.py"
+  "tests/test_v050_benchmark.py"
+  "tests/test_v050_evidence_control.py"
+  "tests/fixtures/v050-ab-benchmark.json"
+  "tests/v050-ab-benchmark.md"
+  "tests/v050-live-smoke.md"
+  "SOL_CONTROL_V050_IMPLEMENTATION_REPORT.md"
   ".github/workflows/windows-validation.yml"
   ".github/workflows/posix-validation.yml"
   "NOTICE"
@@ -166,6 +175,12 @@ done
 if [[ -z "$PYTHON_BIN" ]]; then
   fail 'Python 3.11 or newer is required for TOML validation'
 else
+if ! "$PYTHON_BIN" -c 'import pathlib, sys; compile(pathlib.Path(sys.argv[1]).read_text(encoding="utf-8"), sys.argv[1], "exec")' "$AB_BENCHMARK_FILE" >/dev/null 2>&1; then
+  fail 'benchmark_ab.py syntax validation failed'
+fi
+if ! "$PYTHON_BIN" "$AB_BENCHMARK_FILE" validate "$AB_MANIFEST_FILE" >/dev/null 2>&1; then
+  fail 'v0.5 A/B benchmark manifest validation failed'
+fi
 if ! "$PYTHON_BIN" - "$ROOT_DIR" "$SKILL_FILE" "$OPENAI_FILE" "$RUNTIME_FILE" "$SOL_FILE" "$LUNA_FILE" "$TERRA_FILE" "$PS_FILE" "$PS_VALIDATE_FILE" "$PS_UNINSTALL_FILE" "$WINDOWS_LIFECYCLE_FILE" "$WINDOWS_WORKFLOW_FILE" "$TEST_ENTRYPOINT_FILE" "$POSIX_WORKFLOW_FILE" "$COMPAT_SKILL_FILE" "$COMPAT_OPENAI_FILE" <<'PY' >/dev/null 2>&1
 from __future__ import annotations
 

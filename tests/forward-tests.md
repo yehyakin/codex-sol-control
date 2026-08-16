@@ -1,13 +1,13 @@
 # Tiered-routing Forward Tests
 
-Date: 2026-08-03
+Date: 2026-08-17
 
 Scope: routing-contract fixtures plus isolated installer roots. No business
 repository, global agent file, or live production system is read or modified.
 
 ## Method
 
-- The twenty-nine scenarios are defined in `tests/fixtures/forward-cases.json`.
+- The thirty-nine scenarios are defined in `tests/fixtures/forward-cases.json`.
 - Each case describes the expected route without exposing internal runtime
   mechanics as a public mode or fixed worker-count promise.
 - Contract tests check explicit invocation, direct handling of ordinary simple
@@ -32,6 +32,14 @@ repository, global agent file, or live production system is read or modified.
   once. If Luna has written any owned file before failing, Luna retains all
   ownership; only the original Luna owner may receive one focused fix, otherwise
   return `BLOCKED`. Terra's write state is never the escalation gate.
+- Eight evidence-first cases cover stable Requirement IDs, artifact-first Sol
+  review, wrong-scope verifier rejection, high-risk selective challenge,
+  zero-challenge standard work, idempotent resume, timeout-after-write
+  ownership, and residual suggestions outside the closed verdict.
+- Two runtime-boundary cases distinguish technical capability from task
+  authorization: reversible workspace work may continue with narrow scope and
+  Host-owned snapshots, while destructive or irreversible external work still
+  fails closed without an enforceable boundary or explicit broader approval.
 - Installer tests use a temporary `ORCHESTRATE_HOME`, synthesize a v0.1
   installation with checksums, and exercise migration, modified-target
   preservation, rollback, uninstall, restore, unrelated files, and
@@ -67,9 +75,19 @@ repository, global agent file, or live production system is read or modified.
 | Luna: low-ambiguity, falsifiable, small context | `sol_then_luna` | required; Terra not selected | PASS |
 | Terra: cross-module and long context | `sol_then_terra` | no Luna; Terra required | PASS |
 | Model identity unavailable | `blocked` | Luna and Terra BLOCKED; no substitution | BLOCKED |
+| Runtime capability broader than a read-only audit | `sol_then_luna` | empty write scope plus Host-owned before/after snapshot | PASS |
+| Irreversible work without an enforceable boundary | `blocked` | no worker execution or external side effect | BLOCKED |
 | Luna first classification failure before any write | `sol_then_terra` | same task/scope upgraded once only after zero Luna-owned writes | PASS |
 | Luna first failure after an owned write | `sol_then_luna` | Luna retains scope; one focused fix or `BLOCKED`; Terra blocked | FIX/BLOCKED |
 | Shared file unique owner with Terra route | `sol_then_terra` | exact write scope; one owner | PASS |
+| Missing Requirement evidence | `sol_then_luna` | REQ gap remains visible | FIX |
+| Worker PASS treated as a claim | `sol_then_luna` | artifact-first evidence review | PASS |
+| Verifier targets the wrong scope | `sol_then_luna` | `evidence_quality` failure | FIX |
+| High-risk selective challenge | `sol_then_terra` | one read-only challenge at most | PASS |
+| Standard task | `sol_then_luna` | zero challenge calls | PASS |
+| Resume after interruption | `sol_then_luna` | no duplicate dispatch or attempt reset | PASS |
+| Timeout after an owned write | `sol_then_luna` | Luna retains ownership; Terra blocked | BLOCKED |
+| Residual suggestion after full coverage | `sol_then_luna` | suggestion remains non-gating | PASS |
 
 ## Reliability guard status
 

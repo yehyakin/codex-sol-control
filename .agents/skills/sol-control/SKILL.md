@@ -19,9 +19,10 @@ Ordinary simple work stays direct unless the user explicitly invokes
 
 ## Roles
 
-- **Sol:** understand the real goal, define `done_when`, split work, assign file
-  ownership, schedule stages, and review the actual result. Sol is read-only and
-  does not perform bulk implementation.
+- **Sol:** understand the real goal, give every completion criterion a stable
+  Requirement ID, split work, assign file ownership, schedule stages, and
+  perform the artifact-first final review. Sol is read-only and does not
+  perform bulk implementation.
 - **Luna Max:** execute exactly one assigned task, modify only its write scope,
   run the required verification, and return evidence. Luna does not redesign
   the plan, broaden scope, create subagents, or approve the overall task.
@@ -52,11 +53,17 @@ a permanent agent team.
   Host-owned before/after changed-path check proving zero Sol writes. Never
   combine a custom `agent_type` with a full-history fork; a full-history
   custom-agent fork is invalid and fails closed. Configuration text, an agent
-  label, or a child's unsupported identity claim is not authoritative proof. If
-  the Host/tool contract does not expose the exact role-to-model mapping, or if
-  the exact model identity, reasoning effort, selected agent, fork mode,
-  permission boundary, or no-write proof is mismatched or unprovable, do not
-  send the task: **Fail Closed** and return `BLOCKED`.
+  label, or a child's unsupported identity claim is not authoritative proof.
+  Treat runtime capability and task authorization separately: a surface that
+  reports broader technical access does not widen the user-authorized scope and
+  is not by itself a blocker for reversible workspace work. Record the actual
+  capability, keep the task packet within the parent authorization, and require
+  Host-owned baseline/final changed-path checks; any out-of-scope change fails.
+  Destructive, credential-bearing, production, or other irreversible external
+  work requires an enforceable matching boundary or explicit user approval for
+  that broader capability. If exact model identity, reasoning effort, selected
+  agent, fork mode, or the required no-write/scope evidence is unprovable, **Fail
+  Closed** and return `BLOCKED`.
 - One file has one owner for the whole run. Only when Luna's first failure
   happens before Luna writes any owned file may Sol escalate the same task and
   unchanged scope to Terra once, rather than retrying Luna indefinitely. If
@@ -64,14 +71,26 @@ a permanent agent team.
   only the original Luna owner may receive one focused fix, otherwise return
   `BLOCKED`. Terra's write state is never the escalation gate.
 
+### Selective challenge
+
+Ordinary, standard, low-risk tasks use zero challenge calls. Sol may add at
+most one selective challenge task only for high-consequence work, cross-module
+or shared interface changes, destructive or security-sensitive work, ambiguous
+root cause, weak or conflicting evidence, or an unresolved Requirement ID.
+The challenge is a read-only evidence-gathering task with `write_scope: []`.
+It returns findings and evidence, cannot approve the candidate, and cannot issue
+the final verdict. Sol remains the sole final reviewer and arbitrates every
+finding.
+
 ## Workflow
 
-1. Sol writes the smallest useful plan.
+1. Sol extracts stable Requirement IDs and writes the smallest useful plan.
 2. Independent tasks with disjoint write scopes may run in the same stage.
 3. Dependent or overlapping tasks run in later stages.
 4. Luna Max or Terra High executes and self-checks each assigned task.
-5. Sol reviews real files, the diff, test or build output, and requirement
-   coverage before deciding `PASS`, `FIX`, or `BLOCKED`.
+5. Sol reviews the original request, real files, the complete diff, verification
+   quality, and Requirement coverage before reading worker summaries and
+   deciding `PASS`, `FIX`, or `BLOCKED`.
 
 ## Execution continuity and planning convergence
 
@@ -105,14 +124,18 @@ the unresolved downstream work remains blocked.
 ```yaml
 goal: "The user's final outcome"
 done_when:
-  - "An observable completion criterion"
+  - id: REQ-1
+    criterion: "An observable completion criterion"
+    evidence: "Required evidence for this criterion"
 tasks:
   - id: task-a
     task: "One clear task"
+    requirements: [REQ-1]
     write_scope: ["owned/path"]
     do_not_touch: ["all other paths"]
     expected_result: "What must be observable"
-    verification: "Exact command or procedure"
+    verification: "Exact command or procedure and passing condition"
+    required_evidence: "Evidence bound to the final candidate"
     context: "Optional relevant input"
 stages:
   - [task-a]
@@ -130,11 +153,15 @@ other field is required.
 ```text
 Task ID: <stable task id>
 Task: <one bounded task>
+Requirement IDs: <REQ-1, REQ-2>
 Context: <optional files, evidence, or prior-stage result>
 Write scope: <exact writable paths>
 Do not touch: <excluded paths and side effects>
 Expected result: <observable acceptance condition>
-Verification: <exact command or procedure and passing condition>
+Verification:
+  Procedure: <exact command or procedure>
+  Passing condition: <falsifiable passing condition>
+Required evidence: <diff, output, artifact, or observation bound to the final candidate>
 ```
 
 An incomplete, contradictory, or unauthorized packet is `BLOCKED`; the worker must
@@ -147,9 +174,10 @@ Task ID: <task id>
 Status: PASS | BLOCKED
 Summary: <what happened>
 Changed: <exact files, or None>
+Requirement coverage: <each assigned REQ-ID and its evidence>
 Verification: <commands and exact results>
 Evidence: <diff, test, build, log, or artifact evidence bound to the final candidate>
-Failure class: runtime | model_identity | permission | dependency | scope | verification | conflict | none
+Failure class: runtime | timeout | model_identity | permission | dependency | scope | verification | evidence_quality | conflict | none
 Blocker: <None or the concrete blocker>
 ```
 
@@ -181,13 +209,41 @@ overall work is complete.
 
 ## Review and correction
 
-Sol returns `PASS | FIX | BLOCKED`. Evidence-free `PASS`, out-of-scope writes,
-failed verification, conflicts, or missed criteria cannot pass review. Sol may
-issue at most one focused fix to the original owner without expanding its write
-scope. A second failure is `BLOCKED`.
+The final gate uses the closed verdict vocabulary `PASS | FIX | BLOCKED`.
+Residual suggestions or optional improvements stay separate and do not change
+`PASS`; an unsatisfied Requirement ID is never residual work.
+
+Sol performs an artifact-first review in this order: original request and
+`done_when`; repository baseline and changed paths; actual files and complete
+diff; verification output and artifacts; Requirement coverage; only then the
+worker summary or worker self-assessment. A worker `PASS` is an untrusted claim,
+not evidence.
+
+Sol must verify the verifier, not only its exit status: the procedure must run
+against the correct final candidate, exercise the intended requirement, use the
+right scope, and produce the required evidence. A wrong scope, tautological or
+existence-only check, unexpected test/lockfile rewrite, or unverifiable claim is
+`FIX` or `BLOCKED` under `evidence_quality`.
+
+Sol's final review includes this compact matrix:
+
+```yaml
+verdict: PASS | FIX | BLOCKED
+requirements_coverage:
+  - requirement: REQ-1
+    status: satisfied | unsatisfied | blocked
+    evidence: "Exact file, diff, command output, or artifact"
+findings: []
+residual_suggestions: []
+```
+
+`PASS` requires every Requirement ID to be satisfied and evidenced. Evidence-free
+`PASS`, out-of-scope writes, failed verification, conflicts, or missed criteria
+cannot pass review. Sol may issue at most one focused fix to the original owner
+without expanding its write scope. A second failure is `BLOCKED`.
 
 Every Correction Packet keeps the original owner and original scope, and contains
-`Failure class: runtime | model_identity | permission | dependency | scope | verification | conflict | none`
+`Failure class: runtime | timeout | model_identity | permission | dependency | scope | verification | evidence_quality | conflict | none`
 plus a `Delta` that changes the same-scope task packet or adds new evidence. The
 `none` class is valid only when no failure occurred; any failure uses another
 allowed class. The same task packet with no new evidence is `BLOCKED` and must
@@ -200,8 +256,13 @@ remains unchanged and every safety gate still applies.
 ## Resume packet (long tasks only)
 
 Resume packets are only for tasks expected to cross context compression, suffer a
-session interruption, or run for a long time. The minimal packet contains only
-`goal`, `completed`, `in_flight`, `artifact_location`, and `next_action`. Short and Direct tasks never generate a resume packet.
+session interruption, or run for a long time. The minimal safe packet contains
+`run_id`, `goal`, `completed`, `in_flight`, `ownership`,
+`requirement_coverage`, `candidate_identity`, `attempts`, `artifact_location`,
+and `next_action`. Resume must not redispatch completed tasks or reset retry
+attempts. A changed or mismatched `candidate_identity` requires Sol to re-plan
+or return `BLOCKED`; never reuse stale evidence.
+Short and Direct tasks never generate a resume packet.
 
 Deletion, deployment, production changes, accounts, payment, credentials, or
 other external side effects require explicit user authorization before work

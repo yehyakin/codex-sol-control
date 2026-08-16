@@ -23,6 +23,37 @@ bounded delegation, dispatch, and orchestration:
   MIT
   https://github.com/Glaicer/subagent-orchestrator-skill/tree/96eaeb16f19b789fd004b588858fb846cc674147
 
+The v0.5 evidence-first design also reviewed the following projects. Only
+workflow ideas and test patterns were used; no source text or code was copied:
+
+- obra/superpowers, commit b36e0829c6d0140e93cfef2ca599b1b07d4a7797:
+  MIT
+  https://github.com/obra/superpowers/tree/b36e0829c6d0140e93cfef2ca599b1b07d4a7797
+- os-factory/har, commit 7db2476420e890a8945cb3a156fd3c0d7532303b:
+  Apache-2.0
+  https://github.com/os-factory/har/tree/7db2476420e890a8945cb3a156fd3c0d7532303b
+- spencermarx/open-code-review, commit fee6905939eaa804dfd90d815cecbcb26f600d32:
+  Apache-2.0
+  https://github.com/spencermarx/open-code-review/tree/fee6905939eaa804dfd90d815cecbcb26f600d32
+- gastownhall/gascity, commit 6888ac9839912435ab1fe209e6a8aa5c2b7f3a9c:
+  MIT
+  https://github.com/gastownhall/gascity/tree/6888ac9839912435ab1fe209e6a8aa5c2b7f3a9c
+- aws-samples/sample-codex-agent-team, commit 1415062d0c9ae8479489e405889f4d2071a03b96:
+  MIT-0
+  https://github.com/aws-samples/sample-codex-agent-team/tree/1415062d0c9ae8479489e405889f4d2071a03b96
+- UditAkhourii/adhd, commit 3d9dc487bc2eba4449742e2db0d92be9ebdf95b6:
+  MIT
+  https://github.com/UditAkhourii/adhd/tree/3d9dc487bc2eba4449742e2db0d92be9ebdf95b6
+- alexzh3/codex-orchestrator, commit 37e954e7cd24fc0f2211f13b23fde993dd7027fe:
+  MIT
+  https://github.com/alexzh3/codex-orchestrator/tree/37e954e7cd24fc0f2211f13b23fde993dd7027fe
+- zackproser/coding-agent-eval-harness, commit 608b6b9d6624a020be26df8c1dfac43969d025aa:
+  MIT
+  https://github.com/zackproser/coding-agent-eval-harness/tree/608b6b9d6624a020be26df8c1dfac43969d025aa
+- Danau5tin/multi-agent-coding-system, commit e71b80329eb9ae718ec20500a3e932ffea5fc9ac:
+  Apache-2.0
+  https://github.com/Danau5tin/multi-agent-coding-system/tree/e71b80329eb9ae718ec20500a3e932ffea5fc9ac
+
 The implementation wording and code in this repository are original unless later
 identified otherwise. This statement does not claim that the underlying
 concepts are original.

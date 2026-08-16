@@ -43,6 +43,12 @@ may not authorize a new write or re-execution. If no structured result bound to
 the final candidate is returned, the task is `BLOCKED`; do not perform another
 retrieval or relaunch.
 
+Transport silence, a host deadline, or a timeout is not proof of model
+capability failure. Classify it as `timeout`, inspect actual changed paths and
+partial artifacts, then preserve the original owner if any owned file was
+written. Retry or escalation rules remain bounded and are never reset by a
+resume.
+
 User urgency or a request to hurry or "do not stop" cannot lower, relax, or
 reduce the evidence or verification threshold. The evidence threshold remains
 unchanged.
@@ -77,18 +83,26 @@ same agent only after the combined evidence matches:
   with effective access no broader than the inherited parent boundary and the
   `workspace-write` ceiling.
 
-Sol remains operationally read-only. Prefer an enforced read-only sandbox. If a
-surface inherits broader technical access, the Host must own the repository
-baseline and perform a before/after changed-path check after every Sol turn; any
-Sol-authored change fails closed. A child promise alone is not sufficient
-no-write evidence.
+The listed sandbox modes are requested policy ceilings, not proof that every
+surface enforced them. The handshake reports actual technical capability.
+Capability is not authorization: a broader capability does not widen the user
+authorization or task `write_scope`, and it does not alone block reversible
+workspace work. Record it and require Host-owned baseline/final changed-path
+checks after every affected agent turn; an out-of-scope change fails. Sol remains
+operationally read-only and any Sol-authored change fails closed. A child promise
+alone is not sufficient no-write evidence. Destructive, credential-bearing,
+production, or irreversible external work still requires an enforceable matching
+boundary or explicit user approval for the broader capability.
 
 No task execution, file write, or subagent launch is allowed during the identity
-handshake. If the Host/tool contract does not expose an authoritative exact
-role-to-model mapping, or if any selection, permission, fork, or no-write proof
-cannot be established, **Fail Closed** without sending the task. Do not silently
-substitute a nearby model, effort, role, or permission profile, and do not use
-an agent label or a child's unobservable self-report to spoof identity.
+handshake. This handshake is a deliberate exception to the complete task-packet
+requirement and must not be rejected merely because Task ID, Requirement IDs,
+or verification fields are absent. If the Host/tool contract does not expose an
+authoritative exact role-to-model mapping, or if selection, fork, authorization,
+or required no-write/scope proof cannot be established, **Fail Closed** without
+sending the task. Do not silently substitute a nearby model, effort, role, or
+permission profile, and do not use an agent label or a child's unobservable
+self-report to spoof identity.
 
 Luna and Terra must not spawn or create subagents. Every custom-agent launch,
 including the initial `sol-controller`, must use `fork_turns="none"` plus the
@@ -113,6 +127,22 @@ Read live capacity before each launch. Start only the ready tasks that fit;
 queue the rest for another batch. Never claim a fixed worker maximum from this
 Skill. A reduced capacity changes batch size, not Sol's approved dependency or
 ownership decisions.
+
+## Selective challenge dispatch
+
+Ordinary, standard, low-risk tasks receive no challenge call. Sol may request at
+most one selective challenge when the approved plan marks a high-consequence,
+cross-module, shared-interface, destructive/security-sensitive, ambiguous, or
+weak/conflicting-evidence trigger. The Host dispatches it as a read-only packet
+with `write_scope: []` and no authority to approve or write. Its result contains
+findings, inspected evidence, and unresolved questions; Sol remains the only
+controller and sole final reviewer.
+
+Do not start a challenge merely to demonstrate multi-agent behavior. Do not
+repeat the same challenge after it returns no new evidence. If the surface
+cannot enforce or prove its read-only boundary, the challenge is `BLOCKED` and
+normal Sol review continues only if the existing evidence is independently
+sufficient.
 
 ## First-artifact checkpoint
 
@@ -155,17 +185,29 @@ write. The zero-write Luna-to-Terra escalation above remains the only exception.
   old evidence is stale and affected verification must be rerun before `PASS`.
 
 Correction packets retain the original owner and scope. Their Failure class is
-one of `runtime | model_identity | permission | dependency | scope | verification |
-conflict | none`, and their Delta is a same-scope task-packet change or new
+one of `runtime | timeout | model_identity | permission | dependency | scope | verification |
+evidence_quality | conflict | none`, and their Delta is a same-scope task-packet change or new
 evidence. `none` is valid only when no failure occurred; any failure must use
 one of the other classes. An identical packet with no new evidence is `BLOCKED`
 and is not relaunched.
 
 Resume packets are only for long, interrupted, or context-compressed tasks and
-contain `goal`, `completed`, `in_flight`, `artifact_location`, and `next_action`.
-Short and Direct tasks never generate one.
+contain `run_id`, `goal`, `completed`, `in_flight`, `ownership`,
+`requirement_coverage`, `candidate_identity`, `attempts`, `artifact_location`,
+and `next_action`. On resume, compare the real candidate with the recorded
+identity, preserve written-file ownership, keep attempt counts, and never
+redispatch completed tasks. Candidate mismatch requires Sol to re-plan or return
+`BLOCKED`. Short and Direct tasks never generate one.
 
 ## Verification environment hygiene
+
+Verification quality matters in addition to command exit status. Verify the
+verifier: confirm that it targets the correct final candidate and intended
+requirement, uses the right scope, has a falsifiable passing condition, and
+produces the required evidence. Treat a wrong scope, tautological or
+existence-only check, skipped suite, unexpected tracked-test or lockfile rewrite,
+or candidate-unbound output as `evidence_quality`, resulting in `FIX` or
+`BLOCKED` rather than `PASS`.
 
 Before running delegated or host-side verification, identify the repository's
 package manager from its committed lockfile, scripts, and documented toolchain.

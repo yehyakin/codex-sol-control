@@ -805,6 +805,20 @@ function Test-RollbackFailpoint {
     Assert-UserMarkersPreserved $TestHome $markers
 }
 
+function Test-UninstallTransactionCleanupFailpoint {
+    $TestHome = Join-Path $TestRoot "uninstall transaction cleanup failpoint home"
+    $markers = Seed-UserFiles $TestHome
+    Invoke-Install $TestHome
+    $before = Get-ContractSnapshot $TestHome
+    $backupRoot = Join-Path $TestHome ".codex/sol-control/backups"
+    $backupBefore = Get-PathFingerprint $backupRoot
+
+    Assert-LifecycleFails -Path $Uninstall -TestHome $TestHome -Failpoint "before-transaction-cleanup" -ExpectedError "(?i)before transaction cleanup" -Message "uninstall cleanup failpoint did not fail"
+    Assert-SnapshotEqual $before (Get-ContractSnapshot $TestHome) "uninstall cleanup failpoint did not roll back the isolated home"
+    Assert-Equal $backupBefore (Get-PathFingerprint $backupRoot) "uninstall cleanup failpoint removed or changed the recovery backup"
+    Assert-UserMarkersPreserved $TestHome $markers
+}
+
 function Test-CheckModeReadOnly {
     $TestHome = Join-Path $TestRoot "check mode home"
     $before = Get-PathFingerprint $TestHome
@@ -865,6 +879,7 @@ try {
     Test-ModifiedCurrentTargetRefusal
     Test-ModifiedTerraTargetRefusal
     Test-RollbackFailpoint
+    Test-UninstallTransactionCleanupFailpoint
     Test-CheckModeReadOnly
     Test-IsolatedHomes
     Test-FilesystemRootRefusal

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Contract tests for the v0.4.0 ``sol-control`` package."""
+"""Contract tests for the ``sol-control`` package."""
 
 from __future__ import annotations
 
@@ -256,7 +256,7 @@ class RepositoryContractTests(unittest.TestCase):
 
     def test_v040_correction_packets_require_allowed_failure_class_and_delta(self) -> None:
         text = self.contract_text()
-        allowed = "runtime | model_identity | permission | dependency | scope | verification | conflict | none"
+        allowed = "runtime | timeout | model_identity | permission | dependency | scope | verification | evidence_quality | conflict | none"
         self.assertIn(allowed, text)
         self.assertIn("Failure class:", text)
         self.assertIn("Correction Packet", text)
@@ -384,7 +384,12 @@ class RepositoryContractTests(unittest.TestCase):
         self.assertIn("| Desktop | Agent selection | VERIFIED |", text)
         self.assertIn("| Desktop | exact model | VERIFIED |", text)
         self.assertIn("| Desktop | reasoning | VERIFIED |", text)
-        self.assertIn("| Desktop | nested dispatch | UNVERIFIED |", text)
+        self.assertIn("| Desktop | nested dispatch | VERIFIED |", text)
+        self.assertRegex(
+            text,
+            r"(?is)Desktop\s*\|\s*nested dispatch\s*\|\s*VERIFIED.{0,320}"
+            r"`sol-controller`.{0,180}`terra-high-worker`.{0,180}`luna-max-worker`",
+        )
         self.assertRegex(
             text,
             r"(?is)does not ask the child to self-report.{0,180}Host/tool role mapping.{0,180}launch record",
@@ -468,10 +473,16 @@ class RepositoryContractTests(unittest.TestCase):
 
         luna_text = read_if_present(LUNA_AGENT)
         self.assertRegex(luna_text, r"(?i)do not (spawn|create).*subagent")
-        self.assertRegex(luna_text, r"(?i)parent permission boundary")
+        self.assertRegex(
+            luna_text,
+            r"(?i)(?:parent permission boundary|capability is not authorization)",
+        )
         terra_text = read_if_present(TERRA_AGENT)
         self.assertRegex(terra_text, r"(?i)do not (spawn|create).*subagent")
-        self.assertRegex(terra_text, r"(?i)parent permission boundary")
+        self.assertRegex(
+            terra_text,
+            r"(?i)(?:parent permission boundary|capability is not authorization)",
+        )
         self.assertRegex(self.contract_text(), r"(?i)Fail Closed")
 
     def test_forward_fixture_covers_v020_routes_and_v040_reliability_cases(self) -> None:
@@ -503,10 +514,20 @@ class RepositoryContractTests(unittest.TestCase):
             "luna-low-ambiguity-small-context",
             "terra-cross-module-long-context",
             "model-identity-unavailable-fail-closed",
+            "broader-runtime-capability-keeps-narrow-authorization",
+            "irreversible-work-requires-enforced-boundary",
             "luna-classification-error-escalates-terra",
             "luna-first-failure-before-write-escalates-terra",
             "luna-first-failure-after-write-keeps-luna-owner",
             "single-file-unique-owner",
+            "v050-requirement-evidence-gap",
+            "v050-worker-pass-is-untrusted",
+            "v050-wrong-scope-verifier",
+            "v050-high-risk-selective-challenge",
+            "v050-standard-task-no-challenge",
+            "v050-resume-no-duplicate-dispatch",
+            "v050-timeout-after-write-keeps-owner",
+            "v050-residual-suggestions-do-not-change-pass",
         }
         self.assertEqual(expected_ids, {case["id"] for case in cases})
         self.assertEqual(len(expected_ids), len(cases))
@@ -516,6 +537,7 @@ class RepositoryContractTests(unittest.TestCase):
         allowed_reviews = {"not_applicable", "PASS", "FIX", "BLOCKED"}
         allowed_capacity = {"not_applicable", "live"}
         allowed_resume = {"not_applicable", "forbidden", "required"}
+        allowed_challenge = {"none", "required", "blocked"}
 
         for case in cases:
             self.assertTrue(case["prompt"])
@@ -529,6 +551,8 @@ class RepositoryContractTests(unittest.TestCase):
             self.assertIn(expected["capacity"], allowed_capacity)
             if "resume" in expected:
                 self.assertIn(expected["resume"], allowed_resume)
+            if "challenge" in expected:
+                self.assertIn(expected["challenge"], allowed_challenge)
             self.assertGreaterEqual(len(case["required_assertions"]), 3)
 
         by_id = {case["id"]: case for case in cases}

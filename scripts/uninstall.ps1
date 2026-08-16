@@ -576,7 +576,9 @@ try {
         $previousStateNew = $true
     }
 
-    Remove-Exact $backupDir
+    if ($env:ORCHESTRATE_FAILPOINT -eq "before-transaction-cleanup") {
+        throw "uninstall failpoint before transaction cleanup"
+    }
     Remove-Exact $transactionDir
     $transactionDir = ""
 }
@@ -613,6 +615,17 @@ catch {
     }
     if ($transactionDir -and (Test-PathExists $transactionDir)) { Remove-Exact $transactionDir }
     throw
+}
+
+# The uninstall is committed only after the rollback transaction is gone. The
+# superseded backup is post-commit cleanup and intentionally best effort, which
+# matches the POSIX lifecycle and avoids deleting recovery data before commit.
+try {
+    Remove-Exact $backupDir
+}
+catch {
+    # A retained obsolete backup is safer than turning a committed uninstall
+    # into a false rollback failure after transaction evidence has been removed.
 }
 
 Remove-EmptyDirectory $backupRoot

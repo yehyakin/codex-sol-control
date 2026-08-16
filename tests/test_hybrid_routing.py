@@ -82,7 +82,7 @@ class TerraAgentContractTests(unittest.TestCase):
         normalized = compact(instructions)
         self.assertRegex(
             normalized,
-            r"(?i)(?:parent\s+permission\s+boundary|parent.{0,20}(?:permission|权限).{0,20}(?:boundary|边界))",
+            r"(?i)(?:parent\s+permission\s+boundary|capability\s+is\s+not\s+authorization)",
         )
         self.assertRegex(
             normalized,

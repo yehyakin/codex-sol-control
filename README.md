@@ -218,8 +218,18 @@ Sol：理解 → 规划 → 分配 → 调度
 真实文件 + Diff + 测试 / 构建 / 产物证据
    │
    ▼
-Sol：PASS / FIX / BLOCKED
+Sol：按 REQ-ID 做 artifact-first 审核 → PASS / FIX / BLOCKED
 ```
+
+### 证据优先控制
+
+开发中的 v0.5 契约保持 Sol 单一主控，不增加第二个 Sol Reviewer，并补上五个质量控制点：
+
+1. **需求—证据图。** 每个 `done_when` 使用稳定的 `REQ-ID`，任务、验证和最终证据必须回指对应要求。
+2. **Artifact-first 审核。** Sol 先看原始要求、真实 changed paths、文件、完整 diff 和验证产物，最后才看 worker 的 `PASS` 与总结。
+3. **验证验证器。** 退出码为 0 还不够；检查必须命中最终候选、正确 scope 和目标要求，存在性检查或跑错模块不能通过。
+4. **选择性挑战。** 普通任务零额外挑战；只有高后果、跨模块、共享接口、证据冲突或未覆盖要求才允许最多一个只读 challenge。它只返回 findings，最终裁决仍属于 Sol。
+5. **可恢复执行。** 长任务记录 owner、候选身份、要求覆盖和尝试次数；恢复时不重复派发已完成任务，也不重置修正预算。
 
 ### 角色层级
 
@@ -262,11 +272,12 @@ worker 数量没有固定承诺。Sol 根据依赖关系、实时容量和安全
 
 ## 一条完整的证据闭环
 
-1. **计划。** Sol 写下目标、`done_when`、任务、依赖、精确 `write_scope`、排除项与验证方法。
-2. **执行。** Terra 或 Luna 只修改分配范围，不改整体计划。
-3. **自检。** 执行者运行指定验证并返回真实 changed paths、diff、测试、构建或产物证据。
-4. **审核。** Sol 检查真实文件、完整 diff、证据新鲜度和需求覆盖。
-5. **结论。** Sol 返回 `PASS`、一次 focused `FIX` 或 `BLOCKED`。
+1. **提取要求。** Sol 给每条完成条件分配稳定的 `REQ-ID` 和所需证据。
+2. **计划。** Sol 把每项任务映射到 Requirement IDs、精确 `write_scope`、排除项、验证步骤、通过条件和必需证据。
+3. **执行。** Terra 或 Luna 只修改分配范围，不改整体计划。
+4. **自检。** 执行者运行指定验证并返回 changed paths、Requirement coverage、测试、构建或产物证据。
+5. **审核。** Sol 先检查真实文件、完整 diff、验证质量与需求覆盖，再读取 worker 总结。
+6. **结论。** Sol 返回封闭裁决 `PASS`、一次 focused `FIX` 或 `BLOCKED`；非阻塞建议单独列出。
 
 worker 的 `PASS` 只代表它自己的任务通过。只有 Sol 可以批准整体工作。
 
@@ -277,8 +288,11 @@ worker 的 `PASS` 只代表它自己的任务通过。只有 Sol 可以批准整
 3. **没有证据，不算完成。** transport / spawn 的 `completed` 只表示投递结束。
 4. **验证必须绑定最终候选。** 验证后文件发生变化，旧证据立即失效。
 5. **最多一次 focused fix。** 原 owner 只能在原 scope 内修正一次；再次失败则 `BLOCKED`。
-6. **失败关闭。** 无法证明 custom agent、精确 model、reasoning effort 或有效权限时，不静默替换。
+6. **能力不等于授权。** 运行时暴露更宽技术能力不会扩大用户授权或 `write_scope`；必须如实记录，并用 Host 前后快照检查越界。
 7. **不降低审核门槛。** 用户催促、并行需求或成本目标都不能替代验证与证据。
+8. **Worker PASS 不是证明。** Sol 必须按真实产物独立重建成功结论。
+9. **挑战不是第二主控。** 只读 challenge 无写权限、无批准权，且普通任务不承担固定调用开销。
+10. **高风险仍然失败关闭。** 模型身份、fork 或必要范围证据无法证明时阻塞；破坏性、生产或不可逆外部操作还必须有可强制的匹配边界，或用户明确批准更宽能力。
 
 ### Luna 到 Terra 的有界升级
 
@@ -295,6 +309,8 @@ worker 的 `PASS` 只代表它自己的任务通过。只有 Sol 可以批准整
 | `PASS` | 所有完成条件均由真实文件和新鲜证据支持 |
 | `FIX` | 原 owner 可以在不扩大 scope 的前提下完成一次精确修正 |
 | `BLOCKED` | 权限、依赖、运行时身份、scope、冲突或验证问题阻止可信交付 |
+
+三个结果构成封闭裁决。可选改进与 residual suggestions 保持在裁决之外；但任何未满足的 `REQ-ID` 都不能被降级为建议。
 
 ## 什么时候不该使用
 
@@ -350,6 +366,7 @@ pwsh -NoProfile -File scripts/uninstall.ps1 -RestoreLatest
 | 验证面 | 已记录证据 |
 | --- | --- |
 | 本地仓库 | Skill Creator **PASS**；v0.4.1 候选版本 **113/113 tests PASS** |
+| v0.5 开发候选 | **135/135 tests PASS**；一组真实匹配 smoke 中候选通过、v0.4.1 baseline 未通过，但完整 48-cell × 3 重复尚未完成，因此不声明总体质量、成本或速度提升 |
 | 托管 CI | [POSIX PASS](https://github.com/yehyakin/codex-sol-control/actions/runs/31254093412)：Ubuntu/macOS × Python 3.11/3.13；[Windows PASS](https://github.com/yehyakin/codex-sol-control/actions/runs/31254093408)：Windows Server 2022 / `windows-latest` × Windows PowerShell 5.1 / PowerShell 7 |
 | Windows 实机安装 | 用户报告安装成功；未收集 Windows 版本、安装日志或运行时身份载荷，因此不扩展为 Native Nested 证明 |
 | Desktop Sol 握手 | v0.4.1 已验证 Host/tool 权威角色映射 + `fork_turns="none"` 启动记录 + child 权限/零副作用回执；同一个 Sol 完成最终审核并返回 `PASS`；Desktop 嵌套 worker 调度仍未证明 |
@@ -397,6 +414,9 @@ README.en.md                   English
 - [Luna Max 配置](.codex/agents/luna-max-worker.toml)
 - [运行表面矩阵](docs/release/runtime-surface-matrix.md)
 - [真实项目路由样本](tests/real-project-benchmark.md)
+- [v0.5 匹配 A/B 协议](tests/v050-ab-benchmark.md)
+- [v0.5 真实匹配 smoke 证据](tests/v050-live-smoke.md)
+- [v0.5 证据优先实现报告](SOL_CONTROL_V050_IMPLEMENTATION_REPORT.md)
 - [v0.4.0 实施报告](SOL_CONTROL_IMPLEMENTATION_REPORT.md)
 
 ## 维护与支持
@@ -414,9 +434,11 @@ README.en.md                   English
 ```sh
 bash scripts/validate.sh
 bash scripts/test.sh
+python3 scripts/benchmark_ab.py validate tests/fixtures/v050-ab-benchmark.json
 ```
 
 `scripts/test.sh` 会选择可用的 Python 3.11+，并运行完整 `unittest` 测试集。
+`benchmark_ab.py` 只冻结实验、生成交叉顺序并汇总完整结果；它不会调用模型，也不会在没有实测 cell 时宣布赢家。
 
 修改 README 时应同步更新双语版本与文档测试。测试应保护事实、链接、费率快照、公式、安全边界和平台命令，不应把某一种营销文案或首页章节顺序永久锁死。
 
