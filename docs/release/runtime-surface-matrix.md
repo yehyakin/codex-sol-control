@@ -10,14 +10,16 @@ Candidate date: 2026-08-20
 
 | Surface | Signal | Status | Evidence location | Date |
 | --- | --- | --- | --- | --- |
-| Desktop | `prove-controller` selection | UNVERIFIED | Requires fresh-session Host launch proof after v1.0 installation | 2026-08-20 |
-| Desktop | `prove-complex-worker` selection | UNVERIFIED | Requires fresh-session Host launch proof after v1.0 installation | 2026-08-20 |
-| Desktop | `prove-efficient-worker` selection | UNVERIFIED | Requires fresh-session Host launch proof after v1.0 installation | 2026-08-20 |
-| Desktop | exact models and reasoning | UNVERIFIED | TOML is candidate configuration, not runtime proof | 2026-08-20 |
+| Desktop | `prove-controller` selection | VERIFIED | Fresh session `01a01e7c-477a-7a03-9b74-8a7144d6f958`; Host launch plus two-turn handshake and final review | 2026-08-20 |
+| Desktop | `prove-complex-worker` selection | VERIFIED | Same fresh session; Host launch plus two-turn handshake | 2026-08-20 |
+| Desktop | `prove-efficient-worker` selection | VERIFIED | Same fresh session; Host launch plus two-turn handshake | 2026-08-20 |
+| Desktop | exact models and reasoning | VERIFIED | Host/tool mapping and parent launch records: Sol/high, Terra/high, Luna/max | 2026-08-20 |
 | Desktop | Native Nested | UNVERIFIED | Requires a real controller-to-worker launch with the new role names | 2026-08-20 |
-| Desktop | Compatibility | UNVERIFIED | Requires Host dispatch plus final review with the new role names | 2026-08-20 |
-| Desktop | fresh-session Skill discovery | UNVERIFIED | Requires `$codex-prove` discovery and `$sol-control` compatibility check | 2026-08-20 |
-| Windows CI | install/upgrade/rollback/uninstall | UNVERIFIED | Pending v1.0 Windows workflow on Windows Server 2022 and `windows-latest` | 2026-08-20 |
+| Desktop | Compatibility | VERIFIED | Fresh session `01a01e7c-477a-7a03-9b74-8a7144d6f958`; Controller plan, Host worker dispatch, same-Controller final verdict `PASS` | 2026-08-20 |
+| Desktop | fresh-session Skill discovery | VERIFIED | Canonical session above; alias session `01a01e81-92bc-7462-bb95-450bc929e971` redirected `$sol-control` to `$codex-prove` | 2026-08-20 |
+| Desktop | transactional global install | VERIFIED | Persistent backup `/Users/kin3/.codex/codex-prove/backups/20260820T092316Z-61245`; installed canonical Skill, alias, and three roles | 2026-08-20 |
+| POSIX CI | validation and lifecycle | VERIFIED | `main` run [32353507136](https://github.com/yehyakin/codex-prove/actions/runs/32353507136) | 2026-08-20 |
+| Windows CI | install/upgrade/rollback/uninstall | VERIFIED | `main` run [32353507150](https://github.com/yehyakin/codex-prove/actions/runs/32353507150), Windows Server 2022 and `windows-latest`, PowerShell 5.1 and 7 | 2026-08-20 |
 | Physical Windows 11 | Native Nested | UNVERIFIED | No v1.0 physical-device runtime payload captured | 2026-08-20 |
 
 Update this table only from actual launch, result, lifecycle, or CI evidence.

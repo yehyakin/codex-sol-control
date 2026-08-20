@@ -365,12 +365,12 @@ pwsh -NoProfile -File scripts/uninstall.ps1 -RestoreLatest
 
 | 验证面 | 已记录证据 |
 | --- | --- |
-| 本地仓库 | v1.0.0 候选正在完成 Skill Creator、静态、生命周期与 Forward Tests；发布前以实施报告中的最终证据为准 |
+| 本地仓库 | v1.0.0 的 Skill Creator 双入口、静态验证、POSIX 生命周期与 115 项测试均通过；39 个 Forward 场景覆盖路由、所有权、证据与失败门禁 |
 | 匹配 smoke | v0.5.0 的一组真实匹配 smoke 已记录；v1.0 只重构品牌、角色名与安装迁移，不把旧 smoke 冒充为新角色运行证明 |
 | 托管 CI | [POSIX 工作流](https://github.com/yehyakin/codex-prove/actions/workflows/posix-validation.yml)：Ubuntu/macOS × Python 3.11/3.13；[Windows 工作流](https://github.com/yehyakin/codex-prove/actions/workflows/windows-validation.yml)：Windows Server 2022 / `windows-latest` × Windows PowerShell 5.1 / PowerShell 7 |
 | Windows 实机安装 | 用户报告安装成功；未收集 Windows 版本、安装日志或运行时身份载荷，因此不扩展为 Native Nested 证明 |
-| 旧版运行证据 | v0.5.0 已验证 Host/tool 权威角色映射、`fork_turns="none"`、Native Nested 与 Compatibility；新 `prove-*` Agent 名称仍需在全新会话重新证明 |
-| 运行表面 | v1.0 发布门槛要求 Native Nested 或 Compatibility 至少一种以新角色名真实通过；物理 Windows 11 Native Nested 仍单独标注 |
+| v1.0 运行证据 | 全新会话已发现 `$codex-prove` 与 `$sol-control` 兼容入口；`prove-controller`、`prove-complex-worker`、`prove-efficient-worker` 的 Host/tool 映射和两回合握手均通过 |
+| 运行表面 | Compatibility 已以新角色名完成 Controller 规划、Host 分派和同一 Controller 终审；Native Nested 与物理 Windows 11 运行时仍单独标注为未验证 |
 
 v1.0.0 将品牌、Skill 与 Agent 角色从具体模型名解耦，同时保留 Requirement ID、产物优先审核、验证者校验、有限只读挑战与恢复包；完整设计与证据见 [v1.0.0 实施报告](CODEX_PROVE_V1_IMPLEMENTATION_REPORT.md)。早期模型品牌版本保留在[历史实施报告](SOL_CONTROL_IMPLEMENTATION_REPORT.md)。
 

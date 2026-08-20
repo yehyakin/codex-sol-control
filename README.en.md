@@ -366,12 +366,12 @@ The current version is **[v1.0.0](https://github.com/yehyakin/codex-prove/releas
 
 | Verification surface | Recorded evidence |
 | --- | --- |
-| Local repository | The v1.0.0 candidate is completing Skill Creator, static, lifecycle, and Forward Tests; use the final implementation report as the release evidence |
+| Local repository | Both v1.0.0 Skill Creator entries, static validation, POSIX lifecycle checks, and all 115 tests pass; 39 Forward scenarios cover routing, ownership, evidence, and failure gates |
 | Matched smoke | v0.5.0 recorded one matched live smoke; v1.0 changes branding, role names, and migration, so the old smoke is not presented as proof of the new agent names |
 | Hosted CI | [POSIX workflow](https://github.com/yehyakin/codex-prove/actions/workflows/posix-validation.yml): Ubuntu/macOS × Python 3.11/3.13; [Windows workflow](https://github.com/yehyakin/codex-prove/actions/workflows/windows-validation.yml): Windows Server 2022 / `windows-latest` × Windows PowerShell 5.1 / PowerShell 7 |
 | Physical Windows install | User-reported installation success; the Windows version, install log, and runtime identity payload were not captured, so this does not establish Native Nested |
-| Previous runtime evidence | v0.5.0 verified authoritative Host/tool mapping, `fork_turns="none"`, Native Nested, and Compatibility; the new `prove-*` agent names still require a fresh-session proof |
-| Runtime surface | The v1.0 release gate requires at least one real Native Nested or Compatibility run with the new role names; physical Windows 11 Native Nested remains a separate limitation |
+| v1.0 runtime evidence | Fresh sessions discovered `$codex-prove` and the `$sol-control` compatibility entry; Host/tool mappings and two-turn handshakes passed for `prove-controller`, `prove-complex-worker`, and `prove-efficient-worker` |
+| Runtime surface | Compatibility completed Controller planning, Host dispatch, and same-Controller final review with the new role names; Native Nested and physical Windows 11 runtime support remain separately unverified |
 
 v1.0.0 decouples the brand, Skill, and agent roles from specific model names while retaining Requirement IDs, artifact-first review, verify-the-verifier checks, a bounded read-only challenge, and a resume packet. See the [v1.0.0 implementation report](CODEX_PROVE_V1_IMPLEMENTATION_REPORT.md) for the final evidence. The [historical implementation report](SOL_CONTROL_IMPLEMENTATION_REPORT.md) retains the model-branded release history.
 

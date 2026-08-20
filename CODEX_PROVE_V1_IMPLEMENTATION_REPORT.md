@@ -84,7 +84,9 @@ ownership rules, verification threshold, result schema, and final review.
   review.
 
 Native Nested is claimed only after a real nested launch with the new `prove-*`
-role names. Compatibility is a first-class mode, not a silent downgrade.
+role names. Compatibility is a first-class mode, not a silent downgrade. The
+v1.0 release verified Compatibility end to end; Native Nested remains
+unverified for the new role names.
 
 ## 6. Models and agents
 
@@ -123,8 +125,16 @@ managed targets plus `config.toml`, but never replaces the complete
 reinstall, modified/unowned collision refusal, rollback, exact uninstall, v0.5
 migration, latest-backup restore, and unrelated-file preservation.
 
-Global v1 installation and its persistent recovery-backup path are recorded
-after the release candidate passes hosted CI.
+After `main` passed hosted CI, the transactional installer migrated the global
+v0.5 install to v1.0. The installed paths are
+`~/.agents/skills/codex-prove`, `~/.agents/skills/sol-control`, and the three
+`~/.codex/agents/prove-*.toml` files. The persistent recovery backup is:
+
+`/Users/kin3/.codex/codex-prove/backups/20260820T092316Z-61245`
+
+The global invocation rule was changed minimally: `$codex-prove` is canonical
+and explicit-only, while `$sol-control` is an explicit-only v1.0 compatibility
+alias. The complete `config.toml` was not replaced.
 
 ## 9. Forward and static tests
 
@@ -145,14 +155,43 @@ Current local candidate evidence:
   scan, and `git diff --check`: PASS;
 - local PowerShell runtime: unavailable; deterministic structure checks PASS.
 
-Hosted POSIX and Windows results are added after the feature branch and `main`
-workflows complete.
+Hosted release evidence:
+
+- feature-branch POSIX run
+  [32353330454](https://github.com/yehyakin/codex-prove/actions/runs/32353330454):
+  PASS;
+- feature-branch Windows run
+  [32353330574](https://github.com/yehyakin/codex-prove/actions/runs/32353330574):
+  PASS;
+- `main` POSIX run
+  [32353507136](https://github.com/yehyakin/codex-prove/actions/runs/32353507136):
+  PASS;
+- `main` Windows run
+  [32353507150](https://github.com/yehyakin/codex-prove/actions/runs/32353507150):
+  PASS on Windows Server 2022 and `windows-latest`, with Windows PowerShell 5.1
+  and PowerShell 7.
 
 ## 10. Real model calls
 
 The retained v0.5 evidence proves the previous model-branded roles and protocol,
-but it is not reused as proof of the new `prove-*` agent names. Fresh-session
-v1 runtime results are recorded only after the installed v1 agents are loaded.
+but it is not reused as proof of the new `prove-*` agent names.
+
+After global v1 installation, a fresh ephemeral `codex exec` session
+(`01a01e7c-477a-7a03-9b74-8a7144d6f958`) loaded `$codex-prove` and completed a
+real Compatibility route. The Host launched every role with
+`fork_turns="none"`, used the authoritative runtime mapping, and received the
+required no-side-effect handshake before the second turn:
+
+| Agent type | Proven runtime mapping | Result |
+| --- | --- | --- |
+| `prove-controller` | `gpt-5.6-sol`, `high` | handshake, plan correction, and sole final review PASS |
+| `prove-efficient-worker` | `gpt-5.6-luna`, `max` | handshake and bounded no-write acknowledgment PASS |
+| `prove-complex-worker` | `gpt-5.6-terra`, `high` | handshake and bounded no-write acknowledgment PASS |
+
+The Controller rejected one contradictory draft evidence requirement before
+worker dispatch, returned a corrected graph, and issued the final Compatibility
+verdict `PASS`. The test inspected and changed no repository files. Native
+Nested was not exercised and is not claimed for the new role names.
 
 ## 11. Parallelism and ownership
 
@@ -171,18 +210,26 @@ new recovery backup.
 
 ## 13. Fresh-session discovery
 
-Pending release-candidate installation. The required checks are canonical
-`$codex-prove` discovery, explicit `$sol-control` redirect discovery, exact
-`prove-*` selection, at least one real Native Nested or Compatibility path, and
-Controller artifact review.
+Fresh-session discovery passed after installation:
+
+- session `01a01e7c-477a-7a03-9b74-8a7144d6f958` discovered canonical
+  `$codex-prove`, selected all three exact `prove-*` roles, and completed the
+  Compatibility path plus Controller final review;
+- session `01a01e81-92bc-7462-bb95-450bc929e971` discovered the explicit
+  `$sol-control` entry and reported its canonical `$codex-prove` redirect and
+  v1.0 deprecation status without launching the old workflow.
 
 ## 14. GitHub and version
 
-Candidate version: `v1.0.0`.
+Release version: `v1.0.0`.
 
-Development branch: `codex/codex-prove-v1-migration`. The repository rename,
-final `main` commit, tag, GitHub release, and workflow URLs are recorded after
-their corresponding GitHub operations succeed.
+The development branch `codex/codex-prove-v1-migration` was fast-forwarded to
+`main` at `d944386c7e07f9e9e67f630db98bc40720c84e9f`. GitHub renamed the repository
+from `yehyakin/codex-sol-control` to
+[`yehyakin/codex-prove`](https://github.com/yehyakin/codex-prove), preserving
+repository history and redirects. The final release-evidence commit is the
+commit identified by the `v1.0.0` tag and
+[GitHub release](https://github.com/yehyakin/codex-prove/releases/tag/v1.0.0).
 
 ## 15. Known limitations
 
@@ -190,20 +237,22 @@ their corresponding GitHub operations succeed.
   and example token shares, not a completed matched A/B benchmark.
 - The retained live smoke is one historical ordered pair, not proof of v1 role
   discovery or a general quality, latency, or cost winner.
-- A local PowerShell engine is unavailable; dynamic PowerShell 5.1 and 7 proof
-  depends on GitHub Windows runners.
+- A local PowerShell engine is unavailable; dynamic PowerShell 5.1 and 7 passed
+  on GitHub-hosted Windows runners.
 - Physical Windows installation was user-reported, but no v1 runtime identity
   payload was captured; hosted Windows Server evidence is not physical Windows
   11 evidence.
 - Runtime custom-agent availability, exact model selection, nesting, and capacity
-  remain Host-surface properties.
+  remain Host-surface properties. Compatibility passed on the current Desktop
+  runtime; Native Nested with the new role names remains unverified.
 - PROVE reduces unsupported completion claims; it does not guarantee perfect
   correctness.
 
 ## 16. Next steps
 
-1. Push the feature branch and require POSIX plus Windows CI.
-2. Merge to `main`, rename the GitHub repository, and update the local remote.
-3. Install v1 transactionally and retain the persistent backup path.
-4. Open a fresh Codex session and capture discovery and real route evidence.
-5. Update this report and runtime matrix, tag `v1.0.0`, and publish the release.
+1. Capture a real Native Nested run with the new role names before marking that
+   runtime surface verified.
+2. Capture a physical Windows 11 v1 runtime identity payload if device-specific
+   Native Nested support is needed.
+3. Complete the matched A/B benchmark before presenting scenario projections as
+   measured savings.
