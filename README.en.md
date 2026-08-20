@@ -2,11 +2,23 @@
 
 ![Codex PROVE plans, routes, assigns ownership, verifies, and evidence-gates complex work](docs/assets/readme/hero-en.svg)
 
+<p align="center">
+  <a href="https://github.com/yehyakin/codex-prove/releases/tag/v1.0.0"><img alt="Release v1.0.0" src="https://img.shields.io/github/v/release/yehyakin/codex-prove?style=flat-square"></a>
+  <a href="https://github.com/yehyakin/codex-prove/actions/workflows/posix-validation.yml"><img alt="POSIX CI" src="https://img.shields.io/github/actions/workflow/status/yehyakin/codex-prove/posix-validation.yml?branch=main&amp;label=POSIX&amp;style=flat-square"></a>
+  <a href="https://github.com/yehyakin/codex-prove/actions/workflows/windows-validation.yml"><img alt="Windows CI" src="https://img.shields.io/github/actions/workflow/status/yehyakin/codex-prove/windows-validation.yml?branch=main&amp;label=Windows&amp;style=flat-square"></a>
+  <a href="LICENSE"><img alt="Apache-2.0 License" src="https://img.shields.io/github/license/yehyakin/codex-prove?style=flat-square"></a>
+  <a href="https://github.com/yehyakin/codex-prove/stargazers"><img alt="GitHub stars" src="https://img.shields.io/github/stars/yehyakin/codex-prove?style=flat-square"></a>
+</p>
+
 # Codex PROVE
 
 **Plan the work. Route the right model. Prove the result.**
 
-`codex-prove` is a model-neutral orchestration Skill for Codex. It does not optimize for “more agents.” It keeps one auditable control protocol and treats models as replaceable configuration:
+`codex-prove` is an explicit, model-neutral orchestration Skill for Codex: **one controller makes decisions and performs final review; two replaceable worker profiles execute bounded work.**
+
+[60-second quickstart](#60-second-quickstart) · [Routes](#how-it-works) · [Cost model](#why-it-can-reduce-cost) · [Runtime evidence](#current-status) · [Install and maintenance](#install-check-and-uninstall)
+
+You provide the goal, completion criteria, and constraints. PROVE handles planning, capability routing, file ownership, staged execution, verification, and evidence review.
 
 - **Controller** is the sole decision owner: understand, plan, route, assign ownership, schedule, and perform the final review.
 - **Complex worker** handles cross-module, long-context, ambiguous-debugging, shared-interface, and high-consequence implementation.
@@ -14,13 +26,11 @@
 
 Simple tasks stay with the current Codex session. Explicitly invoke `$codex-prove` for work that is complex, cross-module, parallelizable, or high-consequence.
 
-> **v1.0.0 migration:** Sol Control is now Codex PROVE. Use `$codex-prove`; `$sol-control` remains an explicit compatibility alias for v1.0 and redirects to the same PROVE protocol. The installer can transactionally migrate managed v0.1–v0.5 installs, and `--restore-latest` restores the pre-upgrade state.
-
 Runtime output defaults to Simplified Chinese unless the user explicitly requests another language.
 
-> **One controller, two worker profiles. Workers are leaves: they cannot create subagents or approve the overall task.**
+> **v1.0.0 verified:** 115 tests, 39 Forward scenarios, POSIX and Windows PowerShell 5.1/7 CI, and a real fresh-session Compatibility route.
 
-Canonical repository: [yehyakin/codex-prove](https://github.com/yehyakin/codex-prove)
+Canonical repository: [yehyakin/codex-prove](https://github.com/yehyakin/codex-prove). This is an independent community project, not an official OpenAI product or endorsement.
 
 ## Core routing and projected savings
 
@@ -32,6 +42,67 @@ The table below uses an “all work performed by Sol” baseline of `1.00×`. Mo
 | **Mixed project** | Sol 20% · Terra 40% · Luna 40% | 2%–12% | **50.4%–60.4%** |
 | **Complex project** | Sol 25% · Terra 60% · Luna 15% | 7%–17% | **33.4%–43.4%** |
 | **Direct small task** | The current Codex completes it without delegation | 0% | **0% routing saving** |
+
+These ranges are `scenario_model_projection` values based on public rates and example token shares. They are for budget planning, **not per-task guarantees or latency promises**.
+
+## 60-second quickstart
+
+### macOS / Linux
+
+```sh
+git clone https://github.com/yehyakin/codex-prove.git
+cd codex-prove
+
+bash scripts/validate.sh
+bash scripts/install.sh
+```
+
+### Windows
+
+Windows PowerShell 5.1:
+
+```powershell
+git clone https://github.com/yehyakin/codex-prove.git
+Set-Location codex-prove
+
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/validate.ps1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/install.ps1
+```
+
+PowerShell 7:
+
+```powershell
+pwsh -NoProfile -File scripts/validate.ps1
+pwsh -NoProfile -File scripts/install.ps1
+```
+
+Open a new Codex session after installation:
+
+```text
+$codex-prove
+
+Goal: Add account settings to the existing application.
+Done when: Users can update their display name and avatar; existing authentication APIs remain compatible; tests and build pass.
+Constraints: Do not modify payments and do not replace the existing UI framework.
+```
+
+A one-line request also works:
+
+```text
+$codex-prove Refactor the authentication module, preserve the current API, and make sure tests and build pass.
+```
+
+You do not need to choose a worker count or model. The controller creates the smallest useful execution graph.
+
+## Decide whether orchestration is worth it
+
+| Keep the current Codex Direct | Explicitly use `$codex-prove` |
+| --- | --- |
+| One file, a small edit, or a located issue | Multiple modules, strong dependencies, shared interfaces, or high-consequence changes |
+| Simple answers, deterministic commands, or short text | Decomposition, parallelism, ownership, or independent evidence review matters |
+| Orchestration costs more than implementation | Rework costs more than planning and review |
+
+PROVE is neither the default mode nor a permanent agent team. It uses workers only when orchestration can improve delivery quality or reduce total cost.
 
 ## Why it can reduce cost
 
@@ -130,63 +201,6 @@ A small subset of Enterprise workspaces still using the legacy rate card should 
 
 </details>
 
-## 60-second quickstart
-
-### macOS / Linux
-
-```sh
-git clone https://github.com/yehyakin/codex-prove.git
-cd codex-prove
-
-bash scripts/validate.sh
-bash scripts/install.sh
-```
-
-### Windows
-
-Windows PowerShell 5.1:
-
-```powershell
-git clone https://github.com/yehyakin/codex-prove.git
-Set-Location codex-prove
-
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/validate.ps1
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/install.ps1
-```
-
-PowerShell 7:
-
-```powershell
-pwsh -NoProfile -File scripts/validate.ps1
-pwsh -NoProfile -File scripts/install.ps1
-```
-
-After installation, open a new Codex session and explicitly invoke:
-
-```text
-$codex-prove
-
-Goal: Add account settings to the existing Next.js application.
-
-Done when:
-- Users can update their display name and avatar
-- Existing authentication APIs remain compatible
-- Required tests are added
-- Lint, test, and build all pass
-
-Do not:
-- Modify the payments module
-- Replace the existing UI framework
-```
-
-A one-line request also works:
-
-```text
-$codex-prove Refactor the authentication module, preserve the current API, and make sure tests and build pass.
-```
-
-You do not need to choose a worker count or model. Provide the **goal, observable completion criteria, and important constraints**; the controller creates the smallest useful execution graph.
-
 ## What it solves
 
 | Common problem | Codex PROVE's response |
@@ -220,6 +234,11 @@ Real files + diff + test / build / artifact evidence
    ▼
 Controller: artifact-first review by REQ-ID → PASS / FIX / BLOCKED
 ```
+
+<details>
+<summary><strong>Expand the complete control protocol: roles, routing, parallelism, verification, and failure handling</strong></summary>
+
+<br>
 
 ### Evidence-first control
 
@@ -313,6 +332,8 @@ After a worker writes an owned file, it retains ownership for the run. The contr
 
 The three outcomes form a closed verdict vocabulary. Optional improvements and residual suggestions remain outside the verdict, but an unsatisfied `REQ-ID` can never be downgraded to a suggestion.
 
+</details>
+
 ## When not to use it
 
 The current Codex session is usually better for:
@@ -363,6 +384,8 @@ See [`docs/release/runtime-surface-matrix.md`](docs/release/runtime-surface-matr
 ## Current status
 
 The current version is **[v1.0.0](https://github.com/yehyakin/codex-prove/releases/tag/v1.0.0)**.
+
+> **Migration:** Sol Control is now Codex PROVE. Use `$codex-prove`; `$sol-control` remains an explicit compatibility alias for v1.0. The installer can transactionally migrate managed v0.1–v0.5 installs, and `--restore-latest` restores the pre-upgrade state.
 
 | Verification surface | Recorded evidence |
 | --- | --- |

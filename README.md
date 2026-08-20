@@ -2,11 +2,23 @@
 
 ![Codex PROVE 通过规划、路由、所有权、验证与证据完成复杂任务](docs/assets/readme/hero-zh.svg)
 
+<p align="center">
+  <a href="https://github.com/yehyakin/codex-prove/releases/tag/v1.0.0"><img alt="Release v1.0.0" src="https://img.shields.io/github/v/release/yehyakin/codex-prove?style=flat-square"></a>
+  <a href="https://github.com/yehyakin/codex-prove/actions/workflows/posix-validation.yml"><img alt="POSIX CI" src="https://img.shields.io/github/actions/workflow/status/yehyakin/codex-prove/posix-validation.yml?branch=main&amp;label=POSIX&amp;style=flat-square"></a>
+  <a href="https://github.com/yehyakin/codex-prove/actions/workflows/windows-validation.yml"><img alt="Windows CI" src="https://img.shields.io/github/actions/workflow/status/yehyakin/codex-prove/windows-validation.yml?branch=main&amp;label=Windows&amp;style=flat-square"></a>
+  <a href="LICENSE"><img alt="Apache-2.0 License" src="https://img.shields.io/github/license/yehyakin/codex-prove?style=flat-square"></a>
+  <a href="https://github.com/yehyakin/codex-prove/stargazers"><img alt="GitHub stars" src="https://img.shields.io/github/stars/yehyakin/codex-prove?style=flat-square"></a>
+</p>
+
 # Codex PROVE
 
 **规划任务，路由模型，用证据完成交付。**
 
-`codex-prove` 是一个面向 Codex 的模型中立编排 Skill。它不追求“更多 Agent”，而是固定一套可审核的控制协议，再把模型作为可替换配置：
+`codex-prove` 是一个显式调用、模型中立的 Codex 编排 Skill：**一个 Controller 做判断和终审，两个可替换的 worker profile 做有界执行。**
+
+[60 秒开始](#60-秒开始) · [路由方式](#工作方式) · [成本模型](#为什么能节省成本) · [运行证据](#当前状态) · [安装维护](#安装检查与卸载)
+
+你只需要给出目标、完成条件和限制；PROVE 会自动完成规划、能力路由、文件 ownership、分阶段执行、验证和证据审核。
 
 - **Controller** 是唯一主控：理解目标、规划、路由、分配 ownership、调度并完成最终审核。
 - **Complex worker** 处理跨模块、长上下文、模糊调试、共享接口与高后果实现。
@@ -14,13 +26,11 @@
 
 简单任务仍由当前 Codex 直接完成。复杂、跨模块、可并行或高风险任务，再显式调用 `$codex-prove`。
 
-> **v1.0.0 迁移说明：**项目从 Sol Control 更名为 Codex PROVE。新入口是 `$codex-prove`；`$sol-control` 在 v1.0 中保留为显式兼容别名，并直接转向同一份 PROVE 协议。安装器可从 v0.1–v0.5 的受管版本事务迁移，`--restore-latest` 可恢复升级前状态。
-
 运行时默认使用简体中文；如果用户明确指定其他语言，则遵循用户选择。
 
-> **一个 Controller，两种 worker profile。worker 都是叶子执行者，不得创建子代理，也不得批准整体任务。**
+> **v1.0.0 已验证：**115 项测试、39 个 Forward 场景、POSIX 与 Windows PowerShell 5.1/7 CI，以及全新会话 Compatibility 真实路由。
 
-规范仓库：[yehyakin/codex-prove](https://github.com/yehyakin/codex-prove)
+规范仓库：[yehyakin/codex-prove](https://github.com/yehyakin/codex-prove)。这是独立社区项目，不代表 OpenAI 官方产品或背书。
 
 ## 核心路由与预计节省
 
@@ -32,6 +42,67 @@
 | **混合型项目** | Sol 20% · Terra 40% · Luna 40% | 2%–12% | **50.4%–60.4%** |
 | **复杂型项目** | Sol 25% · Terra 60% · Luna 15% | 7%–17% | **33.4%–43.4%** |
 | **Direct 小任务** | 当前 Codex 直接完成，不委派 | 0% | **路由节省 0%** |
+
+这些区间是基于公开费率和示例 token 份额的 `scenario_model_projection`，用于预算规划，**不是每个任务的保证，也不代表一定更快**。
+
+## 60 秒开始
+
+### macOS / Linux
+
+```sh
+git clone https://github.com/yehyakin/codex-prove.git
+cd codex-prove
+
+bash scripts/validate.sh
+bash scripts/install.sh
+```
+
+### Windows
+
+Windows PowerShell 5.1：
+
+```powershell
+git clone https://github.com/yehyakin/codex-prove.git
+Set-Location codex-prove
+
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/validate.ps1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/install.ps1
+```
+
+PowerShell 7：
+
+```powershell
+pwsh -NoProfile -File scripts/validate.ps1
+pwsh -NoProfile -File scripts/install.ps1
+```
+
+安装后打开一个新的 Codex 会话：
+
+```text
+$codex-prove
+
+目标：为现有项目增加账号设置功能。
+完成条件：用户可以修改昵称和头像；现有认证 API 保持兼容；测试和构建通过。
+限制：不修改支付模块，不更换现有 UI 框架。
+```
+
+也可以直接写：
+
+```text
+$codex-prove 重构认证模块，保持现有 API 兼容，测试和构建必须通过。
+```
+
+不需要指定 worker 数量或模型。Controller 会根据任务能力需求形成最小可执行图。
+
+## 先判断是否值得编排
+
+| 直接交给当前 Codex | 显式使用 `$codex-prove` |
+| --- | --- |
+| 单文件、小改动、已定位的问题 | 多模块、强依赖、共享接口或高后果修改 |
+| 简单回答、确定性命令、短文本 | 需要拆分、并行、ownership 或独立证据审核 |
+| 编排成本高于实现成本 | 返工代价明显高于规划和审核开销 |
+
+PROVE 不是默认模式，也不是固定 Agent 团队。它只在编排能提高交付质量或降低总成本时使用 worker。
 
 ## 为什么能节省成本
 
@@ -130,63 +201,6 @@ API 用户看到的是美元金额；ChatGPT / Codex 用户通常看到的是 cr
 
 </details>
 
-## 60 秒开始
-
-### macOS / Linux
-
-```sh
-git clone https://github.com/yehyakin/codex-prove.git
-cd codex-prove
-
-bash scripts/validate.sh
-bash scripts/install.sh
-```
-
-### Windows
-
-Windows PowerShell 5.1：
-
-```powershell
-git clone https://github.com/yehyakin/codex-prove.git
-Set-Location codex-prove
-
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/validate.ps1
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/install.ps1
-```
-
-PowerShell 7：
-
-```powershell
-pwsh -NoProfile -File scripts/validate.ps1
-pwsh -NoProfile -File scripts/install.ps1
-```
-
-安装后，打开新的 Codex 会话并显式调用：
-
-```text
-$codex-prove
-
-目标：为现有 Next.js 项目增加账号设置功能。
-
-完成条件：
-- 用户可以修改昵称和头像
-- 保持现有认证 API 兼容
-- 新增必要测试
-- lint、test 和 build 全部通过
-
-不要做：
-- 不修改支付模块
-- 不更换现有 UI 框架
-```
-
-也可以直接写：
-
-```text
-$codex-prove 重构认证模块，保持现有 API 兼容，测试和构建必须通过。
-```
-
-你不需要指定 worker 数量或模型。提供**目标、可观察的完成条件与明确限制**即可；Controller 会按任务能力需求形成最小可执行图。
-
 ## 它解决什么问题
 
 | 常见问题 | Codex PROVE 的处理方式 |
@@ -220,6 +234,11 @@ Controller：理解 → 规划 → 路由 → 分配 → 调度
    ▼
 Controller：按 REQ-ID 做 artifact-first 审核 → PASS / FIX / BLOCKED
 ```
+
+<details>
+<summary><strong>展开完整控制协议：角色、路由、并行、验证与失败处理</strong></summary>
+
+<br>
 
 ### 证据优先控制
 
@@ -312,6 +331,8 @@ worker 的 `PASS` 只代表它自己的任务通过。只有 Controller 可以�
 
 三个结果构成封闭裁决。可选改进与 residual suggestions 保持在裁决之外；但任何未满足的 `REQ-ID` 都不能被降级为建议。
 
+</details>
+
 ## 什么时候不该使用
 
 以下情况通常直接交给当前 Codex 更合适：
@@ -362,6 +383,8 @@ pwsh -NoProfile -File scripts/uninstall.ps1 -RestoreLatest
 ## 当前状态
 
 当前版本为 **[v1.0.0](https://github.com/yehyakin/codex-prove/releases/tag/v1.0.0)**。
+
+> **迁移说明：**Sol Control 已更名为 Codex PROVE。新入口是 `$codex-prove`；`$sol-control` 在 v1.0 中保留为显式兼容别名。安装器可事务迁移受管的 v0.1–v0.5 版本，`--restore-latest` 可恢复升级前状态。
 
 | 验证面 | 已记录证据 |
 | --- | --- |
