@@ -1,4 +1,4 @@
-# v0.5 live matched smoke evidence
+# v1.0 live matched smoke evidence
 
 Date: 2026-08-17
 
@@ -33,7 +33,7 @@ the old candidate is not reused.
 | Arm | Held-out rubric | Integrity | Verdict | Input tokens | Cached input | Output tokens | Reasoning output | Elapsed |
 | --- | --- | --- | --- | ---: | ---: | ---: | ---: | ---: |
 | v0.4.1 baseline | FAIL | PASS | `FIX` | 44,849 | 28,160 | 1,487 | 1,074 | 31.0 s |
-| v0.5 candidate | PASS | PASS | `BLOCKED` + re-plan | 45,619 | 38,144 | 802 | 413 | 24.2 s |
+| v1.0 candidate | PASS | PASS | `BLOCKED` + re-plan | 45,619 | 38,144 | 802 | 413 | 24.2 s |
 
 The baseline correctly refused to redispatch completed implementation or reset
 attempts, but it emitted the older five-field resume packet and continued toward

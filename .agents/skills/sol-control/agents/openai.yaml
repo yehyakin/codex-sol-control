@@ -1,6 +1,6 @@
 interface:
-  display_name: "Sol Control"
-  short_description: "Sol controls cost-aware, evidence-gated execution."
-  default_prompt: "使用 $sol-control 规划、分配、执行、验证并审核这项任务。"
+  display_name: "Sol Control (compatibility)"
+  short_description: "Temporary alias that redirects to Codex PROVE."
+  default_prompt: "使用旧命令 $sol-control，并按新的 $codex-prove 协议完成这项任务。"
 policy:
   allow_implicit_invocation: false

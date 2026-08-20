@@ -49,9 +49,5 @@ jobs:
           check_root=$(mktemp -d)
           trap 'rm -rf "$check_root"' EXIT
           check_home="$check_root/home"
-          set +e
           ORCHESTRATE_HOME="$check_home" bash scripts/install.sh --check
-          check_rc=$?
-          set -e
-          test "$check_rc" -eq 2
           test ! -e "$check_home"

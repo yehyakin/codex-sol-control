@@ -1,0 +1,6 @@
+interface:
+  display_name: "Codex PROVE"
+  short_description: "Evidence-gated model-neutral Codex orchestration."
+  default_prompt: "使用 $codex-prove 规划、路由、执行、验证并用证据审核这项任务。"
+policy:
+  allow_implicit_invocation: false

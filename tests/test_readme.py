@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Contract tests for the v0.5.0 bilingual documentation surface."""
+"""Contract tests for the v1.0.0 bilingual documentation surface."""
 
 from __future__ import annotations
 
@@ -30,7 +30,7 @@ EXPECTED_IMAGE_TARGETS_BY_README = {
         "docs/assets/readme/control-plane-en.svg",
     ),
 }
-CANONICAL_REPOSITORY_URL = "https://github.com/yehyakin/codex-sol-control"
+CANONICAL_REPOSITORY_URL = "https://github.com/yehyakin/codex-prove"
 OLD_REPOSITORY_URLS = (
     "https://github.com/yehyakin/codex-sol-luna",
     "https://github.com/yehyakin/codex-sol-luna-orchestrator",
@@ -461,7 +461,7 @@ class ReadmeContractTests(unittest.TestCase):
             self.assertIn(CANONICAL_REPOSITORY_URL, text, path.name)
             for old_url in OLD_REPOSITORY_URLS:
                 self.assertNotIn(old_url, text, path.name)
-            self.assertIn("codex-sol-control", text, path.name)
+            self.assertIn("codex-prove", text, path.name)
 
     def image_sequence(self, text: str, readme_name: str = "fixture README") -> list[tuple[str, str]]:
         images: list[tuple[str, str]] = []
@@ -559,14 +559,14 @@ class ReadmeContractTests(unittest.TestCase):
             CHINESE_README: (
                 "### 角色层级",
                 "### 路由选择",
-                ("**Sol**", "**Terra High**", "**Luna Max**"),
-                ("**Direct**", "**Sol-only**", "**Sol → Luna**", "**Sol → Terra**"),
+                ("**Controller**", "**Complex worker**", "**Efficient worker**"),
+                ("**Direct**", "**Controller-only**", "**Controller → efficient**", "**Controller → complex**"),
             ),
             ENGLISH_README: (
                 "### Role hierarchy",
                 "### Route selection",
-                ("**Sol**", "**Terra High**", "**Luna Max**"),
-                ("**Direct**", "**Sol-only**", "**Sol → Luna**", "**Sol → Terra**"),
+                ("**Controller**", "**Complex worker**", "**Efficient worker**"),
+                ("**Direct**", "**Controller-only**", "**Controller → efficient**", "**Controller → complex**"),
             ),
         }
         for path, text in documents.items():
@@ -586,12 +586,12 @@ class ReadmeContractTests(unittest.TestCase):
             self.assertEqual(
                 sorted(role_order, key=role_block.index),
                 list(role_order),
-                f"{path.name}: role hierarchy must be Sol -> Terra -> Luna",
+                f"{path.name}: role hierarchy must be Controller -> Complex -> Efficient",
             )
             self.assertEqual(
                 sorted(route_order, key=route_block.index),
                 list(route_order),
-                f"{path.name}: route hierarchy must be Direct -> Sol-only -> Sol/Luna -> Sol/Terra",
+                f"{path.name}: route hierarchy must be Direct -> Controller-only -> efficient -> complex",
             )
 
     def test_readmes_cover_layout_testing_limitations_prior_art_and_license(self) -> None:
@@ -613,11 +613,11 @@ class ReadmeContractTests(unittest.TestCase):
     def test_readmes_explain_the_two_role_runtime_and_platform_quickstarts(self) -> None:
         documents = self.readme_documents()
         signals = (
+            "$codex-prove",
             "$sol-control",
-            "$sol-luna",
-            "sol-controller",
-            "luna-max-worker",
-            "terra-high-worker",
+            "prove-controller",
+            "prove-efficient-worker",
+            "prove-complex-worker",
             "bash scripts/validate.sh",
             "bash scripts/install.sh",
             "bash scripts/uninstall.sh",
@@ -636,11 +636,11 @@ class ReadmeContractTests(unittest.TestCase):
         for path, text in documents.items():
             for signal in signals:
                 self.assertIn(signal, text, f"{path.name}: missing platform/runtime signal {signal}")
-            self.assertRegex(text, r"(?i)Sol.{0,120}(?:controls|controller|控制)")
-            self.assertRegex(text, r"(?i)Luna(?: Max)?[\s\S]{0,120}(?:executes|worker|执行)")
+            self.assertRegex(text, r"(?i)Controller[\s\S]{0,160}(?:controls|sole|唯一|主控)")
+            self.assertRegex(text, r"(?i)Efficient worker[\s\S]{0,160}(?:executes|执行|承接|handles)")
             self.assertRegex(
                 text,
-                r"(?i)Terra(?: High)?[\s\S]{0,180}(?:executes|worker|跨模块|cross[- ]module|high[- ]risk|高风险)",
+                r"(?i)Complex worker[\s\S]{0,180}(?:executes|执行|处理|handles|cross[- ]module|跨模块)",
             )
 
     def test_readmes_publish_exact_api_and_chatgpt_rate_rows(self) -> None:
@@ -779,11 +779,11 @@ class ReadmeContractTests(unittest.TestCase):
     def test_bilingual_core_signals_have_parity(self) -> None:
         documents = self.readme_documents()
         parity_signals = (
+            "$codex-prove",
             "$sol-control",
-            "$sol-luna",
-            "sol-controller",
-            "luna-max-worker",
-            "terra-high-worker",
+            "prove-controller",
+            "prove-efficient-worker",
+            "prove-complex-worker",
             "gpt-5.6-sol",
             "gpt-5.6-luna",
             "gpt-5.6-terra",
@@ -802,12 +802,11 @@ class ReadmeContractTests(unittest.TestCase):
             "saving = 1 - route_cost",
             "config.toml",
             "RestoreLatest",
-            "v0.5.0",
-            "tests PASS",
+            "v1.0.0",
             "Compatibility",
             "Native Nested",
-            "SOL_CONTROL_V050_IMPLEMENTATION_REPORT.md",
-            "v0.5.0",
+            "CODEX_PROVE_V1_IMPLEMENTATION_REPORT.md",
+            "v1.0.0",
             "CONTRIBUTING.md",
             "CODE_OF_CONDUCT.md",
             "SECURITY.md",
@@ -821,14 +820,14 @@ class ReadmeContractTests(unittest.TestCase):
         release_status_specs = {
             CHINESE_README: {
                 "title": "当前状态",
-                "compatibility": r"Compatibility\s+保留为回退",
-                "unproven": r"Native Nested\s+已.*gpt-5\.6-sol/high/read-only.*gpt-5\.6-luna/max/read-only.*物理 Windows 11 尚未证明",
+                "compatibility": r"Compatibility",
+                "unproven": r"Native Nested[\s\S]{0,500}Windows 11",
                 "local_row_label": "本地仓库",
                 "hosted_row_label": "托管 CI",
                 "physical_windows_row_label": "Windows 实机安装",
                 "local_row_signals": (
-                    "Skill Creator **PASS**",
-                    "tests PASS",
+                    "v1.0.0",
+                    "Skill Creator",
                 ),
                 "hosted_row_signals": (
                     "POSIX",
@@ -846,14 +845,14 @@ class ReadmeContractTests(unittest.TestCase):
             },
             ENGLISH_README: {
                 "title": "Current status",
-                "compatibility": r"Compatibility\s+remains the fallback",
-                "unproven": r"Native Nested verified.*gpt-5\.6-sol/high/read-only.*gpt-5\.6-luna/max/read-only.*physical Windows 11 remains unproven",
+                "compatibility": r"Compatibility",
+                "unproven": r"Native Nested[\s\S]{0,500}Windows 11",
                 "local_row_label": "Local repository",
                 "hosted_row_label": "Hosted CI",
                 "physical_windows_row_label": "Physical Windows install",
                 "local_row_signals": (
-                    "Skill Creator **PASS**",
-                    "tests PASS",
+                    "v1.0.0",
+                    "Skill Creator",
                 ),
                 "hosted_row_signals": (
                     "POSIX",
@@ -896,9 +895,8 @@ class ReadmeContractTests(unittest.TestCase):
             )
             release_block = rendered[release_heading.start() : release_end]
             for signal in (
-                "v0.5.0",
-                "tests PASS",
-                "(SOL_CONTROL_V050_IMPLEMENTATION_REPORT.md)",
+                "v1.0.0",
+                "(CODEX_PROVE_V1_IMPLEMENTATION_REPORT.md)",
             ):
                 self.assertIn(
                     signal,

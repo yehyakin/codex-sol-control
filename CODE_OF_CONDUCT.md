@@ -34,7 +34,7 @@ This Code of Conduct applies in all project spaces and when an individual offici
 
 ## Reporting and enforcement
 
-Report abusive, harassing, or otherwise unacceptable behavior privately through the repository's [private vulnerability reporting form](https://github.com/yehyakin/codex-sol-control/security/advisories/new). Begin the report title with `Code of Conduct:` so it can be routed correctly. Do not include another person's private information in a public issue.
+Report abusive, harassing, or otherwise unacceptable behavior privately through the repository's [private vulnerability reporting form](https://github.com/yehyakin/codex-prove/security/advisories/new). Begin the report title with `Code of Conduct:` so it can be routed correctly. Do not include another person's private information in a public issue.
 
 Maintainers will review reports promptly, respect the privacy and safety of reporters, and apply consequences proportionate to the nature, impact, and persistence of the behavior. A maintainer who does not follow or enforce this Code of Conduct may be removed from the project team.
 

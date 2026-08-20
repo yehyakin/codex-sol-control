@@ -1,10 +1,5 @@
 #!/usr/bin/env python3
-"""RED contract for the bilingual README Control Orbit SVG assets.
-
-This checkpoint deliberately runs before the four assets are created.  Missing
-assets are reported as ordinary, path-specific unittest failures; parsing and
-the dependent checks are only attempted once the corresponding file exists.
-"""
+"""Contracts for the bilingual Codex PROVE README SVG assets."""
 
 from __future__ import annotations
 
@@ -82,7 +77,7 @@ GEOMETRY_ATTRIBUTES = {
     "data-to",
 }
 KEY_LABELS = (
-    "SOL / LUNA",
+    "CODEX PROVE",
     "72%",
     "FILES",
     "DIFF",
@@ -91,8 +86,9 @@ KEY_LABELS = (
     "FIX",
     "BLOCKED",
     "DIRECT",
-    "SOL-ONLY",
-    "SOL → LUNA",
+    "CONTROLLER-ONLY",
+    "CONTROLLER → EFFICIENT",
+    "CONTROLLER → COMPLEX",
 )
 
 
@@ -206,14 +202,14 @@ def resource_safety_errors(source: str, root: ET.Element) -> list[str]:
 
 
 EXPECTED_WORKERS = (
-    "luna-worker-1",
-    "luna-worker-2",
-    "luna-worker-3",
+    "efficient-worker-1",
+    "efficient-worker-2",
+    "efficient-worker-3",
 )
 
 
 def worker_path_errors(root: ET.Element) -> list[str]:
-    """Validate three independent Sol-to-worker task/evidence round trips."""
+    """Validate three independent controller/worker task/evidence round trips."""
 
     errors: list[str] = []
     flow_elements = [
@@ -240,10 +236,10 @@ def worker_path_errors(root: ET.Element) -> list[str]:
     for element in tasks:
         source = element.attrib.get("data-from", "").strip()
         target = element.attrib.get("data-to", "").strip()
-        if source != "sol-controller":
-            errors.append(f"task path must start at sol-controller: {source!r}")
+        if source != "prove-controller":
+            errors.append(f"task path must start at prove-controller: {source!r}")
         if target not in EXPECTED_WORKERS:
-            errors.append(f"task path has invalid Luna owner: {target!r}")
+            errors.append(f"task path has invalid efficient owner: {target!r}")
         task_targets.append(target)
 
     evidence_sources: list[str] = []
@@ -251,26 +247,26 @@ def worker_path_errors(root: ET.Element) -> list[str]:
         source = element.attrib.get("data-from", "").strip()
         target = element.attrib.get("data-to", "").strip()
         if source not in EXPECTED_WORKERS:
-            errors.append(f"evidence path has invalid Luna owner: {source!r}")
-        if target != "sol-controller":
-            errors.append(f"evidence path must return to sol-controller: {target!r}")
+            errors.append(f"evidence path has invalid efficient owner: {source!r}")
+        if target != "prove-controller":
+            errors.append(f"evidence path must return to prove-controller: {target!r}")
         evidence_sources.append(source)
 
     expected_workers = set(EXPECTED_WORKERS)
     if set(task_targets) != expected_workers:
         errors.append(
-            "task path data-to must exactly cover luna-worker-1..3: "
+            "task path data-to must exactly cover efficient-worker-1..3: "
             f"{sorted(set(task_targets))!r}"
         )
     if len(task_targets) != len(EXPECTED_WORKERS):
-        errors.append("task paths must contain exactly one path per Luna worker")
+        errors.append("task paths must contain exactly one path per efficient worker")
     if set(evidence_sources) != expected_workers:
         errors.append(
-            "evidence path data-from must exactly cover luna-worker-1..3: "
+            "evidence path data-from must exactly cover efficient-worker-1..3: "
             f"{sorted(set(evidence_sources))!r}"
         )
     if len(evidence_sources) != len(EXPECTED_WORKERS):
-        errors.append("evidence paths must contain exactly one path per Luna worker")
+        errors.append("evidence paths must contain exactly one path per efficient worker")
     return errors
 
 
@@ -327,20 +323,20 @@ class ControlOrbitAssetContractTests(unittest.TestCase):
 
                 text = element_text(root)
                 if name.endswith("-zh.svg"):
-                    self.assertIn("Sol", text, name)
-                    self.assertIn("Luna", text, name)
+                    self.assertIn("PROVE", text, name)
+                    self.assertIn("Controller", text, name)
                     self.assertRegex(text, CHINESE_TEXT_RE, f"{name}: missing Chinese copy")
                 elif name == "hero-en.svg":
-                    self.assertIn("Sol", text, name)
-                    self.assertIn("Luna", text, name)
+                    self.assertIn("PROVE", text, name)
+                    self.assertIn("controller", text.casefold(), name)
                     self.assertRegex(
                         text,
                         r"(?i)(?:estimated|budget|projection|sample[- ]validated)",
                         name,
                     )
                 else:
-                    self.assertIn("Sol", text, name)
-                    self.assertIn("Luna", text, name)
+                    self.assertIn("PROVE", text, name)
+                    self.assertIn("CONTROLLER", text, name)
                 if name.startswith("hero-"):
                     self.assertIn("72%", text, name)
                     self.assertIn("FILES", text, name)
@@ -351,7 +347,12 @@ class ControlOrbitAssetContractTests(unittest.TestCase):
                 else:
                     for token in ("PASS", "FIX", "BLOCKED"):
                         self.assertIn(token, text, f"{name}: missing {token}")
-                    for token in ("DIRECT", "SOL-ONLY", "SOL → LUNA"):
+                    for token in (
+                        "DIRECT",
+                        "CONTROLLER-ONLY",
+                        "CONTROLLER → EFFICIENT",
+                        "CONTROLLER → COMPLEX",
+                    ):
                         self.assertIn(token, text, f"{name}: missing route {token}")
                     if name.endswith("-zh.svg"):
                         self.assertIn("同一文件只能有一个 Owner", text, name)
@@ -365,33 +366,21 @@ class ControlOrbitAssetContractTests(unittest.TestCase):
                             name,
                         )
 
-                if "Terra" in text:
-                    if name.endswith("-zh.svg"):
-                        self.assertIn("有界复杂执行", text, name)
-                    else:
-                        self.assertIn("bounded complex execution", text.casefold(), name)
-                    if re.search(r"(?i)(?:terra.{0,80}(?:escalat|升级)|(?:escalat|升级).{0,80}terra)", text):
-                        self.assertRegex(
-                            text,
-                            r"(?i)(?:first failure|首次失败).{0,140}(?:zero|0|零).{0,140}(?:owned[- ]?file|owned file|写入)",
-                            f"{name}: escalation must be limited to Luna's zero-owned-file failure exception",
-                        )
-
                 ids = [element.attrib["id"] for element in root.iter() if "id" in element.attrib]
                 self.assertEqual(
-                    ids.count("sol-controller"),
+                    ids.count("prove-controller"),
                     1,
-                    f"{name}: expected exactly one sol-controller",
+                    f"{name}: expected exactly one prove-controller",
                 )
                 worker_ids = sorted(
                     identifier
                     for identifier in ids
-                    if re.fullmatch(r"luna-worker-[0-9]+", identifier)
+                    if re.fullmatch(r"efficient-worker-[0-9]+", identifier)
                 )
                 self.assertEqual(
                     worker_ids,
-                    ["luna-worker-1", "luna-worker-2", "luna-worker-3"],
-                    f"{name}: expected exactly luna-worker-1..3",
+                    ["efficient-worker-1", "efficient-worker-2", "efficient-worker-3"],
+                    f"{name}: expected exactly efficient-worker-1..3",
                 )
 
                 for element, node_text, font_size in iter_text_nodes(root):
@@ -477,13 +466,13 @@ class ControlOrbitAssetContractTests(unittest.TestCase):
             for index, worker in enumerate(task_workers):
                 path = ET.SubElement(root, f"{SVG_TAG}path", id=f"task-{index}")
                 path.set("data-flow", "task")
-                path.set("data-from", "sol-controller")
+                path.set("data-from", "prove-controller")
                 path.set("data-to", worker)
             for index, worker in enumerate(evidence_workers):
                 path = ET.SubElement(root, f"{SVG_TAG}path", id=f"evidence-{index}")
                 path.set("data-flow", "evidence")
                 path.set("data-from", worker)
-                path.set("data-to", "sol-controller")
+                path.set("data-to", "prove-controller")
             return root
 
         complete = fixture(EXPECTED_WORKERS, EXPECTED_WORKERS)
@@ -495,8 +484,8 @@ class ControlOrbitAssetContractTests(unittest.TestCase):
         missing_evidence = fixture(EXPECTED_WORKERS, EXPECTED_WORKERS[:2])
         self.assertTrue(worker_path_errors(missing_evidence))
 
-        generalized_luna = fixture(("luna", "luna-worker-2", "luna-worker-3"), EXPECTED_WORKERS)
-        self.assertTrue(worker_path_errors(generalized_luna))
+        generalized_worker = fixture(("efficient", "efficient-worker-2", "efficient-worker-3"), EXPECTED_WORKERS)
+        self.assertTrue(worker_path_errors(generalized_worker))
 
 
 if __name__ == "__main__":

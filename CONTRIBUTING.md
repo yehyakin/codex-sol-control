@@ -1,13 +1,13 @@
-# Contributing to Codex Sol Control
+# Contributing to Codex Codex PROVE
 
-Thank you for helping improve Codex Sol Control. Contributions should keep the project focused on one job: Sol controls planning, delegation, and review while bounded workers execute independently verifiable work.
+Thank you for helping improve Codex Codex PROVE. Contributions should keep the project focused on one job: Sol controls planning, delegation, and review while bounded workers execute independently verifiable work.
 
 ## Before you start
 
 - Search existing issues and pull requests before opening a new one.
 - Use the bug or feature issue form for reproducible defects and proposals.
 - Open an issue before a material routing, security, installer, or compatibility change.
-- Use GitHub's [private vulnerability reporting](https://github.com/yehyakin/codex-sol-control/security/advisories/new) for security-sensitive reports. Do not disclose them in a public issue.
+- Use GitHub's [private vulnerability reporting](https://github.com/yehyakin/codex-prove/security/advisories/new) for security-sensitive reports. Do not disclose them in a public issue.
 
 ## Development setup
 

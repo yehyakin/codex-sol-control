@@ -1,60 +1,60 @@
 [
   {
     "id": "ordinary-simple-direct",
-    "prompt": "Change one known button label without invoking $sol-control.",
+    "prompt": "Change one known button label without invoking $codex-prove.",
     "expected": {
       "route": "direct",
-      "sol": "none",
-      "luna": "none",
+      "controller": "none",
+      "efficient": "none",
       "review": "not_applicable",
       "capacity": "not_applicable",
       "resume": "forbidden"
     },
     "required_assertions": [
       "ordinary simple work remains direct",
-      "no Sol is created",
+      "no controller is created",
       "Main verifies the narrow diff"
     ]
   },
   {
-    "id": "explicit-sol-control",
-    "prompt": "$sol-control: implement one bounded change in the named file.",
+    "id": "explicit-codex-prove",
+    "prompt": "$codex-prove: implement one bounded change in the named file.",
     "expected": {
-      "route": "sol_then_luna",
-      "sol": "required",
-      "luna": "required",
+      "route": "controller_then_efficient",
+      "controller": "required",
+      "efficient": "required",
       "review": "PASS",
       "capacity": "live"
     },
     "required_assertions": [
-      "explicit invocation selects Sol",
-      "Sol returns goal, done_when, tasks, and stages",
-      "Luna receives a complete task packet before writing"
+      "explicit invocation selects controller",
+      "controller returns goal, done_when, tasks, and stages",
+      "efficient worker receives a complete task packet before writing"
     ]
   },
   {
-    "id": "planning-only-sol",
-    "prompt": "$sol-control: produce an execution plan and stop before implementation.",
+    "id": "planning-only-controller",
+    "prompt": "$codex-prove: produce an execution plan and stop before implementation.",
     "expected": {
-      "route": "sol",
-      "sol": "required",
-      "luna": "optional",
+      "route": "controller",
+      "controller": "required",
+      "efficient": "optional",
       "review": "not_applicable",
       "capacity": "not_applicable"
     },
     "required_assertions": [
-      "Sol is invoked",
-      "planning-only work may use zero Luna",
+      "controller is invoked",
+      "planning-only work may use zero efficient worker",
       "the plan remains actionable without a write"
     ]
   },
   {
     "id": "single-file-execution",
-    "prompt": "$sol-control: update exactly one owned source file and run its focused verification.",
+    "prompt": "$codex-prove: update exactly one owned source file and run its focused verification.",
     "expected": {
-      "route": "sol_then_luna",
-      "sol": "required",
-      "luna": "required",
+      "route": "controller_then_efficient",
+      "controller": "required",
+      "efficient": "required",
       "review": "PASS",
       "capacity": "live"
     },
@@ -66,11 +66,11 @@
   },
   {
     "id": "live-capacity-batching",
-    "prompt": "$sol-control: execute four independent file tasks while live worker capacity changes during the run.",
+    "prompt": "$codex-prove: execute four independent file tasks while live worker capacity changes during the run.",
     "expected": {
-      "route": "sol_then_luna",
-      "sol": "required",
-      "luna": "required",
+      "route": "controller_then_efficient",
+      "controller": "required",
+      "efficient": "required",
       "review": "PASS",
       "capacity": "live"
     },
@@ -82,43 +82,43 @@
   },
   {
     "id": "shared-integration-owner",
-    "prompt": "$sol-control: update several modules and one shared integration file.",
+    "prompt": "$codex-prove: update several modules and one shared integration file.",
     "expected": {
-      "route": "sol_then_luna",
-      "sol": "required",
-      "luna": "required",
+      "route": "controller_then_efficient",
+      "controller": "required",
+      "efficient": "required",
       "review": "PASS",
       "capacity": "live"
     },
     "required_assertions": [
-      "shared integration file has one Luna owner",
+      "shared integration file has one efficient worker owner",
       "other files remain disjoint task scopes",
       "no concurrent writer touches the shared file"
     ]
   },
   {
-    "id": "incomplete-luna-packet",
-    "prompt": "$sol-control: execute a task whose packet omits Do not touch and Verification.",
+    "id": "incomplete-efficient-packet",
+    "prompt": "$codex-prove: execute a task whose packet omits Do not touch and Verification.",
     "expected": {
-      "route": "sol_then_luna",
-      "sol": "required",
-      "luna": "blocked",
+      "route": "controller_then_efficient",
+      "controller": "required",
+      "efficient": "blocked",
       "review": "BLOCKED",
       "capacity": "live"
     },
     "required_assertions": [
-      "Luna returns BLOCKED before writing",
+      "efficient worker returns BLOCKED before writing",
       "missing packet fields are not invented",
       "the blocker identifies the missing fields"
     ]
   },
   {
     "id": "exact-selection-unavailable",
-    "prompt": "$sol-control: continue even though exact model and reasoning-effort selection cannot be proved.",
+    "prompt": "$codex-prove: continue even though exact model and reasoning-effort selection cannot be proved.",
     "expected": {
       "route": "blocked",
-      "sol": "blocked",
-      "luna": "blocked",
+      "controller": "blocked",
+      "efficient": "blocked",
       "review": "BLOCKED",
       "capacity": "not_applicable"
     },
@@ -129,28 +129,28 @@
     ]
   },
   {
-    "id": "focused-sol-fix",
-    "prompt": "$sol-control: review a Luna result that misses one acceptance criterion.",
+    "id": "focused-controller-fix",
+    "prompt": "$codex-prove: review a efficient worker result that misses one acceptance criterion.",
     "expected": {
-      "route": "sol_then_luna",
-      "sol": "required",
-      "luna": "required",
+      "route": "controller_then_efficient",
+      "controller": "required",
+      "efficient": "required",
       "review": "FIX",
       "capacity": "live"
     },
     "required_assertions": [
-      "Sol review can return FIX",
+      "controller review can return FIX",
       "at most one focused fix is issued",
       "a second failure becomes BLOCKED"
     ]
   },
   {
     "id": "dirty-worktree-preserved",
-    "prompt": "$sol-control: change only the named files while unrelated user edits are uncommitted.",
+    "prompt": "$codex-prove: change only the named files while unrelated user edits are uncommitted.",
     "expected": {
-      "route": "sol_then_luna",
-      "sol": "required",
-      "luna": "required",
+      "route": "controller_then_efficient",
+      "controller": "required",
+      "efficient": "required",
       "review": "PASS",
       "capacity": "live"
     },
@@ -162,11 +162,11 @@
   },
   {
     "id": "stale-evidence-after-candidate-change",
-    "prompt": "$sol-control: reject a PASS when the final candidate changed after verification but the old evidence was reused.",
+    "prompt": "$codex-prove: reject a PASS when the final candidate changed after verification but the old evidence was reused.",
     "expected": {
-      "route": "sol_then_luna",
-      "sol": "required",
-      "luna": "blocked",
+      "route": "controller_then_efficient",
+      "controller": "required",
+      "efficient": "blocked",
       "review": "BLOCKED",
       "capacity": "live",
       "resume": "not_applicable"
@@ -179,28 +179,28 @@
   },
   {
     "id": "transport-completed-not-pass",
-    "prompt": "$sol-control: treat spawn or transport completed as delivery only, not as a task PASS.",
+    "prompt": "$codex-prove: treat spawn or transport completed as delivery only, not as a task PASS.",
     "expected": {
-      "route": "sol_then_luna",
-      "sol": "required",
-      "luna": "blocked",
+      "route": "controller_then_efficient",
+      "controller": "required",
+      "efficient": "blocked",
       "review": "BLOCKED",
       "capacity": "live",
       "resume": "not_applicable"
     },
     "required_assertions": [
       "transport completed proves delivery lifecycle only",
-      "structured Luna PASS is still required",
-      "Sol review and changed-path evidence are still required"
+      "structured efficient worker PASS is still required",
+      "controller review and changed-path evidence are still required"
     ]
   },
   {
     "id": "identical-retry-no-delta",
-    "prompt": "$sol-control: reject a second launch of the identical task packet when no new evidence or delta exists.",
+    "prompt": "$codex-prove: reject a second launch of the identical task packet when no new evidence or delta exists.",
     "expected": {
-      "route": "sol_then_luna",
-      "sol": "required",
-      "luna": "blocked",
+      "route": "controller_then_efficient",
+      "controller": "required",
+      "efficient": "blocked",
       "review": "BLOCKED",
       "capacity": "live",
       "resume": "not_applicable"
@@ -213,11 +213,11 @@
   },
   {
     "id": "long-task-resume",
-    "prompt": "$sol-control: resume a long-running task after context compression using the minimal resume packet.",
+    "prompt": "$codex-prove: resume a long-running task after context compression using the minimal resume packet.",
     "expected": {
-      "route": "sol_then_luna",
-      "sol": "required",
-      "luna": "required",
+      "route": "controller_then_efficient",
+      "controller": "required",
+      "efficient": "required",
       "review": "PASS",
       "capacity": "live",
       "resume": "required"
@@ -230,11 +230,11 @@
   },
   {
     "id": "authorized-plan-not-stop",
-    "prompt": "$sol-control: execute the authorized implementation after Sol publishes the plan.",
+    "prompt": "$codex-prove: execute the authorized implementation after controller publishes the plan.",
     "expected": {
-      "route": "sol_then_luna",
-      "sol": "required",
-      "luna": "required",
+      "route": "controller_then_efficient",
+      "controller": "required",
+      "efficient": "required",
       "review": "PASS",
       "capacity": "live",
       "resume": "not_applicable"
@@ -247,11 +247,11 @@
   },
   {
     "id": "status-inquiry-keeps-running",
-    "prompt": "$sol-control: continue the authorized task while the user asks for a normal status update.",
+    "prompt": "$codex-prove: continue the authorized task while the user asks for a normal status update.",
     "expected": {
-      "route": "sol_then_luna",
-      "sol": "required",
-      "luna": "required",
+      "route": "controller_then_efficient",
+      "controller": "required",
+      "efficient": "required",
       "review": "PASS",
       "capacity": "live",
       "resume": "not_applicable"
@@ -264,11 +264,11 @@
   },
   {
     "id": "planning-timebox-converges",
-    "prompt": "$sol-control: spend a bounded planning timebox and converge on a plan, determination, or evidence gap.",
+    "prompt": "$codex-prove: spend a bounded planning timebox and converge on a plan, determination, or evidence gap.",
     "expected": {
-      "route": "sol",
-      "sol": "required",
-      "luna": "optional",
+      "route": "controller",
+      "controller": "required",
+      "efficient": "optional",
       "review": "not_applicable",
       "capacity": "not_applicable",
       "resume": "not_applicable"
@@ -281,11 +281,11 @@
   },
   {
     "id": "partial-stage-delivery-on-blocker",
-    "prompt": "$sol-control: deliver the evidence-complete first stage even when a later dependent stage is blocked.",
+    "prompt": "$codex-prove: deliver the evidence-complete first stage even when a later dependent stage is blocked.",
     "expected": {
-      "route": "sol_then_luna",
-      "sol": "required",
-      "luna": "required",
+      "route": "controller_then_efficient",
+      "controller": "required",
+      "efficient": "required",
       "review": "BLOCKED",
       "capacity": "live",
       "resume": "not_applicable"
@@ -298,11 +298,11 @@
   },
   {
     "id": "completed-no-result-one-recovery",
-    "prompt": "$sol-control: recover a transport completed event that has no structured Luna result.",
+    "prompt": "$codex-prove: recover a transport completed event that has no structured efficient worker result.",
     "expected": {
-      "route": "sol_then_luna",
-      "sol": "required",
-      "luna": "required",
+      "route": "controller_then_efficient",
+      "controller": "required",
+      "efficient": "required",
       "review": "PASS",
       "capacity": "live",
       "resume": "not_applicable"
@@ -310,16 +310,16 @@
     "required_assertions": [
       "only the same worker receives one result-only follow-up",
       "the follow-up cannot authorize new writes or re-execution",
-      "a bound structured result is required before Sol review can pass"
+      "a bound structured result is required before controller review can pass"
     ]
   },
   {
     "id": "completed-no-result-recovery-blocked",
-    "prompt": "$sol-control: block safely when the one allowed result-only recovery still has no structured result bound to the final candidate.",
+    "prompt": "$codex-prove: block safely when the one allowed result-only recovery still has no structured result bound to the final candidate.",
     "expected": {
-      "route": "sol_then_luna",
-      "sol": "required",
-      "luna": "blocked",
+      "route": "controller_then_efficient",
+      "controller": "required",
+      "efficient": "blocked",
       "review": "BLOCKED",
       "capacity": "live",
       "resume": "not_applicable"
@@ -332,11 +332,11 @@
   },
   {
     "id": "urgency-does-not-lower-evidence",
-    "prompt": "$sol-control: do not lower the evidence threshold because the user says hurry or do not stop.",
+    "prompt": "$codex-prove: do not lower the evidence threshold because the user says hurry or do not stop.",
     "expected": {
       "route": "blocked",
-      "sol": "blocked",
-      "luna": "blocked",
+      "controller": "blocked",
+      "efficient": "blocked",
       "review": "BLOCKED",
       "capacity": "not_applicable",
       "resume": "not_applicable"
@@ -349,11 +349,11 @@
   },
   {
     "id": "explicit-user-steering-replans",
-    "prompt": "$sol-control: stop the old plan and re-plan when the user explicitly cancels, replaces, or redirects the current request.",
+    "prompt": "$codex-prove: stop the old plan and re-plan when the user explicitly cancels, replaces, or redirects the current request.",
     "expected": {
-      "route": "sol",
-      "sol": "required",
-      "luna": "optional",
+      "route": "controller",
+      "controller": "required",
+      "efficient": "optional",
       "review": "not_applicable",
       "capacity": "not_applicable",
       "resume": "not_applicable"
@@ -361,53 +361,53 @@
     "required_assertions": [
       "explicit cancellation, replacement, or redirection stops the old plan",
       "substantive user steering is distinct from an ordinary status inquiry",
-      "Sol re-plans from the new request before any old-plan execution continues"
+      "controller re-plans from the new request before any old-plan execution continues"
     ]
   },
   {
-    "id": "luna-low-ambiguity-small-context",
-    "prompt": "$sol-control: route a clear, low-ambiguity, falsifiable one-file task with a small context to Luna Max.",
+    "id": "efficient-low-ambiguity-small-context",
+    "prompt": "$codex-prove: route a clear, low-ambiguity, falsifiable one-file task with a small context to efficient worker.",
     "expected": {
-      "route": "sol_then_luna",
-      "sol": "required",
-      "luna": "required",
-      "terra": "none",
+      "route": "controller_then_efficient",
+      "controller": "required",
+      "efficient": "required",
+      "complex": "none",
       "review": "PASS",
       "capacity": "live",
       "resume": "forbidden"
     },
     "required_assertions": [
-      "Luna Max handles clear low-ambiguity work",
+      "efficient worker handles clear low-ambiguity work",
       "the task is falsifiable and has a small context",
-      "Terra is not selected when the bounded Luna route is sufficient"
+      "complex worker is not selected when the bounded efficient worker route is sufficient"
     ]
   },
   {
-    "id": "terra-cross-module-long-context",
-    "prompt": "$sol-control: route a cross-module implementation with long context, shared interfaces, and high risk to Terra High.",
+    "id": "complex-cross-module-long-context",
+    "prompt": "$codex-prove: route a cross-module implementation with long context, shared interfaces, and high risk to complex worker.",
     "expected": {
-      "route": "sol_then_terra",
-      "sol": "required",
-      "luna": "none",
-      "terra": "required",
+      "route": "controller_then_complex",
+      "controller": "required",
+      "efficient": "none",
+      "complex": "required",
       "review": "PASS",
       "capacity": "live",
       "resume": "not_applicable"
     },
     "required_assertions": [
-      "Terra High handles cross-module and long-context work",
-      "shared interfaces and high-risk implementation are Terra signals",
-      "Sol remains the only controller and final reviewer"
+      "complex worker handles cross-module and long-context work",
+      "shared interfaces and high-risk implementation are complex worker signals",
+      "controller remains the only controller and final reviewer"
     ]
   },
   {
     "id": "model-identity-unavailable-fail-closed",
-    "prompt": "$sol-control: perform an identity-only handshake, then reject task execution when the selected model identity and reasoning effort cannot be proved.",
+    "prompt": "$codex-prove: perform an identity-only handshake, then reject task execution when the selected model identity and reasoning effort cannot be proved.",
     "expected": {
       "route": "blocked",
-      "sol": "blocked",
-      "luna": "blocked",
-      "terra": "blocked",
+      "controller": "blocked",
+      "efficient": "blocked",
+      "complex": "blocked",
       "review": "BLOCKED",
       "capacity": "not_applicable",
       "resume": "not_applicable"
@@ -416,17 +416,17 @@
       "the authoritative Host/tool role mapping and launch record must prove model identity and selection",
       "the child handshake proves permissions and no side effects without inventing an unobservable model self-report",
       "Fail Closed prevents silent model substitution",
-      "no Luna or Terra task execution or write occurs when identity is unavailable"
+      "no efficient worker or complex worker task execution or write occurs when identity is unavailable"
     ]
   },
   {
     "id": "broader-runtime-capability-keeps-narrow-authorization",
-    "prompt": "$sol-control: the runtime reports broader technical filesystem access than the read-only task requests; keep the audit read-only and prove no changes with Host-owned snapshots.",
+    "prompt": "$codex-prove: the runtime reports broader technical filesystem access than the read-only task requests; keep the audit read-only and prove no changes with Host-owned snapshots.",
     "expected": {
-      "route": "sol_then_luna",
-      "sol": "required",
-      "luna": "required",
-      "terra": "none",
+      "route": "controller_then_efficient",
+      "controller": "required",
+      "efficient": "required",
+      "complex": "none",
       "review": "PASS",
       "capacity": "live",
       "resume": "not_applicable"
@@ -440,12 +440,12 @@
   },
   {
     "id": "irreversible-work-requires-enforced-boundary",
-    "prompt": "$sol-control: deploy a destructive production change when the runtime exposes broader capability than the approved task boundary and no enforceable boundary or broader user approval exists.",
+    "prompt": "$codex-prove: deploy a destructive production change when the runtime exposes broader capability than the approved task boundary and no enforceable boundary or broader user approval exists.",
     "expected": {
       "route": "blocked",
-      "sol": "required",
-      "luna": "blocked",
-      "terra": "blocked",
+      "controller": "required",
+      "efficient": "blocked",
+      "complex": "blocked",
       "review": "BLOCKED",
       "capacity": "not_applicable",
       "resume": "not_applicable"
@@ -458,13 +458,13 @@
     ]
   },
   {
-    "id": "luna-classification-error-escalates-terra",
-    "prompt": "$sol-control: after Luna's first failure, before Luna writes any owned file, escalate the same task and scope once to Terra instead of retrying Luna indefinitely.",
+    "id": "efficient-classification-error-escalates-complex",
+    "prompt": "$codex-prove: after efficient worker's first failure, before efficient worker writes any owned file, escalate the same task and scope once to complex worker instead of retrying efficient worker indefinitely.",
     "expected": {
-      "route": "sol_then_terra",
-      "sol": "required",
-      "luna": "required",
-      "terra": "required",
+      "route": "controller_then_complex",
+      "controller": "required",
+      "efficient": "required",
+      "complex": "required",
       "review": "PASS",
       "capacity": "live",
       "resume": "not_applicable",
@@ -475,21 +475,21 @@
       "owned_files_written_before_failure": 0
     },
     "required_assertions": [
-      "a first Luna failure before any Luna-owned file write can escalate to Terra",
-      "a first Luna classification failure before any Luna-owned file write can escalate to Terra as a classification error route",
+      "a first efficient worker failure before any efficient worker-owned file write can escalate to complex worker",
+      "a first efficient worker classification failure before any efficient worker-owned file write can escalate to complex worker as a classification error route",
       "the same task and unchanged scope are forwarded once",
-      "the escalation is bounded and not an infinite Luna retry",
-      "Sol reviews the re-routed result before delivery"
+      "the escalation is bounded and not an infinite efficient worker retry",
+      "controller reviews the re-routed result before delivery"
     ]
   },
   {
-    "id": "luna-first-failure-before-write-escalates-terra",
-    "prompt": "$sol-control: Luna fails before writing any owned file; upgrade the same task and unchanged scope to Terra exactly once.",
+    "id": "efficient-first-failure-before-write-escalates-complex",
+    "prompt": "$codex-prove: efficient worker fails before writing any owned file; upgrade the same task and unchanged scope to complex worker exactly once.",
     "expected": {
-      "route": "sol_then_terra",
-      "sol": "required",
-      "luna": "required",
-      "terra": "required",
+      "route": "controller_then_complex",
+      "controller": "required",
+      "efficient": "required",
+      "complex": "required",
       "review": "PASS",
       "capacity": "live",
       "resume": "not_applicable",
@@ -500,24 +500,24 @@
       "owned_files_written_before_failure": 0
     },
     "required_assertions": [
-      "zero Luna-owned files were written before the first failure",
-      "Sol may upgrade the same task and unchanged scope to Terra once",
-      "Terra receives ownership only after the zero-write check",
-      "the escalation does not retry Luna indefinitely"
+      "zero efficient worker-owned files were written before the first failure",
+      "controller may upgrade the same task and unchanged scope to complex worker once",
+      "complex worker receives ownership only after the zero-write check",
+      "the escalation does not retry efficient worker indefinitely"
     ]
   },
   {
-    "id": "luna-first-failure-after-write-keeps-luna-owner",
-    "prompt": "$sol-control: Luna fails after writing an owned file; keep all ownership with Luna for one focused fix or return BLOCKED, never transfer that file to Terra.",
+    "id": "efficient-first-failure-after-write-keeps-efficient-owner",
+    "prompt": "$codex-prove: efficient worker fails after writing an owned file; keep all ownership with efficient worker for one focused fix or return BLOCKED, never transfer that file to complex worker.",
     "expected": {
-      "route": "sol_then_luna",
-      "sol": "required",
-      "luna": "required",
-      "terra": "blocked",
+      "route": "controller_then_efficient",
+      "controller": "required",
+      "efficient": "required",
+      "complex": "blocked",
       "review": "FIX",
       "capacity": "live",
       "resume": "not_applicable",
-      "ownership": "luna_retains_scope",
+      "ownership": "efficient_retains_scope",
       "correction": "focused_fix_or_blocked"
     },
     "luna_state": {
@@ -525,21 +525,21 @@
       "owned_files_written_before_failure": 1
     },
     "required_assertions": [
-      "Luna wrote an owned file before the first failure",
-      "Luna retains all ownership of the written file and scope",
-      "Terra is blocked and cannot receive the already-written file",
-      "only the original Luna owner may receive one focused fix",
+      "efficient worker wrote an owned file before the first failure",
+      "efficient worker retains all ownership of the written file and scope",
+      "complex worker is blocked and cannot receive the already-written file",
+      "only the original efficient worker owner may receive one focused fix",
       "a second failure or failed focused fix is BLOCKED"
     ]
   },
   {
     "id": "single-file-unique-owner",
-    "prompt": "$sol-control: assign one shared integration file to exactly one worker owner while routing the surrounding work to Terra.",
+    "prompt": "$codex-prove: assign one shared integration file to exactly one worker owner while routing the surrounding work to complex worker.",
     "expected": {
-      "route": "sol_then_terra",
-      "sol": "required",
-      "luna": "none",
-      "terra": "required",
+      "route": "controller_then_complex",
+      "controller": "required",
+      "efficient": "none",
+      "complex": "required",
       "review": "PASS",
       "capacity": "live",
       "resume": "not_applicable"
@@ -547,16 +547,16 @@
     "required_assertions": [
       "one file has one owner for the entire run",
       "a shared integration file is never written by two workers",
-      "Sol allocates exact write_scope and performs final review"
+      "controller allocates exact write_scope and performs final review"
     ]
   },
   {
-    "id": "v050-requirement-evidence-gap",
-    "prompt": "$sol-control: a worker reports PASS but REQ-2 has no evidence in the final candidate.",
+    "id": "v100-requirement-evidence-gap",
+    "prompt": "$codex-prove: a worker reports PASS but REQ-2 has no evidence in the final candidate.",
     "expected": {
-      "route": "sol_then_luna",
-      "sol": "required",
-      "luna": "required",
+      "route": "controller_then_efficient",
+      "controller": "required",
+      "efficient": "required",
       "review": "FIX",
       "capacity": "live",
       "resume": "not_applicable",
@@ -566,16 +566,16 @@
       "every done_when criterion has a stable Requirement ID",
       "requirements_coverage marks REQ-2 unsatisfied",
       "an evidence gap cannot be reclassified as a residual suggestion",
-      "Sol returns FIX or BLOCKED instead of PASS"
+      "controller returns FIX or BLOCKED instead of PASS"
     ]
   },
   {
-    "id": "v050-worker-pass-is-untrusted",
-    "prompt": "$sol-control: review a structured worker PASS without trusting its summary as proof.",
+    "id": "v100-worker-pass-is-untrusted",
+    "prompt": "$codex-prove: review a structured worker PASS without trusting its summary as proof.",
     "expected": {
-      "route": "sol_then_luna",
-      "sol": "required",
-      "luna": "required",
+      "route": "controller_then_efficient",
+      "controller": "required",
+      "efficient": "required",
       "review": "PASS",
       "capacity": "live",
       "resume": "not_applicable",
@@ -583,55 +583,55 @@
     },
     "required_assertions": [
       "worker PASS is an untrusted claim",
-      "Sol uses artifact-first review before reading the worker summary",
+      "controller uses artifact-first review before reading the worker summary",
       "actual files complete diff verification and requirement coverage support PASS"
     ]
   },
   {
-    "id": "v050-wrong-scope-verifier",
-    "prompt": "$sol-control: the verification command exits zero but tests the wrong module and does not exercise REQ-1.",
+    "id": "v100-wrong-scope-verifier",
+    "prompt": "$codex-prove: the verification command exits zero but tests the wrong module and does not exercise REQ-1.",
     "expected": {
-      "route": "sol_then_luna",
-      "sol": "required",
-      "luna": "required",
+      "route": "controller_then_efficient",
+      "controller": "required",
+      "efficient": "required",
       "review": "FIX",
       "capacity": "live",
       "resume": "not_applicable",
       "challenge": "none"
     },
     "required_assertions": [
-      "Sol verifies the verifier rather than trusting exit zero",
+      "controller verifies the verifier rather than trusting exit zero",
       "wrong-scope verification is failure class evidence_quality",
       "the corrected check must exercise the intended Requirement ID"
     ]
   },
   {
-    "id": "v050-high-risk-selective-challenge",
-    "prompt": "$sol-control: perform a high-consequence cross-module authentication change with conflicting verification evidence.",
+    "id": "v100-high-risk-selective-challenge",
+    "prompt": "$codex-prove: perform a high-consequence cross-module authentication change with conflicting verification evidence.",
     "expected": {
-      "route": "sol_then_terra",
-      "sol": "required",
-      "luna": "none",
-      "terra": "required",
+      "route": "controller_then_complex",
+      "controller": "required",
+      "efficient": "none",
+      "complex": "required",
       "review": "PASS",
       "capacity": "live",
       "resume": "not_applicable",
       "challenge": "required"
     },
     "required_assertions": [
-      "Sol may schedule at most one selective challenge",
+      "controller may schedule at most one selective challenge",
       "the challenge is read-only with an empty write scope",
       "the challenge returns findings but cannot approve the candidate",
-      "Sol remains the sole final reviewer"
+      "controller remains the sole final reviewer"
     ]
   },
   {
-    "id": "v050-standard-task-no-challenge",
-    "prompt": "$sol-control: make a normal bounded change with strong deterministic evidence.",
+    "id": "v100-standard-task-no-challenge",
+    "prompt": "$codex-prove: make a normal bounded change with strong deterministic evidence.",
     "expected": {
-      "route": "sol_then_luna",
-      "sol": "required",
-      "luna": "required",
+      "route": "controller_then_efficient",
+      "controller": "required",
+      "efficient": "required",
       "review": "PASS",
       "capacity": "live",
       "resume": "not_applicable",
@@ -640,16 +640,16 @@
     "required_assertions": [
       "ordinary standard low-risk work uses zero challenge calls",
       "no extra reviewer tax is added",
-      "Sol still performs artifact-first final review"
+      "controller still performs artifact-first final review"
     ]
   },
   {
-    "id": "v050-resume-no-duplicate-dispatch",
-    "prompt": "$sol-control: resume a long run after interruption when task-a is already complete and task-b is in flight.",
+    "id": "v100-resume-no-duplicate-dispatch",
+    "prompt": "$codex-prove: resume a long run after interruption when task-a is already complete and task-b is in flight.",
     "expected": {
-      "route": "sol_then_luna",
-      "sol": "required",
-      "luna": "required",
+      "route": "controller_then_efficient",
+      "controller": "required",
+      "efficient": "required",
       "review": "PASS",
       "capacity": "live",
       "resume": "required",
@@ -659,17 +659,17 @@
       "the Resume packet preserves run_id ownership candidate identity and attempts",
       "completed task-a is not redispatched",
       "attempt counts do not reset after resume",
-      "candidate mismatch requires Sol to re-plan or return BLOCKED"
+      "candidate mismatch requires controller to re-plan or return BLOCKED"
     ]
   },
   {
-    "id": "v050-timeout-after-write-keeps-owner",
-    "prompt": "$sol-control: a Luna task times out after writing one owned file and before returning a structured result.",
+    "id": "v100-timeout-after-write-keeps-owner",
+    "prompt": "$codex-prove: a efficient worker task times out after writing one owned file and before returning a structured result.",
     "expected": {
-      "route": "sol_then_luna",
-      "sol": "required",
-      "luna": "blocked",
-      "terra": "blocked",
+      "route": "controller_then_efficient",
+      "controller": "required",
+      "efficient": "blocked",
+      "complex": "blocked",
       "review": "BLOCKED",
       "capacity": "live",
       "resume": "required",
@@ -678,17 +678,17 @@
     "required_assertions": [
       "timeout is distinct from model capability failure",
       "the Host inspects actual partial writes",
-      "Luna retains ownership after writing the file",
+      "efficient worker retains ownership after writing the file",
       "resume does not reset the bounded attempt budget"
     ]
   },
   {
-    "id": "v050-residual-suggestions-do-not-change-pass",
-    "prompt": "$sol-control: all Requirement IDs pass with evidence and one non-gating cleanup suggestion remains.",
+    "id": "v100-residual-suggestions-do-not-change-pass",
+    "prompt": "$codex-prove: all Requirement IDs pass with evidence and one non-gating cleanup suggestion remains.",
     "expected": {
-      "route": "sol_then_luna",
-      "sol": "required",
-      "luna": "required",
+      "route": "controller_then_efficient",
+      "controller": "required",
+      "efficient": "required",
       "review": "PASS",
       "capacity": "live",
       "resume": "not_applicable",

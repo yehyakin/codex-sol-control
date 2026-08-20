@@ -1,17 +1,16 @@
 #!/usr/bin/env python3
-"""v0.5.0 Sol Control rename and legacy-removal contracts."""
+"""Codex PROVE v1.0 identity and compatibility-migration contracts."""
 
 from __future__ import annotations
 
-import re
 import unittest
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-CANONICAL_SKILL = ROOT / ".agents" / "skills" / "sol-control"
-COMPAT_SKILL = ROOT / ".agents" / "skills" / "sol-luna"
-CANONICAL_REPOSITORY = "https://github.com/yehyakin/codex-sol-control"
+CANONICAL = ROOT / ".agents" / "skills" / "codex-prove"
+COMPAT = ROOT / ".agents" / "skills" / "sol-control"
+REPOSITORY = "https://github.com/yehyakin/codex-prove"
 
 
 def read(path: Path) -> str:
@@ -19,48 +18,44 @@ def read(path: Path) -> str:
 
 
 class RenameMigrationContractTests(unittest.TestCase):
-    def test_sol_control_is_the_only_full_skill(self) -> None:
-        skill = read(CANONICAL_SKILL / "SKILL.md")
-        metadata = read(CANONICAL_SKILL / "agents" / "openai.yaml")
+    def test_codex_prove_is_the_only_full_skill(self) -> None:
+        skill = read(CANONICAL / "SKILL.md")
+        metadata = read(CANONICAL / "agents" / "openai.yaml")
+        alias = read(COMPAT / "SKILL.md")
 
-        self.assertRegex(skill, r"(?m)^name:\s*sol-control\s*$")
-        self.assertIn("$sol-control", skill)
-        self.assertIn("# Sol Control", skill)
-        self.assertIn('display_name: "Sol Control"', metadata)
-        self.assertIn("$sol-control", metadata)
-        self.assertRegex(metadata, r"(?m)^\s*allow_implicit_invocation:\s*false\s*$")
+        self.assertIn("name: codex-prove", skill)
+        self.assertIn("# Codex PROVE", skill)
+        self.assertIn("Planning, Routing, Ownership, Verification, Evidence", skill)
+        self.assertIn('display_name: "Codex PROVE"', metadata)
+        self.assertIn("$codex-prove", metadata)
+        self.assertIn("allow_implicit_invocation: false", metadata)
+        self.assertLess(len(alias.splitlines()), 30)
+        self.assertIn("$codex-prove", alias)
+        self.assertNotIn("## Plan", alias)
 
-    def test_custom_agent_launches_require_fresh_context(self) -> None:
-        surfaces = (
-            CANONICAL_SKILL / "SKILL.md",
-            CANONICAL_SKILL / "references" / "orchestration.md",
-            CANONICAL_SKILL / "references" / "runtime-notes.md",
-        )
-        for surface in surfaces:
-            text = read(surface)
-            self.assertIn('fork_turns="none"', text, surface)
-            self.assertRegex(text, r"(?is)full-history.{0,120}(?:invalid|never|fail)")
-            self.assertRegex(text, r"(?is)identity(?:-only)?\s+handshake")
-            self.assertRegex(text, r"(?is)(?:no|without).{0,100}(?:task execution|planning).{0,100}(?:write|writing)")
+    def test_role_names_are_model_neutral(self) -> None:
+        for name in (
+            "prove-controller.toml",
+            "prove-complex-worker.toml",
+            "prove-efficient-worker.toml",
+        ):
+            self.assertTrue((ROOT / ".codex" / "agents" / name).is_file(), name)
+        active_names = {path.name for path in (ROOT / ".codex" / "agents").glob("*.toml")}
+        self.assertNotIn("sol-controller.toml", active_names)
+        self.assertNotIn("terra-high-worker.toml", active_names)
+        self.assertNotIn("luna-max-worker.toml", active_names)
 
-    def test_sol_luna_compatibility_alias_is_removed_in_v050(self) -> None:
-        self.assertFalse(COMPAT_SKILL.exists())
-        for relative in ("scripts/install.sh", "scripts/install.ps1"):
-            text = read(ROOT / relative)
-            self.assertIn(".agents/skills/sol-luna", text, relative)
-            self.assertRegex(text, r"(?i)removed compatibility|compatibility.*removed|compat.*backup", relative)
-
-    def test_public_readmes_publish_the_new_identity_and_version(self) -> None:
+    def test_public_readmes_publish_new_identity_and_compatibility_window(self) -> None:
         for relative in ("README.md", "README.en.md"):
             text = read(ROOT / relative)
-            self.assertIn(CANONICAL_REPOSITORY, text, relative)
-            self.assertRegex(text, r"(?i)current version.*v0\.5\.0|当前版本.*v0\.5\.0", relative)
-            self.assertIn("SOL_CONTROL_V050_IMPLEMENTATION_REPORT.md", text, relative)
+            self.assertIn(REPOSITORY, text, relative)
+            self.assertIn("v1.0.0", text, relative)
+            self.assertIn("CODEX_PROVE_V1_IMPLEMENTATION_REPORT.md", text, relative)
+            self.assertIn("$codex-prove", text, relative)
             self.assertIn("$sol-control", text, relative)
-            self.assertRegex(text, r"(?is)\$sol-luna.{0,100}(?:removed|移除)", relative)
-            self.assertNotIn("https://github.com/yehyakin/codex-sol-luna", text, relative)
+            self.assertNotIn("https://github.com/yehyakin/codex-sol-control", text, relative)
 
-    def test_installers_use_sol_control_state_and_migrate_both_old_states(self) -> None:
+    def test_installers_use_v1_state_and_preserve_old_state_migration(self) -> None:
         for relative in (
             "scripts/install.sh",
             "scripts/uninstall.sh",
@@ -68,11 +63,24 @@ class RenameMigrationContractTests(unittest.TestCase):
             "scripts/uninstall.ps1",
         ):
             text = read(ROOT / relative)
-            self.assertIn(".agents/skills/sol-control", text, relative)
-            self.assertIn(".agents/skills/sol-luna", text, relative)
-            self.assertRegex(text, r"[.\\/]codex[.\\/]sol-control|(?:stateRoot|state_root).{0,80}sol-control")
+            self.assertIn("codex-prove", text, relative)
+            self.assertIn("sol-control", text, relative)
             self.assertIn("sol-luna", text, relative)
             self.assertIn("orchestrate-sol-luna", text, relative)
+            self.assertIn("prove-controller", text, relative)
+
+    def test_custom_agent_launch_contract_requires_fresh_context(self) -> None:
+        surfaces = (
+            CANONICAL / "SKILL.md",
+            CANONICAL / "references" / "orchestration.md",
+            CANONICAL / "references" / "runtime-notes.md",
+        )
+        for surface in surfaces:
+            text = read(surface)
+            self.assertIn('fork_turns="none"', text, surface)
+            self.assertIn("identity", text.lower(), surface)
+            self.assertIn("handshake", text.lower(), surface)
+            self.assertIn("BLOCKED", text, surface)
 
 
 if __name__ == "__main__":

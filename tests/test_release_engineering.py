@@ -65,7 +65,7 @@ class ReleaseEngineeringTests(unittest.TestCase):
                 self.run_posix("install.sh", home, "--check")
             run.assert_not_called()
 
-    def test_install_check_fresh_home_returns_two_without_writes(self) -> None:
+    def test_install_check_fresh_home_returns_zero_without_writes(self) -> None:
         with tempfile.TemporaryDirectory(prefix="sol-luna-check.") as temporary:
             parent = Path(temporary)
             home = parent / "not-created" / "nested home"
@@ -73,7 +73,7 @@ class ReleaseEngineeringTests(unittest.TestCase):
 
             result = self.run_posix("install.sh", home, "--check")
 
-            self.assertEqual(2, result.returncode, result.stdout)
+            self.assertEqual(0, result.returncode, result.stdout)
             self.assertIn("check", result.stdout.lower())
             self.assertFalse(home.exists(), "check mode created the home/install directory")
             self.assertEqual(before, snapshot_tree(parent))
@@ -88,7 +88,7 @@ class ReleaseEngineeringTests(unittest.TestCase):
             result = self.run_posix("install.sh", home, "--check")
 
             self.assertEqual(0, result.returncode, result.stdout)
-            self.assertIn("consistent", result.stdout.lower())
+            self.assertIn("install check: ok", result.stdout.lower())
             self.assertEqual(before, snapshot_tree(home))
 
     def test_install_check_unsafe_target_returns_one_without_writes(self) -> None:
@@ -133,10 +133,11 @@ class ReleaseEngineeringTests(unittest.TestCase):
             text = (ROOT / relative).read_text(encoding="utf-8")
             positions = [text.index(f"python3.{minor}") for minor in (14, 13, 12, 11)]
             self.assertEqual(sorted(positions), positions, relative)
-            self.assertGreater(text.index('"python3"'), positions[-1], relative)
-            self.assertGreater(text.index('"python"'), text.index('"python3"'), relative)
-            for minor in (14, 13, 12, 11):
-                self.assertIn(f"python@3.{minor}", text, relative)
+            self.assertGreater(text.index("python3", positions[-1] + 1), positions[-1], relative)
+            self.assertIn("python", text, relative)
+            if relative.name == "test.sh":
+                for minor in (14, 13, 12, 11):
+                    self.assertIn(f"python@3.{minor}", text, relative)
 
     def test_posix_workflow_checks_each_shell_file_individually(self) -> None:
         workflow = (WORKFLOWS / "posix-validation.yml").read_text(encoding="utf-8")

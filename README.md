@@ -1,26 +1,26 @@
 [简体中文](README.md) · [English](README.en.md)
 
-![Sol 作为唯一主控，将有边界的任务路由给 Terra High 或 Luna Max，并在证据返回后完成最终审核](docs/assets/readme/hero-zh.svg)
+![Codex PROVE 通过规划、路由、所有权、验证与证据完成复杂任务](docs/assets/readme/hero-zh.svg)
 
-# Sol Control
+# Codex PROVE
 
-**Sol 单一主控。Terra High 与 Luna Max 分层执行。真实文件与证据通过后才交付。**
+**规划任务，路由模型，用证据完成交付。**
 
-`codex-sol-control` 是一个面向 Codex 的轻量级编排 Skill。它不追求“更多 Agent”，而是让不同模型只承担最适合自己的工作：
+`codex-prove` 是一个面向 Codex 的模型中立编排 Skill。它不追求“更多 Agent”，而是固定一套可审核的控制协议，再把模型作为可替换配置：
 
-- **Sol** 是唯一主控：理解目标、定义完成条件、规划、分配、调度并完成最终审核。
-- **Terra High** 是复杂执行层：处理跨模块、长上下文、模糊调试、共享接口与高风险实现。
-- **Luna Max** 是轻量执行层：承接清晰、低歧义、边界明确、可独立验证的任务。
+- **Controller** 是唯一主控：理解目标、规划、路由、分配 ownership、调度并完成最终审核。
+- **Complex worker** 处理跨模块、长上下文、模糊调试、共享接口与高后果实现。
+- **Efficient worker** 承接清晰、低歧义、边界明确、可独立验证的执行。
 
-简单任务仍由当前 Codex 直接完成。复杂、跨模块、可并行或高风险任务，再显式调用 `$sol-control`。
+简单任务仍由当前 Codex 直接完成。复杂、跨模块、可并行或高风险任务，再显式调用 `$codex-prove`。
 
-> **v0.5.0 迁移说明：**旧命令 `$sol-luna` 已移除，请统一使用 `$sol-control`。从 v0.4.x 升级时，安装器会先校验并备份旧兼容入口，再以事务方式移除；`--restore-latest` 可恢复升级前状态。
+> **v1.0.0 迁移说明：**项目从 Sol Control 更名为 Codex PROVE。新入口是 `$codex-prove`；`$sol-control` 在 v1.0 中保留为显式兼容别名，并直接转向同一份 PROVE 协议。安装器可从 v0.1–v0.5 的受管版本事务迁移，`--restore-latest` 可恢复升级前状态。
 
 运行时默认使用简体中文；如果用户明确指定其他语言，则遵循用户选择。
 
-> **一个 Sol，两级执行。Terra 与 Luna 都是叶子执行者，不得创建子代理，也不得批准整体任务。**
+> **一个 Controller，两种 worker profile。worker 都是叶子执行者，不得创建子代理，也不得批准整体任务。**
 
-规范仓库：[yehyakin/codex-sol-control](https://github.com/yehyakin/codex-sol-control)
+规范仓库：[yehyakin/codex-prove](https://github.com/yehyakin/codex-prove)
 
 ## 核心路由与预计节省
 
@@ -35,7 +35,7 @@
 
 ## 为什么能节省成本
 
-Sol Control 的节省逻辑很直接：
+Codex PROVE 的节省逻辑很直接：
 
 > **把高成本的目标理解、边界判断与最终审核留给 Sol；把实际执行按复杂度路由给 Terra 或 Luna。**
 
@@ -135,8 +135,8 @@ API 用户看到的是美元金额；ChatGPT / Codex 用户通常看到的是 cr
 ### macOS / Linux
 
 ```sh
-git clone https://github.com/yehyakin/codex-sol-control.git
-cd codex-sol-control
+git clone https://github.com/yehyakin/codex-prove.git
+cd codex-prove
 
 bash scripts/validate.sh
 bash scripts/install.sh
@@ -147,8 +147,8 @@ bash scripts/install.sh
 Windows PowerShell 5.1：
 
 ```powershell
-git clone https://github.com/yehyakin/codex-sol-control.git
-Set-Location codex-sol-control
+git clone https://github.com/yehyakin/codex-prove.git
+Set-Location codex-prove
 
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/validate.ps1
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/install.ps1
@@ -164,7 +164,7 @@ pwsh -NoProfile -File scripts/install.ps1
 安装后，打开新的 Codex 会话并显式调用：
 
 ```text
-$sol-control
+$codex-prove
 
 目标：为现有 Next.js 项目增加账号设置功能。
 
@@ -182,17 +182,17 @@ $sol-control
 也可以直接写：
 
 ```text
-$sol-control 重构认证模块，保持现有 API 兼容，测试和构建必须通过。
+$codex-prove 重构认证模块，保持现有 API 兼容，测试和构建必须通过。
 ```
 
-你不需要指定 worker 数量，也不需要自己判断哪些任务交给 Terra 或 Luna。提供**目标、可观察的完成条件与明确限制**即可；Sol 负责形成最小可执行计划。
+你不需要指定 worker 数量或模型。提供**目标、可观察的完成条件与明确限制**即可；Controller 会按任务能力需求形成最小可执行图。
 
 ## 它解决什么问题
 
-| 常见问题 | Sol Control 的处理方式 |
+| 常见问题 | Codex PROVE 的处理方式 |
 | --- | --- |
-| 同一个 Agent 同时规划、实现和验证，容易顾此失彼 | Sol 专注判断与审核，Terra / Luna 专注有界执行 |
-| 所有工作都使用最高成本模型 | 按复杂度把执行路由到 Terra 或 Luna |
+| 同一个 Agent 同时规划、实现和验证，容易顾此失彼 | Controller 专注判断与审核，worker 专注有界执行 |
+| 所有工作都使用最高成本模型 | 按能力需求路由到 efficient 或 complex profile |
 | 多个执行者同时修改共享文件 | **一个文件，一个 owner**；重叠范围必须串行 |
 | “完成”只有口头总结，没有真实证据 | 必须返回 changed paths、diff、测试、构建或产物 |
 | 错误任务被无限重试 | 只允许一次有边界的修正，否则 `BLOCKED` |
@@ -201,106 +201,106 @@ $sol-control 重构认证模块，保持现有 API 兼容，测试和构建必�
 
 ## 工作方式
 
-![Direct、Sol-only、Sol 到 Luna，以及按需路由到 Terra 的执行路径，所有证据最终返回 Sol 审核](docs/assets/readme/control-plane-zh.svg)
+![Direct、Controller-only、efficient 与 complex worker 路径，所有证据最终返回 Controller 审核](docs/assets/readme/control-plane-zh.svg)
 
 ```text
 用户目标
    │
    ▼
-Sol：理解 → 规划 → 分配 → 调度
+Controller：理解 → 规划 → 路由 → 分配 → 调度
    │
    ├─ Direct：简单任务由当前 Codex 直接完成
-   ├─ Sol-only：只做计划、分析或审核
-   ├─ Luna Max：清晰、低歧义、可独立验证的执行
-   └─ Terra High：跨模块、长上下文或高风险执行
+   ├─ Controller-only：只做计划、分析或审核
+   ├─ Efficient worker：清晰、低歧义、可独立验证的执行
+   └─ Complex worker：跨模块、长上下文或高后果执行
    │
    ▼
 真实文件 + Diff + 测试 / 构建 / 产物证据
    │
    ▼
-Sol：按 REQ-ID 做 artifact-first 审核 → PASS / FIX / BLOCKED
+Controller：按 REQ-ID 做 artifact-first 审核 → PASS / FIX / BLOCKED
 ```
 
 ### 证据优先控制
 
-开发中的 v0.5 契约保持 Sol 单一主控，不增加第二个 Sol Reviewer，并补上五个质量控制点：
+v1.0 契约保持单一 Controller，不增加第二个 Reviewer，并包含五个质量控制点：
 
 1. **需求—证据图。** 每个 `done_when` 使用稳定的 `REQ-ID`，任务、验证和最终证据必须回指对应要求。
-2. **Artifact-first 审核。** Sol 先看原始要求、真实 changed paths、文件、完整 diff 和验证产物，最后才看 worker 的 `PASS` 与总结。
+2. **Artifact-first 审核。** Controller 先看原始要求、真实 changed paths、文件、完整 diff 和验证产物，最后才看 worker 的 `PASS` 与总结。
 3. **验证验证器。** 退出码为 0 还不够；检查必须命中最终候选、正确 scope 和目标要求，存在性检查或跑错模块不能通过。
-4. **选择性挑战。** 普通任务零额外挑战；只有高后果、跨模块、共享接口、证据冲突或未覆盖要求才允许最多一个只读 challenge。它只返回 findings，最终裁决仍属于 Sol。
+4. **选择性挑战。** 普通任务零额外挑战；只有高后果、跨模块、共享接口、证据冲突或未覆盖要求才允许最多一个只读 challenge。它只返回 findings，最终裁决仍属于 Controller。
 5. **可恢复执行。** 长任务记录 owner、候选身份、要求覆盖和尝试次数；恢复时不重复派发已完成任务，也不重置修正预算。
 
 ### 角色层级
 
 | 角色 | 配置 | 负责什么 | 明确边界 |
 | --- | --- | --- | --- |
-| **Sol** | `gpt-5.6-sol` / `high` / `read-only` | 理解目标、定义 `done_when`、拆分任务、分配 owner、安排阶段、最终审核 | 不承担大批量机械实现 |
-| **Terra High** | `gpt-5.6-terra` / `high` / `workspace-write` | 跨模块、长上下文、模糊调试、共享接口判断、高风险实现 | 不是第二个主控；不改计划、不创建子代理 |
-| **Luna Max** | `gpt-5.6-luna` / `max` / `workspace-write` | 清晰、低歧义、小上下文、机械或高吞吐任务 | 不扩大 scope、不创建子代理、不批准整体任务 |
+| **Controller** | `prove-controller` → `gpt-5.6-sol` / `high` / `read-only` | 理解目标、定义 `done_when`、路由任务、分配 owner、安排阶段、最终审核 | 不承担大批量机械实现 |
+| **Complex worker** | `prove-complex-worker` → `gpt-5.6-terra` / `high` / `workspace-write` | 跨模块、长上下文、模糊调试、共享接口判断、高后果实现 | 不是第二个主控；不改计划、不创建子代理 |
+| **Efficient worker** | `prove-efficient-worker` → `gpt-5.6-luna` / `max` / `workspace-write` | 清晰、低歧义、小上下文、机械或高吞吐任务 | 不扩大 scope、不创建子代理、不批准整体任务 |
 
-角色介绍按能力层级使用 **Sol → Terra → Luna**；任务路由按复杂度递进使用 **Direct → Luna → Terra**。
+角色名保持稳定，箭头右侧的模型是 v1.0 默认配置。未来模型换代只更新 TOML、验证与发布说明，不再更改项目名或协议。
 
 ### 路由选择
 
 | 路径 | 什么时候使用 | 成本含义 |
 | --- | --- | --- |
 | **Direct** | 单文件、小改动、目标清楚 | 不承担编排开销，路由节省为 0% |
-| **Sol-only** | 需要规划、分析或审核，但不改文件 | 只使用主控能力 |
-| **Sol → Luna** | scope 可精确划分，结果可独立验证 | 优先承接大量明确执行 |
-| **Sol → Terra** | 跨模块、长上下文、共享接口、模糊调试或高风险实现 | 用更强执行层处理不能安全下放给 Luna 的工作 |
+| **Controller-only** | 需要规划、分析或审核，但不改文件 | 只使用主控能力 |
+| **Controller → efficient** | scope 可精确划分，结果可独立验证 | 优先承接大量明确执行 |
+| **Controller → complex** | 跨模块、长上下文、共享接口、模糊调试或高后果实现 | 使用更强执行 profile |
 
-Terra 不是 Luna 的固定上级，也不是常驻第二主控。两者都是 Sol 根据任务风险选择的执行层。
+Complex worker 不是 efficient worker 的固定上级，也不是常驻第二主控。两者都由 Controller 按任务能力需求选择。
 
 ### 多个执行者如何协作
 
-复杂任务可以同时使用一个或多个 Terra / Luna worker，但并行由**文件所有权**决定，而不是由 Agent 数量决定：
+复杂任务可以同时使用一个或多个 worker，但并行由**文件所有权**决定，而不是由 Agent 数量决定：
 
 ```text
 Stage 1
-├─ Terra A → src/auth/core/*
-├─ Luna A  → src/account/ui/*
-└─ Luna B  → docs/account.md
+├─ Complex A   → src/auth/core/*
+├─ Efficient A → src/account/ui/*
+└─ Efficient B → docs/account.md
 
 Stage 2
 └─ 原指定 owner → src/shared/routes.ts
 ```
 
-只有 write scope 完全不重叠的任务才能同时执行。共享文件必须指定唯一 owner；依赖、共享接口或边界不确定时，Sol 会合并任务或改为串行执行。
+只有 write scope 完全不重叠的任务才能同时执行。共享文件必须指定唯一 owner；依赖、共享接口或边界不确定时，Controller 会合并任务或改为串行执行。
 
-worker 数量没有固定承诺。Sol 根据依赖关系、实时容量和安全边界分批启动最少数量的执行者。
+worker 数量没有固定承诺。Controller 根据依赖关系、实时容量和安全边界分批启动最少数量的执行者。
 
 ## 一条完整的证据闭环
 
-1. **提取要求。** Sol 给每条完成条件分配稳定的 `REQ-ID` 和所需证据。
-2. **计划。** Sol 把每项任务映射到 Requirement IDs、精确 `write_scope`、排除项、验证步骤、通过条件和必需证据。
-3. **执行。** Terra 或 Luna 只修改分配范围，不改整体计划。
+1. **提取要求。** Controller 给每条完成条件分配稳定的 `REQ-ID` 和所需证据。
+2. **计划。** Controller 把每项任务映射到 Requirement IDs、能力 profile、依赖、精确 `write_scope`、排除项、验证步骤、通过条件和必需证据。
+3. **执行。** worker 只修改分配范围，不改整体计划。
 4. **自检。** 执行者运行指定验证并返回 changed paths、Requirement coverage、测试、构建或产物证据。
-5. **审核。** Sol 先检查真实文件、完整 diff、验证质量与需求覆盖，再读取 worker 总结。
-6. **结论。** Sol 返回封闭裁决 `PASS`、一次 focused `FIX` 或 `BLOCKED`；非阻塞建议单独列出。
+5. **审核。** Controller 先检查真实文件、完整 diff、验证质量与需求覆盖，再读取 worker 总结。
+6. **结论。** Controller 返回封闭裁决 `PASS`、一次 focused `FIX` 或 `BLOCKED`；非阻塞建议单独列出。
 
-worker 的 `PASS` 只代表它自己的任务通过。只有 Sol 可以批准整体工作。
+worker 的 `PASS` 只代表它自己的任务通过。只有 Controller 可以批准整体工作。
 
 ## 不可妥协的边界
 
 1. **一个文件，一个 owner。** 同一轮执行中，不允许两个 worker 修改同一文件。
-2. **执行者不能创建子代理。** Terra 与 Luna 都是叶子节点。
+2. **执行者不能创建子代理。** Complex 与 efficient worker 都是叶子节点。
 3. **没有证据，不算完成。** transport / spawn 的 `completed` 只表示投递结束。
 4. **验证必须绑定最终候选。** 验证后文件发生变化，旧证据立即失效。
 5. **最多一次 focused fix。** 原 owner 只能在原 scope 内修正一次；再次失败则 `BLOCKED`。
 6. **能力不等于授权。** 运行时暴露更宽技术能力不会扩大用户授权或 `write_scope`；必须如实记录，并用 Host 前后快照检查越界。
 7. **不降低审核门槛。** 用户催促、并行需求或成本目标都不能替代验证与证据。
-8. **Worker PASS 不是证明。** Sol 必须按真实产物独立重建成功结论。
+8. **Worker PASS 不是证明。** Controller 必须按真实产物独立重建成功结论。
 9. **挑战不是第二主控。** 只读 challenge 无写权限、无批准权，且普通任务不承担固定调用开销。
 10. **高风险仍然失败关闭。** 模型身份、fork 或必要范围证据无法证明时阻塞；破坏性、生产或不可逆外部操作还必须有可强制的匹配边界，或用户明确批准更宽能力。
 
-### Luna 到 Terra 的有界升级
+### Efficient 到 complex 的有界升级
 
-只有当 Luna 的第一次失败发生在它写入任何 owned file **之前**，Sol 才能把同一任务、同一 scope 一次升级给 Terra。
+只有当 efficient worker 的第一次失败发生在它写入任何 owned file **之前**，Controller 才能把同一任务、同一 scope 一次升级给 complex profile。
 
-升级门槛只看 Luna 首次失败前是否零写入；Terra 的写入状态不是门槛。
+升级门槛只看首次失败前是否零写入。
 
-一旦 Luna 已经写入 owned file，它保留该文件在本轮运行中的 ownership。Sol 只能把一次 focused fix 交回原 Luna owner，不能把已经写过的文件转交给 Terra 覆盖。
+一旦 worker 已经写入 owned file，它保留该文件在本轮运行中的 ownership。Controller 只能把一次 focused fix 交回原 owner，不能把已经写过的文件转交给其他 profile 覆盖。
 
 ## 审核结果
 
@@ -322,7 +322,7 @@ worker 的 `PASS` 只代表它自己的任务通过。只有 Sol 可以批准整
 - 无法划分独立 write scope；
 - 编排、重复上下文与审核成本明显高于实现本身。
 
-`$sol-control` 不是默认模式。**小任务保持 Direct，复杂任务才进入编排。**
+`$codex-prove` 不是默认模式。**小任务保持 Direct，复杂任务才进入编排。**
 
 ## 安装、检查与卸载
 
@@ -355,24 +355,24 @@ pwsh -NoProfile -File scripts/uninstall.ps1 -RestoreLatest
 
 安装器只管理本项目拥有的 Skill 与 agent 文件，并保留无关 agent 和用户自己的 `~/.codex/config.toml`。隔离生命周期测试时可使用 `ORCHESTRATE_HOME` 指定临时 home。
 
-从 v0.3 或 v0.4.x 升级时，安装器会先校验旧 `$sol-luna` Skill、三个 agent 与 ownership state，再迁移到 `~/.codex/sol-control` 并移除旧兼容入口。`--restore-latest` 可恢复升级前的完整可管理状态；检测到用户修改、无 ownership 的目标或校验失败时会停止，不会覆盖。
+安装器支持从 v0.1–v0.5 的受管版本迁移：先校验旧 Skill、Agent 与 ownership state，再备份并原子安装到 `~/.agents/skills/codex-prove` 和 `~/.codex/codex-prove`。v1.0 同时安装 `$sol-control` 兼容入口。`--restore-latest` 可恢复升级前的完整可管理状态；检测到用户修改、无 ownership 的同名目标或校验失败时会停止，不会覆盖。
 
 平台与证据覆盖详见 [`docs/release/runtime-surface-matrix.md`](docs/release/runtime-surface-matrix.md)。
 
 ## 当前状态
 
-当前版本为 **[v0.5.0](https://github.com/yehyakin/codex-sol-control/releases/tag/v0.5.0)**。
+当前版本为 **[v1.0.0](https://github.com/yehyakin/codex-prove/releases/tag/v1.0.0)**。
 
 | 验证面 | 已记录证据 |
 | --- | --- |
-| 本地仓库 | Skill Creator **PASS**；v0.5.0 候选版本 **136/136 tests PASS** |
-| 匹配 smoke | 一组真实匹配 smoke 中 v0.5.0 候选通过、v0.4.1 baseline 未通过，但完整 48-cell × 3 重复尚未完成，因此不声明总体质量、成本或速度提升 |
-| 托管 CI | [POSIX 工作流](https://github.com/yehyakin/codex-sol-control/actions/workflows/posix-validation.yml)：Ubuntu/macOS × Python 3.11/3.13；[Windows 工作流](https://github.com/yehyakin/codex-sol-control/actions/workflows/windows-validation.yml)：Windows Server 2022 / `windows-latest` × Windows PowerShell 5.1 / PowerShell 7 |
+| 本地仓库 | v1.0.0 候选正在完成 Skill Creator、静态、生命周期与 Forward Tests；发布前以实施报告中的最终证据为准 |
+| 匹配 smoke | v0.5.0 的一组真实匹配 smoke 已记录；v1.0 只重构品牌、角色名与安装迁移，不把旧 smoke 冒充为新角色运行证明 |
+| 托管 CI | [POSIX 工作流](https://github.com/yehyakin/codex-prove/actions/workflows/posix-validation.yml)：Ubuntu/macOS × Python 3.11/3.13；[Windows 工作流](https://github.com/yehyakin/codex-prove/actions/workflows/windows-validation.yml)：Windows Server 2022 / `windows-latest` × Windows PowerShell 5.1 / PowerShell 7 |
 | Windows 实机安装 | 用户报告安装成功；未收集 Windows 版本、安装日志或运行时身份载荷，因此不扩展为 Native Nested 证明 |
-| Desktop Sol 握手 | v0.4.1 已验证 Host/tool 权威角色映射 + `fork_turns="none"` 启动记录 + child 权限/零副作用回执；同一个 Sol 完成最终审核并返回 `PASS`；Desktop 嵌套 worker 调度仍未证明 |
-| 运行表面 | Native Nested 已在 Codex CLI `0.146.0-alpha.9.2` 验证：`gpt-5.6-sol/high/read-only` → `gpt-5.6-luna/max/read-only` → Sol `PASS`；Compatibility 保留为回退；物理 Windows 11 尚未证明 |
+| 旧版运行证据 | v0.5.0 已验证 Host/tool 权威角色映射、`fork_turns="none"`、Native Nested 与 Compatibility；新 `prove-*` Agent 名称仍需在全新会话重新证明 |
+| 运行表面 | v1.0 发布门槛要求 Native Nested 或 Compatibility 至少一种以新角色名真实通过；物理 Windows 11 Native Nested 仍单独标注 |
 
-v0.5.0 增加 Requirement ID、产物优先审核、验证者校验、有限只读挑战与恢复包，并正式移除 `$sol-luna` 兼容入口；完整设计与证据见 [v0.5.0 实施报告](SOL_CONTROL_V050_IMPLEMENTATION_REPORT.md)。v0.4.1 的 Desktop 握手修复与早期迁移背景保留在[历史实施报告](SOL_CONTROL_IMPLEMENTATION_REPORT.md)。
+v1.0.0 将品牌、Skill 与 Agent 角色从具体模型名解耦，同时保留 Requirement ID、产物优先审核、验证者校验、有限只读挑战与恢复包；完整设计与证据见 [v1.0.0 实施报告](CODEX_PROVE_V1_IMPLEMENTATION_REPORT.md)。早期模型品牌版本保留在[历史实施报告](SOL_CONTROL_IMPLEMENTATION_REPORT.md)。
 
 这些状态描述的是已记录证据范围，不推断未验证运行表面。
 
@@ -380,16 +380,17 @@ v0.5.0 增加 Requirement ID、产物优先审核、验证者校验、有限只�
 
 ```text
 .agents/skills/
-└─ sol-control/                唯一 Skill 与调用入口
+├─ codex-prove/                规范 Skill 与调用入口
 │  ├─ SKILL.md
 │  └─ references/
 │     ├─ orchestration.md      编排契约
-│     └─ runtime-notes.md      运行时与调度说明
+│     └─ runtime-notes.md      运行时与能力 profile
+└─ sol-control/                v1.0 显式兼容入口
 
 .codex/agents/
-├─ sol-controller.toml
-├─ terra-high-worker.toml
-└─ luna-max-worker.toml
+├─ prove-controller.toml
+├─ prove-complex-worker.toml
+└─ prove-efficient-worker.toml
 
 scripts/
 ├─ validate.*
@@ -405,26 +406,26 @@ README.en.md                   English
 
 ## 文档入口
 
-- [Public Skill](.agents/skills/sol-control/SKILL.md)
-- [编排契约](.agents/skills/sol-control/references/orchestration.md)
-- [运行时说明](.agents/skills/sol-control/references/runtime-notes.md)
-- [Sol 配置](.codex/agents/sol-controller.toml)
-- [Terra High 配置](.codex/agents/terra-high-worker.toml)
-- [Luna Max 配置](.codex/agents/luna-max-worker.toml)
+- [Public Skill](.agents/skills/codex-prove/SKILL.md)
+- [编排契约](.agents/skills/codex-prove/references/orchestration.md)
+- [运行时与能力 profile](.agents/skills/codex-prove/references/runtime-notes.md)
+- [Controller 配置](.codex/agents/prove-controller.toml)
+- [Complex worker 配置](.codex/agents/prove-complex-worker.toml)
+- [Efficient worker 配置](.codex/agents/prove-efficient-worker.toml)
 - [运行表面矩阵](docs/release/runtime-surface-matrix.md)
 - [真实项目路由样本](tests/real-project-benchmark.md)
-- [v0.5 匹配 A/B 协议](tests/v050-ab-benchmark.md)
-- [v0.5 真实匹配 smoke 证据](tests/v050-live-smoke.md)
-- [v0.5 证据优先实现报告](SOL_CONTROL_V050_IMPLEMENTATION_REPORT.md)
+- [v1.0 匹配 A/B 协议](tests/v100-ab-benchmark.md)
+- [v1.0 真实匹配 smoke 证据](tests/v100-live-smoke.md)
+- [v1.0 证据优先实现报告](CODEX_PROVE_V1_IMPLEMENTATION_REPORT.md)
 - [v0.4.0 实施报告](SOL_CONTROL_IMPLEMENTATION_REPORT.md)
 
 ## 维护与支持
 
-主要维护者：[@yehyakin](https://github.com/yehyakin)。项目支持最新发布版本与当前 `main`；具体环境边界和求助渠道见 [SUPPORT.md](SUPPORT.md)。提交改进前请阅读 [CONTRIBUTING.md](CONTRIBUTING.md) 和 [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)，可复现问题请使用仓库的结构化 [Issue 模板](https://github.com/yehyakin/codex-sol-control/issues/new/choose)。
+主要维护者：[@yehyakin](https://github.com/yehyakin)。项目支持最新发布版本与当前 `main`；具体环境边界和求助渠道见 [SUPPORT.md](SUPPORT.md)。提交改进前请阅读 [CONTRIBUTING.md](CONTRIBUTING.md) 和 [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)，可复现问题请使用仓库的结构化 [Issue 模板](https://github.com/yehyakin/codex-prove/issues/new/choose)。
 
 ## 安全
 
-安全问题不要提交公开 Issue，也不要附带 Token、私有路径或私有仓库内容。请阅读 [SECURITY.md](SECURITY.md)，并通过 GitHub [私密漏洞报告](https://github.com/yehyakin/codex-sol-control/security/advisories/new)提交。
+安全问题不要提交公开 Issue，也不要附带 Token、私有路径或私有仓库内容。请阅读 [SECURITY.md](SECURITY.md)，并通过 GitHub [私密漏洞报告](https://github.com/yehyakin/codex-prove/security/advisories/new)提交。
 
 ## 开发与测试
 
@@ -433,7 +434,7 @@ README.en.md                   English
 ```sh
 bash scripts/validate.sh
 bash scripts/test.sh
-python3 scripts/benchmark_ab.py validate tests/fixtures/v050-ab-benchmark.json
+python3 scripts/benchmark_ab.py validate tests/fixtures/v100-ab-benchmark.json
 ```
 
 `scripts/test.sh` 会选择可用的 Python 3.11+，并运行完整 `unittest` 测试集。
@@ -449,7 +450,8 @@ python3 scripts/benchmark_ab.py validate tests/fixtures/v050-ab-benchmark.json
 - 精确 custom agent、model、reasoning effort 与权限选择取决于宿主运行表面。
 - 并行能力取决于实时容量和互不重叠的 write scope，不承诺固定 worker 数量。
 - GitHub 托管 Windows runner 证明的是 Windows Server 行为，不等同于物理 Windows 11。
-- Terra High 是复杂执行层，不是第二 planner 或 controller。
+- Complex worker 是复杂执行层，不是第二 planner 或 controller。
+- PROVE 表示受证据约束的验证流程，不保证绝对正确。
 - 最终交付依赖真实文件、完整 diff 与新鲜验证；配置标签本身不是运行证据。
 
 ## 许可证

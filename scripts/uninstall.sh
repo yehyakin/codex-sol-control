@@ -2,6 +2,16 @@
 set -euo pipefail
 IFS=$'\n\t'
 
+restore_latest=0
+if (( $# > 1 )); then
+  printf 'Usage: uninstall.sh [--restore-latest]\n' >&2
+  exit 1
+fi
+if (( $# == 1 )); then
+  [[ "$1" == --restore-latest ]] || { printf 'Usage: uninstall.sh [--restore-latest]\n' >&2; exit 1; }
+  restore_latest=1
+fi
+
 die() {
   printf 'uninstall.sh: %s\n' "$1" >&2
   exit 1
@@ -18,20 +28,16 @@ valid_hash() {
 sha256_file() {
   if command -v shasum >/dev/null 2>&1; then
     shasum -a 256 "$1" | awk '{print $1}'
-  elif command -v sha256sum >/dev/null 2>&1; then
-    sha256sum "$1" | awk '{print $1}'
   else
-    return 1
+    sha256sum "$1" | awk '{print $1}'
   fi
 }
 
-sha256_text_stream() {
+sha256_stream() {
   if command -v shasum >/dev/null 2>&1; then
     shasum -a 256 | awk '{print $1}'
-  elif command -v sha256sum >/dev/null 2>&1; then
-    sha256sum | awk '{print $1}'
   else
-    return 1
+    sha256sum | awk '{print $1}'
   fi
 }
 
@@ -52,76 +58,38 @@ sha256_tree() {
         printf 'O\t%s\n' "$relative"
       fi
     done < <(find . -mindepth 1 -print | LC_ALL=C sort)
-  ) | sha256_text_stream
+  ) | sha256_stream
 }
 
-state_value_file() {
+hash_path() {
+  if [[ "$2" == directory ]]; then sha256_tree "$1"; else sha256_file "$1"; fi
+}
+
+state_value() {
   local file="$1"
   local key="$2"
   awk -F= -v wanted="$key" '$1 == wanted { print substr($0, length(wanted) + 2); found = 1 } END { if (!found) exit 1 }' "$file"
 }
 
-state_optional_value_file() {
-  local file="$1"
-  local key="$2"
-  awk -F= -v wanted="$key" '$1 == wanted { print substr($0, length(wanted) + 2); found = 1 } END { if (!found) exit 0 }' "$file"
-}
-
-state_has_key() {
-  local file="$1"
-  local key="$2"
-  awk -F= -v wanted="$key" '$1 == wanted { found = 1 } END { exit !found }' "$file"
-}
-
-assert_plain_tree() {
-  local path="$1"
-  local link
-  [[ ! -L "$path" ]] || die 'symbolic links are not allowed in an owned path'
-  if [[ -d "$path" ]]; then
-    link=$(find "$path" -type l -print -quit)
-    [[ -z "$link" ]] || die 'symbolic links are not allowed in an owned tree'
-  fi
-}
-
-assert_target() {
-  local path="$1"
+assert_plain() {
+  local target="$1"
   local kind="$2"
-  if ! path_exists "$path"; then
-    return 0
-  fi
-  [[ ! -L "$path" ]] || die 'symbolic links are not allowed in an uninstall target'
+  local link
+  [[ ! -L "$target" ]] || die 'symbolic links are not allowed in managed paths'
   if [[ "$kind" == directory ]]; then
-    [[ -d "$path" ]] || die 'an existing directory target has the wrong type'
+    [[ -d "$target" ]] || die 'a managed directory has the wrong type'
+    link=$(find "$target" -type l -print -quit)
+    [[ -z "$link" ]] || die 'symbolic links are not allowed in a managed tree'
   else
-    [[ -f "$path" ]] || die 'an existing file target has the wrong type'
+    [[ -f "$target" ]] || die 'a managed file has the wrong type'
   fi
-  assert_plain_tree "$path"
 }
 
 copy_exact() {
-  local source="$1"
-  local destination="$2"
-  if [[ -d "$source" ]]; then
-    cp -a "$source" "$destination"
-  else
-    cp -p "$source" "$destination"
-  fi
+  if [[ -d "$1" ]]; then cp -a "$1" "$2"; else cp -p "$1" "$2"; fi
 }
 
-case "${1:-}" in
-  '')
-    restore_latest=0
-    ;;
-  --restore-latest)
-    restore_latest=1
-    ;;
-  *)
-    die 'usage: uninstall.sh [--restore-latest]'
-    ;;
-esac
-[[ "$#" -le 1 ]] || die 'usage: uninstall.sh [--restore-latest]'
-
-for command_name in find awk sort mktemp cp mv rm rmdir; do
+for command_name in find awk sort mktemp cp mv mkdir rm; do
   command -v "$command_name" >/dev/null 2>&1 || die "required command is unavailable: $command_name"
 done
 if ! command -v shasum >/dev/null 2>&1 && ! command -v sha256sum >/dev/null 2>&1; then
@@ -129,363 +97,139 @@ if ! command -v shasum >/dev/null 2>&1 && ! command -v sha256sum >/dev/null 2>&1
 fi
 
 raw_home=${ORCHESTRATE_HOME:-${HOME:-}}
-[[ -n "$raw_home" ]] || die 'ORCHESTRATE_HOME or HOME is required'
-[[ "$raw_home" == /* ]] || die 'ORCHESTRATE_HOME must be an absolute path'
-[[ "$raw_home" != / ]] || die 'refusing the filesystem root as ORCHESTRATE_HOME'
-[[ -d "$raw_home" && ! -L "$raw_home" ]] || die 'ORCHESTRATE_HOME is not a safe directory'
-base_dir=$(CDPATH= cd -- "$raw_home" && pwd -P) || die 'cannot resolve ORCHESTRATE_HOME'
-[[ "$base_dir" != / ]] || die 'refusing the filesystem root as ORCHESTRATE_HOME'
+[[ -n "$raw_home" && "$raw_home" == /* && "$raw_home" != / ]] || die 'ORCHESTRATE_HOME must be a non-root absolute path'
+[[ ! -L "$raw_home" && -d "$raw_home" ]] || die 'ORCHESTRATE_HOME is missing or unsafe'
+base_dir=$(CDPATH= cd -- "${raw_home%/}" && pwd -P) || die 'cannot resolve ORCHESTRATE_HOME'
 
-new_skill_target="$base_dir/.agents/skills/sol-control"
-compat_skill_target="$base_dir/.agents/skills/sol-luna"
-new_sol_target="$base_dir/.codex/agents/sol-controller.toml"
-luna_target="$base_dir/.codex/agents/luna-max-worker.toml"
-terra_target="$base_dir/.codex/agents/terra-high-worker.toml"
-legacy_skill_target="$base_dir/.agents/skills/orchestrate-sol-luna"
-legacy_sol_target="$base_dir/.codex/agents/sol-planner.toml"
-codex_dir="$base_dir/.codex"
-agents_dir="$codex_dir/agents"
-config_target="$codex_dir/config.toml"
-state_root="$codex_dir/sol-control"
+known_relatives=(
+  ".agents/skills/codex-prove"
+  ".agents/skills/sol-control"
+  ".agents/skills/sol-luna"
+  ".agents/skills/orchestrate-sol-luna"
+  ".codex/agents/prove-controller.toml"
+  ".codex/agents/prove-complex-worker.toml"
+  ".codex/agents/prove-efficient-worker.toml"
+  ".codex/agents/sol-controller.toml"
+  ".codex/agents/terra-high-worker.toml"
+  ".codex/agents/luna-max-worker.toml"
+  ".codex/agents/sol-planner.toml"
+  ".codex/codex-prove/install-state"
+  ".codex/sol-control/install-state"
+  ".codex/sol-luna/install-state"
+  ".codex/orchestrate-sol-luna/install-state"
+)
+known_kinds=(
+  directory directory directory directory
+  file file file file file file file
+  file file file file
+)
+
+state_root="$base_dir/.codex/codex-prove"
 state_file="$state_root/install-state"
 backup_root="$state_root/backups"
-previous_state_root="$codex_dir/sol-luna"
-previous_state_file="$previous_state_root/install-state"
-legacy_state_root="$codex_dir/orchestrate-sol-luna"
-legacy_state_file="$legacy_state_root/install-state"
+path_exists "$state_file" || die 'Codex PROVE install state is missing'
+assert_plain "$state_file" file
+[[ "$(state_value "$state_file" version)" == 5 ]] || die 'unsupported Codex PROVE install state'
 
-for directory in \
-  "$base_dir/.agents" \
-  "$base_dir/.agents/skills" \
-  "$codex_dir" \
-  "$agents_dir" \
-  "$state_root" \
-  "$backup_root" \
-  "$previous_state_root" \
-  "$legacy_state_root"; do
-  if path_exists "$directory"; then
-    [[ ! -L "$directory" && -d "$directory" ]] || die 'an uninstall parent is unsafe'
-  fi
+backup_id=$(state_value "$state_file" backup_id) || die 'install state is incomplete'
+[[ "$backup_id" =~ ^[A-Za-z0-9._-]+$ ]] || die 'install state has an unsafe backup identifier'
+
+managed_indexes=(0 1 4 5 6)
+managed_keys=(skill_sha256 compat_skill_sha256 controller_sha256 complex_worker_sha256 efficient_worker_sha256)
+for (( item=0; item<${#managed_indexes[@]}; item++ )); do
+  index=${managed_indexes[item]}
+  target="$base_dir/${known_relatives[index]}"
+  expected=$(state_value "$state_file" "${managed_keys[item]}") || die 'install state is incomplete'
+  valid_hash "$expected" || die 'install state contains an invalid checksum'
+  path_exists "$target" || die 'an installed Codex PROVE target is missing'
+  assert_plain "$target" "${known_kinds[index]}"
+  [[ "$(hash_path "$target" "${known_kinds[index]}")" == "$expected" ]] || die 'an installed Codex PROVE target was modified; refusing to remove it'
 done
 
-[[ -d "$state_root" && ! -L "$state_root" ]] || die 'no v0.5 installation state was found'
-[[ -f "$state_file" && ! -L "$state_file" ]] || die 'no v0.5 installation state was found'
-if path_exists "$config_target"; then
-  assert_target "$config_target" file
-fi
-assert_target "$state_file" file
-assert_target "$new_skill_target" directory
-assert_target "$compat_skill_target" directory
-assert_target "$new_sol_target" file
-assert_target "$luna_target" file
-assert_target "$terra_target" file
-assert_target "$legacy_skill_target" directory
-assert_target "$legacy_sol_target" file
-if path_exists "$legacy_state_file"; then assert_target "$legacy_state_file" file; fi
-if path_exists "$previous_state_file"; then assert_target "$previous_state_file" file; fi
-
-[[ "$(state_value_file "$state_file" version)" == 4 ]] || die 'install state is not v0.5'
-backup_id=$(state_value_file "$state_file" backup_id) || die 'install state is incomplete'
-[[ "$backup_id" =~ ^[A-Za-z0-9._-]+$ && "$backup_id" != . && "$backup_id" != .. ]] || die 'install state contains an unsafe backup identifier'
 backup_dir="$backup_root/$backup_id"
-[[ -d "$backup_dir" && ! -L "$backup_dir" ]] || die 'recorded backup is unavailable'
-[[ -f "$backup_dir/manifest" && ! -L "$backup_dir/manifest" ]] || die 'recorded backup manifest is unavailable'
-
-recorded_skill=$(state_value_file "$state_file" skill_sha256) || die 'install state is incomplete'
-recorded_sol=$(state_value_file "$state_file" sol_sha256) || die 'install state is incomplete'
-recorded_luna=$(state_value_file "$state_file" luna_sha256) || die 'install state is incomplete'
-recorded_terra=$(state_optional_value_file "$state_file" terra_sha256)
-valid_hash "$recorded_skill" || die 'install state has an invalid skill checksum'
-valid_hash "$recorded_sol" || die 'install state has an invalid Sol checksum'
-valid_hash "$recorded_luna" || die 'install state has an invalid Luna checksum'
-if [[ -n "$recorded_terra" ]]; then valid_hash "$recorded_terra" || die 'install state has an invalid Terra checksum'; fi
-[[ -d "$new_skill_target" && ! -L "$new_skill_target" ]] || die 'installed v0.5 skill is missing or unsafe'
-! path_exists "$compat_skill_target" || die 'removed compatibility skill unexpectedly exists; refusing to remove it without ownership'
-[[ -f "$new_sol_target" && ! -L "$new_sol_target" ]] || die 'installed v0.5 Sol controller is missing or unsafe'
-[[ -f "$luna_target" && ! -L "$luna_target" ]] || die 'installed v0.5 Luna agent is missing or unsafe'
-[[ "$(sha256_tree "$new_skill_target")" == "$recorded_skill" ]] || die 'installed v0.5 skill was modified; refusing to remove it'
-[[ "$(sha256_file "$new_sol_target")" == "$recorded_sol" ]] || die 'installed v0.5 Sol controller was modified; refusing to remove it'
-[[ "$(sha256_file "$luna_target")" == "$recorded_luna" ]] || die 'installed v0.5 Luna agent was modified; refusing to remove it'
-if [[ -n "$recorded_terra" ]]; then
-  [[ -f "$terra_target" && ! -L "$terra_target" ]] || die 'installed v0.5 Terra agent is missing or unsafe'
-  [[ "$(sha256_file "$terra_target")" == "$recorded_terra" ]] || die 'installed v0.5 Terra agent was modified; refusing to remove it'
-fi
-
-manifest_value() {
-  state_value_file "$backup_dir/manifest" "$1"
-}
-
-[[ "$(manifest_value version)" == 4 ]] || die 'backup manifest is not v0.5'
-
-verify_backup_entry() {
-  local label="$1"
-  local presence_key="$2"
-  local checksum_key="$3"
-  local artifact="$4"
-  local kind="$5"
-  local presence checksum actual
-  presence=$(manifest_value "$presence_key") || die 'backup manifest is incomplete'
-  checksum=$(manifest_value "$checksum_key") || die 'backup manifest is incomplete'
-  [[ "$presence" == present || "$presence" == absent ]] || die 'backup manifest has an invalid presence value'
-  if [[ "$presence" == present ]]; then
-    valid_hash "$checksum" || die 'backup manifest has an invalid checksum'
-    [[ -e "$artifact" && ! -L "$artifact" ]] || die "recorded $label backup is missing or unsafe"
-    if [[ "$kind" == directory ]]; then
-      [[ -d "$artifact" ]] || die "recorded $label backup has the wrong type"
-      assert_plain_tree "$artifact"
-      actual=$(sha256_tree "$artifact")
-    else
-      [[ -f "$artifact" ]] || die "recorded $label backup has the wrong type"
-      actual=$(sha256_file "$artifact")
-    fi
-    [[ "$actual" == "$checksum" ]] || die "recorded $label backup was modified"
-  else
-    [[ -z "$checksum" ]] || die 'absent backup has a checksum'
-    [[ ! -e "$artifact" && ! -L "$artifact" ]] || die 'absent backup has an unexpected artifact'
-  fi
-}
-
-assert_target "$backup_dir" directory
-assert_target "$backup_dir/legacy" directory
-assert_target "$backup_dir/v040" directory
-verify_backup_entry legacy-skill legacy_skill_presence legacy_skill_sha256 "$backup_dir/legacy/skill" directory
-verify_backup_entry legacy-Sol legacy_sol_presence legacy_sol_sha256 "$backup_dir/legacy/sol-planner.toml" file
-verify_backup_entry legacy-Luna legacy_luna_presence legacy_luna_sha256 "$backup_dir/legacy/luna-max-worker.toml" file
-legacy_state_presence_key=0
-legacy_state_sha256_key=0
-if state_has_key "$backup_dir/manifest" legacy_state_presence; then legacy_state_presence_key=1; fi
-if state_has_key "$backup_dir/manifest" legacy_state_sha256; then legacy_state_sha256_key=1; fi
-if (( legacy_state_presence_key && legacy_state_sha256_key )); then
-  verify_backup_entry legacy-install-state legacy_state_presence legacy_state_sha256 "$backup_dir/legacy/install-state" file
-  legacy_state_presence=$(manifest_value legacy_state_presence)
-elif (( legacy_state_presence_key || legacy_state_sha256_key )); then
-  die 'backup manifest is incomplete'
-else
-  legacy_state_presence=absent
-fi
-verify_backup_entry previous-install-state previous_state_presence previous_state_sha256 "$backup_dir/previous-install-state" file
-verify_backup_entry compatibility-skill compat_skill_presence compat_skill_sha256 "$backup_dir/compat-skill" directory
-verify_backup_entry v040-install-state v040_state_presence v040_state_sha256 "$backup_dir/v040/install-state" file
-verify_backup_entry v040-skill v040_skill_presence v040_skill_sha256 "$backup_dir/v040/skill" directory
-verify_backup_entry v040-Sol v040_sol_presence v040_sol_sha256 "$backup_dir/v040/sol-controller.toml" file
-verify_backup_entry v040-Luna v040_luna_presence v040_luna_sha256 "$backup_dir/v040/luna-max-worker.toml" file
-if [[ -n "$recorded_terra" ]]; then
-  verify_backup_entry v040-Terra v040_terra_presence v040_terra_sha256 "$backup_dir/v040/terra-high-worker.toml" file
-fi
-
-config_presence=$(manifest_value config_presence) || die 'backup manifest is incomplete'
-config_sha256=$(manifest_value config_sha256) || die 'backup manifest is incomplete'
-[[ "$config_presence" == present || "$config_presence" == absent ]] || die 'backup manifest has an invalid config presence'
-if [[ "$config_presence" == present ]]; then
-  valid_hash "$config_sha256" || die 'backup manifest has an invalid config checksum'
-else
-  [[ -z "$config_sha256" ]] || die 'absent config backup has a checksum'
-fi
-
-legacy_skill_presence=$(manifest_value legacy_skill_presence)
-legacy_sol_presence=$(manifest_value legacy_sol_presence)
-legacy_luna_presence=$(manifest_value legacy_luna_presence)
-previous_state_presence=$(manifest_value previous_state_presence)
-compat_skill_presence=$(manifest_value compat_skill_presence)
-v040_state_presence=$(manifest_value v040_state_presence)
-v040_skill_presence=$(manifest_value v040_skill_presence)
-v040_sol_presence=$(manifest_value v040_sol_presence)
-v040_luna_presence=$(manifest_value v040_luna_presence)
-v040_terra_presence=absent
-if [[ -n "$recorded_terra" ]]; then v040_terra_presence=$(manifest_value v040_terra_presence); fi
-
-restore_legacy_skill=0
-restore_legacy_sol=0
-restore_legacy_state=0
-restore_previous_state=0
-restore_compat_skill=0
-restore_v040_state=0
-restore_v040_skill=0
-restore_v040_sol=0
-restore_luna=0
-restore_terra=0
+manifest="$backup_dir/manifest"
 if (( restore_latest )); then
-  if [[ "$previous_state_presence" == present ]]; then
-    ! path_exists "$previous_state_file" || die 'previous install state already exists; refusing to overwrite it'
-    restore_previous_state=1
-  fi
-  if [[ "$legacy_state_presence" == present ]]; then
-    ! path_exists "$legacy_state_file" || die 'legacy install state already exists; refusing to overwrite it'
-    restore_legacy_state=1
-  fi
-  if [[ "$legacy_skill_presence" == present ]] && ! path_exists "$legacy_skill_target"; then
-    restore_legacy_skill=1
-  fi
-  if [[ "$legacy_sol_presence" == present ]] && ! path_exists "$legacy_sol_target"; then
-    restore_legacy_sol=1
-  fi
-  if [[ "$v040_skill_presence" == present ]]; then
-    restore_v040_skill=1
-  fi
-  if [[ "$compat_skill_presence" == present ]]; then
-    restore_compat_skill=1
-  fi
-  if [[ "$v040_state_presence" == present ]]; then
-    restore_v040_state=1
-  fi
-  if [[ "$v040_sol_presence" == present ]]; then
-    restore_v040_sol=1
-  fi
-  if [[ "$v040_luna_presence" == present ]]; then
-    restore_luna=1
-    luna_restore_source="$backup_dir/v040/luna-max-worker.toml"
-  elif [[ "$legacy_luna_presence" == present ]]; then
-    restore_luna=1
-    luna_restore_source="$backup_dir/legacy/luna-max-worker.toml"
-  else
-    luna_restore_source=
-  fi
-  if [[ "$v040_terra_presence" == present ]]; then restore_terra=1; fi
+  [[ -d "$backup_dir" && ! -L "$backup_dir" ]] || die 'latest backup directory is missing or unsafe'
+  [[ -f "$manifest" && ! -L "$manifest" ]] || die 'latest backup manifest is missing or unsafe'
+  [[ "$(state_value "$manifest" version)" == 5 ]] || die 'latest backup manifest has an unsupported version'
+  [[ "$(state_value "$manifest" entry_count)" == "${#known_relatives[@]}" ]] || die 'latest backup manifest has the wrong entry count'
 fi
 
-transaction_dir=$(mktemp -d "$state_root/.uninstall.XXXXXX") || die 'cannot create the uninstall transaction'
-mkdir "$transaction_dir/stage"
-if (( restore_legacy_skill )); then copy_exact "$backup_dir/legacy/skill" "$transaction_dir/stage/legacy-skill"; fi
-if (( restore_legacy_sol )); then copy_exact "$backup_dir/legacy/sol-planner.toml" "$transaction_dir/stage/legacy-sol.toml"; fi
-if (( restore_legacy_state )); then copy_exact "$backup_dir/legacy/install-state" "$transaction_dir/stage/legacy-install-state"; fi
-if (( restore_previous_state )); then copy_exact "$backup_dir/previous-install-state" "$transaction_dir/stage/previous-install-state"; fi
-if (( restore_compat_skill )); then copy_exact "$backup_dir/compat-skill" "$transaction_dir/stage/compat-skill"; fi
-if (( restore_v040_state )); then copy_exact "$backup_dir/v040/install-state" "$transaction_dir/stage/v040-install-state"; fi
-if (( restore_v040_skill )); then copy_exact "$backup_dir/v040/skill" "$transaction_dir/stage/v040-skill"; fi
-if (( restore_v040_sol )); then copy_exact "$backup_dir/v040/sol-controller.toml" "$transaction_dir/stage/v040-sol.toml"; fi
-if (( restore_luna )); then copy_exact "$luna_restore_source" "$transaction_dir/stage/luna.toml"; fi
-if (( restore_terra )); then copy_exact "$backup_dir/v040/terra-high-worker.toml" "$transaction_dir/stage/terra.toml"; fi
+transaction_dir=$(mktemp -d "$state_root/.uninstall.XXXXXX") || die 'cannot create uninstall transaction'
+mkdir "$transaction_dir/current" "$transaction_dir/stage" "$transaction_dir/failed"
 
-state_old=0
-state_new=0
-skill_old=0
-sol_old=0
-luna_old=0
-terra_old=0
-legacy_skill_new=0
-legacy_sol_new=0
-legacy_state_new=0
-legacy_state_root_new=0
-previous_state_new=0
-previous_state_root_new=0
-compat_skill_new=0
-v040_skill_new=0
-v040_sol_new=0
-luna_new=0
-terra_new=0
-
-rollback_uninstall() {
-  local status="$1"
+rollback() {
+  local status=$?
   trap - EXIT INT TERM
-  set +e
-
-  if (( luna_new )); then rm -f "$luna_target"; fi
-  if (( luna_old )) && path_exists "$transaction_dir/old-luna"; then mv "$transaction_dir/old-luna" "$luna_target"; fi
-  if (( terra_new )); then rm -f "$terra_target"; fi
-  if (( terra_old )) && path_exists "$transaction_dir/old-terra"; then mv "$transaction_dir/old-terra" "$terra_target"; fi
-  if (( v040_sol_new )); then rm -f "$new_sol_target"; fi
-  if (( sol_old )) && path_exists "$transaction_dir/old-v040-sol"; then mv "$transaction_dir/old-v040-sol" "$new_sol_target"; fi
-  if (( v040_skill_new )); then rm -rf "$new_skill_target"; fi
-  if (( skill_old )) && path_exists "$transaction_dir/old-v040-skill"; then mv "$transaction_dir/old-v040-skill" "$new_skill_target"; fi
-  if (( compat_skill_new )); then rm -rf "$compat_skill_target"; fi
-  if (( legacy_sol_new )); then rm -f "$legacy_sol_target"; fi
-  if (( legacy_skill_new )); then rm -rf "$legacy_skill_target"; fi
-  if (( legacy_state_new )); then rm -f "$legacy_state_file"; fi
-  if (( legacy_state_root_new )); then rmdir "$legacy_state_root" 2>/dev/null || true; fi
-  if (( previous_state_new )); then rm -f "$previous_state_file"; fi
-  if (( previous_state_root_new )); then rmdir "$previous_state_root" 2>/dev/null || true; fi
-  if (( state_new )); then rm -f "$state_file"; fi
-  if (( state_old )) && path_exists "$transaction_dir/old-state"; then mv "$transaction_dir/old-state" "$state_file"; fi
-
-  rm -rf "$transaction_dir"
+  for (( index=${#known_relatives[@]} - 1; index>=0; index-- )); do
+    target="$base_dir/${known_relatives[index]}"
+    if path_exists "$target"; then
+      mkdir -p "$transaction_dir/failed/$index"
+      mv "$target" "$transaction_dir/failed/$index/current" 2>/dev/null || true
+    fi
+    if path_exists "$transaction_dir/current/$index"; then
+      mkdir -p "${target%/*}"
+      mv "$transaction_dir/current/$index" "$target" 2>/dev/null || true
+    fi
+  done
+  rm -rf "$transaction_dir" 2>/dev/null || true
   exit "$status"
 }
-trap 'rollback_uninstall "$?"' EXIT INT TERM
+trap rollback EXIT INT TERM
 
-mv "$state_file" "$transaction_dir/old-state"
-state_old=1
-if (( restore_v040_state )); then
-  mv "$transaction_dir/stage/v040-install-state" "$state_file"
-  state_new=1
-fi
-
-mv "$new_skill_target" "$transaction_dir/old-v040-skill"
-skill_old=1
-if (( restore_v040_skill )); then
-  mv "$transaction_dir/stage/v040-skill" "$new_skill_target"
-  v040_skill_new=1
-fi
-
-if (( restore_compat_skill )); then
-  mv "$transaction_dir/stage/compat-skill" "$compat_skill_target"
-  compat_skill_new=1
-fi
-
-mv "$new_sol_target" "$transaction_dir/old-v040-sol"
-sol_old=1
-if (( restore_v040_sol )); then
-  mv "$transaction_dir/stage/v040-sol.toml" "$new_sol_target"
-  v040_sol_new=1
+if (( restore_latest )); then
+  for (( index=0; index<${#known_relatives[@]}; index++ )); do
+    number=$((index + 1))
+    recorded_path=$(state_value "$manifest" "entry_${number}_path") || die 'backup manifest is incomplete'
+    recorded_kind=$(state_value "$manifest" "entry_${number}_kind") || die 'backup manifest is incomplete'
+    presence=$(state_value "$manifest" "entry_${number}_presence") || die 'backup manifest is incomplete'
+    checksum=$(state_value "$manifest" "entry_${number}_sha256") || die 'backup manifest is incomplete'
+    [[ "$recorded_path" == "${known_relatives[index]}" ]] || die 'backup manifest contains an unsafe path'
+    [[ "$recorded_kind" == "${known_kinds[index]}" ]] || die 'backup manifest contains an invalid target type'
+    [[ "$presence" == present || "$presence" == absent ]] || die 'backup manifest contains an invalid presence value'
+    source="$backup_dir/entries/$number"
+    if [[ "$presence" == present ]]; then
+      valid_hash "$checksum" || die 'backup manifest contains an invalid checksum'
+      path_exists "$source" || die 'a backup entry is missing'
+      assert_plain "$source" "$recorded_kind"
+      [[ "$(hash_path "$source" "$recorded_kind")" == "$checksum" ]] || die 'a backup entry checksum does not match'
+      copy_exact "$source" "$transaction_dir/stage/$index"
+    else
+      [[ -z "$checksum" ]] || die 'an absent backup entry has a checksum'
+      ! path_exists "$source" || die 'an absent backup entry has unexpected data'
+    fi
+  done
 fi
 
-mv "$luna_target" "$transaction_dir/old-luna"
-luna_old=1
-if (( restore_luna )); then
-  mv "$transaction_dir/stage/luna.toml" "$luna_target"
-  luna_new=1
+for index in "${managed_indexes[@]}" 11; do
+  target="$base_dir/${known_relatives[index]}"
+  mv "$target" "$transaction_dir/current/$index"
+done
+
+if (( restore_latest )); then
+  for (( index=0; index<${#known_relatives[@]}; index++ )); do
+    if path_exists "$transaction_dir/stage/$index"; then
+      target="$base_dir/${known_relatives[index]}"
+      ! path_exists "$target" || die 'a restore target unexpectedly exists'
+      mkdir -p "${target%/*}"
+      mv "$transaction_dir/stage/$index" "$target"
+    fi
+  done
 fi
 
-if [[ -n "$recorded_terra" ]]; then
-  mv "$terra_target" "$transaction_dir/old-terra"
-  terra_old=1
-  if (( restore_terra )); then
-    mv "$transaction_dir/stage/terra.toml" "$terra_target"
-    terra_new=1
-  fi
+if [[ "${ORCHESTRATE_FAILPOINT:-}" == after-remove ]]; then
+  die 'injected failure after removal'
 fi
 
-if (( restore_legacy_skill )); then
-  mv "$transaction_dir/stage/legacy-skill" "$legacy_skill_target"
-  legacy_skill_new=1
-fi
-if (( restore_legacy_sol )); then
-  mv "$transaction_dir/stage/legacy-sol.toml" "$legacy_sol_target"
-  legacy_sol_new=1
-fi
-if (( restore_legacy_state )); then
-  if ! path_exists "$legacy_state_root"; then
-    mkdir "$legacy_state_root"
-    legacy_state_root_new=1
-  fi
-  mv "$transaction_dir/stage/legacy-install-state" "$legacy_state_file"
-  legacy_state_new=1
-fi
-if (( restore_previous_state )); then
-  if ! path_exists "$previous_state_root"; then
-    mkdir "$previous_state_root"
-    previous_state_root_new=1
-  fi
-  mv "$transaction_dir/stage/previous-install-state" "$previous_state_file"
-  previous_state_new=1
-fi
-
-rm -rf "$transaction_dir" || die 'cannot finalize the uninstall transaction'
+rm -rf "$transaction_dir"
 transaction_dir=
 trap - EXIT INT TERM
 
-rm -rf "$backup_dir" 2>/dev/null || true
-rmdir "$backup_root" 2>/dev/null || true
-rmdir "$state_root" 2>/dev/null || true
-
-printf 'Uninstall path: %s\n' "$new_skill_target"
-printf 'Uninstall path: %s\n' "$new_sol_target"
-printf 'Uninstall path: %s\n' "$luna_target"
-if [[ -n "$recorded_terra" ]]; then printf 'Uninstall path: %s\n' "$terra_target"; fi
+printf 'Removed path: %s\n' "$base_dir/.agents/skills/codex-prove"
+printf 'Removed path: %s\n' "$base_dir/.agents/skills/sol-control"
+printf 'Removed path: %s\n' "$base_dir/.codex/agents/prove-controller.toml"
+printf 'Removed path: %s\n' "$base_dir/.codex/agents/prove-complex-worker.toml"
+printf 'Removed path: %s\n' "$base_dir/.codex/agents/prove-efficient-worker.toml"
 if (( restore_latest )); then
-  printf 'Restore path: %s\n' "$legacy_skill_target"
-  printf 'Restore path: %s\n' "$legacy_sol_target"
-  if (( restore_compat_skill )); then printf 'Restore path: %s\n' "$compat_skill_target"; fi
-  if (( restore_previous_state )); then printf 'Restore path: %s\n' "$previous_state_file"; fi
-  if (( restore_v040_state )); then printf 'Restore path: %s\n' "$state_file"; fi
-  if (( restore_legacy_state )); then printf 'Restore path: %s\n' "$legacy_state_file"; fi
+  printf 'Restored backup: %s\n' "$backup_dir"
 fi

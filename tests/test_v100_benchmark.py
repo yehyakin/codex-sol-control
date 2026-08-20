@@ -14,7 +14,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "scripts" / "benchmark_ab.py"
-MANIFEST = ROOT / "tests" / "fixtures" / "v050-ab-benchmark.json"
+MANIFEST = ROOT / "tests" / "fixtures" / "v100-ab-benchmark.json"
 
 
 def load_module():
@@ -103,7 +103,7 @@ class BenchmarkABTests(unittest.TestCase):
             self.module.validate_results(self.manifest, self.schedule, results)
 
     def test_cli_validate_emits_frozen_manifest_hash(self) -> None:
-        with tempfile.TemporaryDirectory(prefix="sol-control-ab.") as raw:
+        with tempfile.TemporaryDirectory(prefix="codex-prove-ab.") as raw:
             output = Path(raw) / "validation.json"
             run = subprocess.run(
                 [sys.executable, str(SCRIPT), "validate", str(MANIFEST), "--output", str(output)],

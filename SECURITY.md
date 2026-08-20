@@ -11,7 +11,7 @@ Security fixes target the latest tagged release and the current `main` branch.
 
 ## Reporting a vulnerability
 
-Report suspected vulnerabilities through GitHub's [private vulnerability reporting](https://github.com/yehyakin/codex-sol-control/security/advisories/new). Do not open a public issue and do not include credentials, tokens, private paths, or private repository content.
+Report suspected vulnerabilities through GitHub's [private vulnerability reporting](https://github.com/yehyakin/codex-prove/security/advisories/new). Do not open a public issue and do not include credentials, tokens, private paths, or private repository content.
 
 Include the affected version or commit, operating system and Codex surface, reproduction steps, impact, and a minimally redacted proof of concept when safe. We aim to acknowledge a report within seven days and will share the next update after triage.
 

@@ -1,5 +1,5 @@
 name: Feature request
-description: Propose a focused improvement to Codex Sol Control
+description: Propose a focused improvement to Codex Codex PROVE
 title: "[Feature]: "
 labels:
   - enhancement
@@ -15,7 +15,7 @@ body:
       options:
         - label: I searched existing issues and pull requests for this proposal.
           required: true
-        - label: This request is about Codex Sol Control rather than a downstream business project.
+        - label: This request is about Codex Codex PROVE rather than a downstream business project.
           required: true
   - type: textarea
     id: problem

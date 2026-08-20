@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate, schedule, and summarize matched Sol Control A/B runs.
+"""Validate, schedule, and summarize matched Codex PROVE A/B runs.
 
 This tool never launches a model. It freezes the experiment shape and rejects
 incomplete or incomparable result cells before computing descriptive metrics.

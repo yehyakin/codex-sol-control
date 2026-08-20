@@ -2,10 +2,10 @@
   "schema_version": 1,
   "evidence_class": "protocol_only",
   "baseline_ref": "v0.4.1",
-  "candidate_ref": "v0.5.0-working-tree",
+  "candidate_ref": "v1.0.0-working-tree",
   "arms": [
-    {"id": "baseline", "label": "Current Sol Control"},
-    {"id": "candidate", "label": "Evidence-first Sol Control"}
+    {"id": "baseline", "label": "Current Codex PROVE"},
+    {"id": "candidate", "label": "Evidence-first Codex PROVE"}
   ],
   "repetitions": 3,
   "counterbalanced_order": true,
@@ -14,12 +14,12 @@
   "cases": [
     {"id": "direct-small", "forward_case_id": "ordinary-simple-direct"},
     {"id": "parallel-disjoint", "forward_case_id": "live-capacity-batching"},
-    {"id": "requirement-gap", "forward_case_id": "v050-requirement-evidence-gap"},
-    {"id": "wrong-scope-verifier", "forward_case_id": "v050-wrong-scope-verifier"},
-    {"id": "high-risk-challenge", "forward_case_id": "v050-high-risk-selective-challenge"},
-    {"id": "resume-interruption", "forward_case_id": "v050-resume-no-duplicate-dispatch"},
+    {"id": "requirement-gap", "forward_case_id": "v100-requirement-evidence-gap"},
+    {"id": "wrong-scope-verifier", "forward_case_id": "v100-wrong-scope-verifier"},
+    {"id": "high-risk-challenge", "forward_case_id": "v100-high-risk-selective-challenge"},
+    {"id": "resume-interruption", "forward_case_id": "v100-resume-no-duplicate-dispatch"},
     {"id": "dirty-worktree", "forward_case_id": "dirty-worktree-preserved"},
-    {"id": "ownership-timeout", "forward_case_id": "v050-timeout-after-write-keeps-owner"}
+    {"id": "ownership-timeout", "forward_case_id": "v100-timeout-after-write-keeps-owner"}
   ],
   "metrics": [
     "held_out_pass",

@@ -1,4 +1,4 @@
-# v0.5 matched A/B benchmark protocol
+# v1.0 matched A/B benchmark protocol
 
 This protocol compares the published v0.4.1 baseline with the evidence-first
 candidate. It contains no performance result and declares no winner.
@@ -48,9 +48,9 @@ is independently auditable.
 ## Commands
 
 ```sh
-python3 scripts/benchmark_ab.py validate tests/fixtures/v050-ab-benchmark.json
-python3 scripts/benchmark_ab.py schedule tests/fixtures/v050-ab-benchmark.json --output schedule.json
-python3 scripts/benchmark_ab.py summarize tests/fixtures/v050-ab-benchmark.json results.json --output summary.json
+python3 scripts/benchmark_ab.py validate tests/fixtures/v100-ab-benchmark.json
+python3 scripts/benchmark_ab.py schedule tests/fixtures/v100-ab-benchmark.json --output schedule.json
+python3 scripts/benchmark_ab.py summarize tests/fixtures/v100-ab-benchmark.json results.json --output summary.json
 ```
 
 The tool does not launch Codex or any model. A separate authorized runner must

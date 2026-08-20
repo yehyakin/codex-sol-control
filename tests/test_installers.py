@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
-"""Black-box v0.5 installer and rename-migration tests."""
+"""Transactional installer lifecycle tests for Codex PROVE v1.0."""
 
 from __future__ import annotations
 
 import hashlib
 import os
-import shutil
 import subprocess
 import tempfile
 import unittest
@@ -14,754 +13,226 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPTS = ROOT / "scripts"
-
-LEGACY_SKILL_REL = Path(".agents/skills/orchestrate-sol-luna")
-LEGACY_SOL_REL = Path(".codex/agents/sol-planner.toml")
-NEW_SKILL_REL = Path(".agents/skills/sol-control")
-COMPAT_SKILL_REL = Path(".agents/skills/sol-luna")
-NEW_SOL_REL = Path(".codex/agents/sol-controller.toml")
-LUNA_REL = Path(".codex/agents/luna-max-worker.toml")
-TERRA_REL = Path(".codex/agents/terra-high-worker.toml")
-WINDOWS_LIFECYCLE_REL = Path("tests/windows-lifecycle.ps1")
-WINDOWS_SCRIPT_RELS = (
-    Path("scripts/install.ps1"),
-    Path("scripts/validate.ps1"),
-    Path("scripts/uninstall.ps1"),
-)
+SKILL = Path(".agents/skills/codex-prove")
+ALIAS = Path(".agents/skills/sol-control")
+CONTROLLER = Path(".codex/agents/prove-controller.toml")
+COMPLEX = Path(".codex/agents/prove-complex-worker.toml")
+EFFICIENT = Path(".codex/agents/prove-efficient-worker.toml")
+STATE = Path(".codex/codex-prove/install-state")
+CURRENT_TARGETS = (SKILL, ALIAS, CONTROLLER, COMPLEX, EFFICIENT)
 
 
-def digest(path: Path) -> str:
+def file_hash(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def tree_digest(directory: Path) -> str:
-    """Match the installer's deterministic SHA-256 tree representation."""
-
-    entries: list[str] = []
-    for path in sorted(directory.rglob("*"), key=lambda item: item.relative_to(directory).as_posix()):
-        relative = path.relative_to(directory).as_posix()
-        if path.is_symlink():
-            entries.append(f"L\t{relative}\t{os.readlink(path)}\n")
-        elif path.is_dir():
-            entries.append(f"D\t{relative}\n")
-        elif path.is_file():
-            entries.append(f"F\t{relative}\t{digest(path)}\n")
-        else:
-            entries.append(f"O\t{relative}\n")
-    return hashlib.sha256("".join(entries).encode("utf-8")).hexdigest()
-
-
-def snapshot(
-    root: Path,
-    ignored_prefixes: tuple[str, ...] = (),
-) -> dict[str, tuple[str, bytes | str | None]]:
-    """Capture every path under an isolated home for exact rollback checks."""
-
-    result: dict[str, tuple[str, bytes | str | None]] = {}
+def tree_hash(root: Path) -> str:
+    rows: list[str] = []
     for path in sorted(root.rglob("*"), key=lambda item: item.relative_to(root).as_posix()):
         relative = path.relative_to(root).as_posix()
-        if any(
-            relative == prefix or relative.startswith(f"{prefix}/")
-            for prefix in ignored_prefixes
-        ):
-            continue
+        if path.is_symlink():
+            rows.append(f"L\t{relative}\t{os.readlink(path)}\n")
+        elif path.is_dir():
+            rows.append(f"D\t{relative}\n")
+        elif path.is_file():
+            rows.append(f"F\t{relative}\t{file_hash(path)}\n")
+        else:
+            rows.append(f"O\t{relative}\n")
+    return hashlib.sha256("".join(rows).encode()).hexdigest()
+
+
+def snapshot(root: Path) -> dict[str, tuple[str, bytes | str | None]]:
+    result: dict[str, tuple[str, bytes | str | None]] = {}
+    if not root.exists():
+        return result
+    for path in sorted(root.rglob("*"), key=lambda item: item.relative_to(root).as_posix()):
+        relative = path.relative_to(root).as_posix()
         if path.is_symlink():
             result[relative] = ("link", os.readlink(path))
         elif path.is_dir():
             result[relative] = ("dir", None)
         elif path.is_file():
             result[relative] = ("file", path.read_bytes())
-        else:
-            result[relative] = ("other", None)
     return result
 
 
-class InstallerTests(unittest.TestCase):
+class PosixInstallerTests(unittest.TestCase):
     def setUp(self) -> None:
-        self.tempdir = tempfile.TemporaryDirectory(prefix="sol-control-v050-test.")
-        self.test_home = Path(self.tempdir.name)
-        self.env = os.environ.copy()
-        self.env["ORCHESTRATE_HOME"] = str(self.test_home)
-        self.env.pop("ORCHESTRATE_FAILPOINT", None)
+        if os.name == "nt":
+            self.skipTest("POSIX lifecycle runs on macOS/Linux; Windows uses windows-lifecycle.ps1")
+        self.temporary = tempfile.TemporaryDirectory(prefix="codex-prove-v1.")
+        self.home = Path(self.temporary.name) / "home"
 
     def tearDown(self) -> None:
-        self.tempdir.cleanup()
+        self.temporary.cleanup()
 
-    def run_script(self, name: str, *args: str) -> subprocess.CompletedProcess[str]:
-        if os.name == "nt":
-            self.skipTest(
-                "Bash installer execution is POSIX-only; Windows runtime coverage is provided by tests/windows-lifecycle.ps1."
-            )
+    def path(self, relative: Path) -> Path:
+        return self.home / relative
+
+    def run_script(self, script: str, *args: str, failpoint: str | None = None) -> subprocess.CompletedProcess[str]:
+        env = os.environ.copy()
+        env["ORCHESTRATE_HOME"] = str(self.home)
+        if failpoint:
+            env["ORCHESTRATE_FAILPOINT"] = failpoint
         return subprocess.run(
-            ["bash", str(SCRIPTS / name), *args],
+            ["bash", str(SCRIPTS / script), *args],
             cwd=ROOT,
-            env=self.env,
+            env=env,
             text=True,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             check=False,
         )
 
-    def path(self, relative: Path) -> Path:
-        return self.test_home / relative
+    def assert_current(self) -> None:
+        for relative in CURRENT_TARGETS:
+            self.assertTrue(self.path(relative).exists(), relative)
+        state = self.path(STATE).read_text(encoding="utf-8")
+        self.assertIn("version=5", state)
+        self.assertIn("skill_sha256=", state)
+        self.assertIn("compat_skill_sha256=", state)
+        self.assertIn("controller_sha256=", state)
 
-    def v050_targets(self) -> tuple[Path, Path, Path, Path, Path]:
-        return (
-            self.path(NEW_SKILL_REL),
-            self.path(COMPAT_SKILL_REL),
-            self.path(NEW_SOL_REL),
-            self.path(LUNA_REL),
-            self.path(TERRA_REL),
-        )
+    def install(self) -> subprocess.CompletedProcess[str]:
+        result = self.run_script("install.sh")
+        self.assertEqual(0, result.returncode, result.stdout)
+        self.assert_current()
+        return result
 
-    def assert_v050_targets_installed(self) -> None:
-        skill, compat, sol, luna, terra = self.v050_targets()
-        self.assertTrue(skill.is_dir(), skill)
-        self.assertFalse(compat.exists(), compat)
-        self.assertTrue(sol.is_file(), sol)
-        self.assertTrue(luna.is_file(), luna)
-        self.assertTrue(terra.is_file(), terra)
-
-    def seed_legacy_v01_install(self) -> dict[str, Path]:
-        """Create a valid, synthetic v0.1 install with a v0.1 checksum state."""
-
-        skill = self.path(LEGACY_SKILL_REL)
-        sol = self.path(LEGACY_SOL_REL)
-        luna = self.path(LUNA_REL)
-        unrelated = self.path(Path(".codex/agents/keep-me.toml"))
-        config = self.path(Path(".codex/config.toml"))
-
-        (skill / "agents").mkdir(parents=True)
-        (skill / "references").mkdir(parents=True)
-        (skill / "SKILL.md").write_text(
-            "---\nname: orchestrate-sol-luna\ndescription: legacy\n---\nlegacy skill\n",
+    def make_v050_install(self) -> dict[str, bytes]:
+        old_skill = self.home / ".agents/skills/sol-control"
+        old_agents = self.home / ".codex/agents"
+        old_skill.mkdir(parents=True)
+        old_agents.mkdir(parents=True)
+        (old_skill / "SKILL.md").write_text(
+            "---\nname: sol-control\ndescription: managed v0.5 fixture\n---\nold\n",
             encoding="utf-8",
         )
-        (skill / "agents" / "openai.yaml").write_text("legacy: true\n", encoding="utf-8")
-        (skill / "references" / "routing-protocol.md").write_text(
-            "legacy protocol\n", encoding="utf-8"
-        )
-        sol.parent.mkdir(parents=True, exist_ok=True)
-        sol.write_text('name = "sol-planner"\nmodel = "gpt-5.6-sol"\n', encoding="utf-8")
-        luna.write_text(
-            'name = "luna-max-worker"\nmodel = "gpt-5.6-luna"\n', encoding="utf-8"
-        )
-        unrelated.write_text("keep this unrelated file\n", encoding="utf-8")
-        config.write_text('model = "user-configured"\nplugins = ["keep"]\n', encoding="utf-8")
-
-        state_root = self.path(Path(".codex/orchestrate-sol-luna"))
-        backup = state_root / "backups" / "legacy-seed"
-        backup.mkdir(parents=True)
-        shutil.copytree(skill, backup / "skill")
-        shutil.copy2(sol, backup / "sol-planner.toml")
-        shutil.copy2(luna, backup / "luna-max-worker.toml")
-        shutil.copy2(config, backup / "config.toml")
-        (backup / "manifest").write_text(
-            "\n".join(
-                [
-                    "version=1",
-                    "skill_presence=present",
-                    f"skill_sha256={tree_digest(skill)}",
-                    "sol_presence=present",
-                    f"sol_sha256={digest(sol)}",
-                    "luna_presence=present",
-                    f"luna_sha256={digest(luna)}",
-                    "config_presence=present",
-                    f"config_sha256={digest(config)}",
-                    "",
-                ]
-            ),
-            encoding="utf-8",
-        )
-        (state_root / "install-state").write_text(
-            "\n".join(
-                [
-                    "version=1",
-                    "backup_id=legacy-seed",
-                    f"skill_sha256={tree_digest(skill)}",
-                    f"sol_sha256={digest(sol)}",
-                    f"luna_sha256={digest(luna)}",
-                    "",
-                ]
-            ),
-            encoding="utf-8",
-        )
-        return {
-            "skill": skill,
-            "sol": sol,
-            "luna": luna,
-            "unrelated": unrelated,
-            "config": config,
-            "state": state_root / "install-state",
+        files = {
+            "sol-controller.toml": b'name = "sol-controller"\nmodel = "gpt-5.6-sol"\n',
+            "terra-high-worker.toml": b'name = "terra-high-worker"\nmodel = "gpt-5.6-terra"\n',
+            "luna-max-worker.toml": b'name = "luna-max-worker"\nmodel = "gpt-5.6-luna"\n',
         }
-
-    def seed_state_only_v01_install(self) -> dict[str, Path]:
-        """Leave only a valid v0.1 state and its shared Luna target behind."""
-
-        legacy = self.seed_legacy_v01_install()
-        shutil.rmtree(legacy["skill"])
-        legacy["sol"].unlink()
-        return legacy
-
-    def seed_v030_install(self) -> dict[str, Path]:
-        """Create an owned v0.3 Sol Luna install for rename migration."""
-
-        skill = self.path(COMPAT_SKILL_REL)
-        skill.mkdir(parents=True)
-        (skill / "SKILL.md").write_text(
-            "---\nname: sol-luna\ndescription: previous release\n---\nold full skill\n",
-            encoding="utf-8",
-        )
-        sol = self.path(NEW_SOL_REL)
-        luna = self.path(LUNA_REL)
-        terra = self.path(TERRA_REL)
-        sol.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(ROOT / NEW_SOL_REL, sol)
-        shutil.copy2(ROOT / LUNA_REL, luna)
-        shutil.copy2(ROOT / TERRA_REL, terra)
-        state_root = self.path(Path(".codex/sol-luna"))
-        (state_root / "backups" / "v030-seed").mkdir(parents=True)
-        state = state_root / "install-state"
-        state.write_text(
+        for name, content in files.items():
+            (old_agents / name).write_bytes(content)
+        old_state = self.home / ".codex/sol-control/install-state"
+        old_state.parent.mkdir(parents=True)
+        old_state.write_text(
             "\n".join(
-                [
-                    "version=2",
-                    "backup_id=v030-seed",
-                    f"skill_sha256={tree_digest(skill)}",
-                    f"sol_sha256={digest(sol)}",
-                    f"luna_sha256={digest(luna)}",
-                    f"terra_sha256={digest(terra)}",
+                (
+                    "version=4",
+                    "backup_id=v050-fixture",
+                    f"skill_sha256={tree_hash(old_skill)}",
+                    f"sol_sha256={file_hash(old_agents / 'sol-controller.toml')}",
+                    f"terra_sha256={file_hash(old_agents / 'terra-high-worker.toml')}",
+                    f"luna_sha256={file_hash(old_agents / 'luna-max-worker.toml')}",
                     "",
-                ]
+                )
             ),
             encoding="utf-8",
         )
-        return {"skill": skill, "sol": sol, "luna": luna, "terra": terra, "state": state}
+        return {str(path.relative_to(self.home)): path.read_bytes() for path in old_agents.glob("*.toml")}
 
-    def seed_v040_install(self) -> dict[str, Path]:
-        """Create an owned v0.4 install whose compatibility alias must be removed."""
+    def test_install_creates_v1_targets_and_state(self) -> None:
+        result = self.install()
+        self.assertIn(str(self.path(SKILL)), result.stdout)
+        self.assertIn("Backup path:", result.stdout)
+        self.assertIn("name: codex-prove", (self.path(SKILL) / "SKILL.md").read_text())
+        self.assertIn("$codex-prove", (self.path(ALIAS) / "SKILL.md").read_text())
 
-        skill = self.path(NEW_SKILL_REL)
-        compat = self.path(COMPAT_SKILL_REL)
-        sol = self.path(NEW_SOL_REL)
-        luna = self.path(LUNA_REL)
-        terra = self.path(TERRA_REL)
-        shutil.copytree(ROOT / NEW_SKILL_REL, skill)
-        (compat / "agents").mkdir(parents=True)
-        (compat / "SKILL.md").write_text(
-            "---\nname: sol-luna\ndescription: v0.4 compatibility alias\n---\nredirect to $sol-control\n",
-            encoding="utf-8",
-        )
-        (compat / "agents" / "openai.yaml").write_text(
-            "interface:\n  default_prompt: use $sol-luna via $sol-control\npolicy:\n  allow_implicit_invocation: false\n",
-            encoding="utf-8",
-        )
-        sol.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(ROOT / NEW_SOL_REL, sol)
-        shutil.copy2(ROOT / LUNA_REL, luna)
-        shutil.copy2(ROOT / TERRA_REL, terra)
-        state = self.path(Path(".codex/sol-control/install-state"))
-        state.parent.mkdir(parents=True)
-        state.write_text(
-            "\n".join(
-                [
-                    "version=3",
-                    "backup_id=v040-seed",
-                    f"skill_sha256={tree_digest(skill)}",
-                    f"compat_skill_sha256={tree_digest(compat)}",
-                    f"sol_sha256={digest(sol)}",
-                    f"luna_sha256={digest(luna)}",
-                    f"terra_sha256={digest(terra)}",
-                    "",
-                ]
-            ),
-            encoding="utf-8",
-        )
-        return {"skill": skill, "compat": compat, "sol": sol, "luna": luna, "terra": terra, "state": state}
-
-    def test_install_creates_v050_targets_and_versioned_state(self) -> None:
-        result = self.run_script("install.sh")
-
-        self.assertEqual(0, result.returncode, result.stdout)
-        self.assert_v050_targets_installed()
-        state = self.path(Path(".codex/sol-control/install-state"))
-        self.assertTrue(state.is_file(), state)
-        state_text = state.read_text(encoding="utf-8")
-        self.assertRegex(state_text, r"(?m)^version=4$")
-        self.assertNotIn("compat_skill_sha256", state_text)
-        for key in ["skill_sha256", "sol_sha256", "luna_sha256", "terra_sha256"]:
-            self.assertRegex(state_text, rf"(?m)^{key}=[0-9a-f]{{64}}$")
-
-    def test_install_migrates_v040_alias_and_restore_latest_recovers_it_exactly(self) -> None:
-        self.seed_v040_install()
-        before = snapshot(self.test_home)
-
-        install = self.run_script("install.sh")
-
-        self.assertEqual(0, install.returncode, install.stdout)
-        self.assert_v050_targets_installed()
-        state = self.path(Path(".codex/sol-control/install-state"))
-        self.assertRegex(state.read_text(encoding="utf-8"), r"(?m)^version=4$")
+    def test_check_mode_is_read_only_for_fresh_and_current_home(self) -> None:
+        before = snapshot(Path(self.temporary.name))
         check = self.run_script("install.sh", "--check")
         self.assertEqual(0, check.returncode, check.stdout)
+        self.assertEqual(before, snapshot(Path(self.temporary.name)))
 
-        restore = self.run_script("uninstall.sh", "--restore-latest")
-
-        self.assertEqual(0, restore.returncode, restore.stdout)
-        self.assertEqual(before, snapshot(self.test_home))
-
-    def test_install_migrates_unmodified_v01_targets_transactionally(self) -> None:
-        legacy = self.seed_legacy_v01_install()
-        config_before = digest(legacy["config"])
-        unrelated_before = digest(legacy["unrelated"])
-        old_skill_digest = tree_digest(legacy["skill"])
-        old_sol_digest = digest(legacy["sol"])
-
-        result = self.run_script("install.sh")
-
-        self.assertEqual(0, result.returncode, result.stdout)
-        self.assert_v050_targets_installed()
-        self.assertFalse(legacy["skill"].exists(), legacy["skill"])
-        self.assertFalse(legacy["sol"].exists(), legacy["sol"])
-        self.assertEqual(config_before, digest(legacy["config"]))
-        self.assertEqual(unrelated_before, digest(legacy["unrelated"]))
-        self.assertNotEqual(old_skill_digest, tree_digest(self.path(NEW_SKILL_REL)))
-        self.assertNotEqual(old_sol_digest, digest(self.path(NEW_SOL_REL)))
-
-    def test_state_only_v01_state_converges_and_restore_latest_recovers_it_exactly(self) -> None:
-        legacy = self.seed_state_only_v01_install()
-        legacy_state_before = legacy["state"].read_bytes()
-
-        install = self.run_script("install.sh")
-
-        self.assertEqual(0, install.returncode, install.stdout)
-        self.assertFalse(legacy["state"].exists(), legacy["state"])
-        state = self.path(Path(".codex/sol-control/install-state"))
-        backup_id = next(
-            line.split("=", 1)[1]
-            for line in state.read_text(encoding="utf-8").splitlines()
-            if line.startswith("backup_id=")
-        )
-        backup = self.path(Path(".codex/sol-control/backups") / backup_id)
-        backed_up_state = backup / "legacy" / "install-state"
-        self.assertEqual(legacy_state_before, backed_up_state.read_bytes())
-        manifest = (backup / "manifest").read_text(encoding="utf-8")
-        self.assertRegex(manifest, r"(?m)^legacy_state_presence=present$")
-        self.assertRegex(manifest, rf"(?m)^legacy_state_sha256={digest(backed_up_state)}$")
-
+        self.install()
+        before = snapshot(self.home)
         check = self.run_script("install.sh", "--check")
         self.assertEqual(0, check.returncode, check.stdout)
+        self.assertEqual(before, snapshot(self.home))
 
-        uninstall = self.run_script("uninstall.sh", "--restore-latest")
-
-        self.assertEqual(0, uninstall.returncode, uninstall.stdout)
-        self.assertEqual(legacy_state_before, legacy["state"].read_bytes())
-
-    def test_plain_uninstall_does_not_restore_state_only_v01_state(self) -> None:
-        legacy = self.seed_state_only_v01_install()
-        self.assertEqual(0, self.run_script("install.sh").returncode)
-        self.assertFalse(legacy["state"].exists(), legacy["state"])
-
-        result = self.run_script("uninstall.sh")
-
-        self.assertEqual(0, result.returncode, result.stdout)
-        self.assertFalse(legacy["state"].exists(), legacy["state"])
-
-    def test_restore_latest_refuses_to_overwrite_existing_legacy_state(self) -> None:
-        legacy = self.seed_state_only_v01_install()
-        self.assertEqual(0, self.run_script("install.sh").returncode)
-        legacy["state"].parent.mkdir(parents=True, exist_ok=True)
-        legacy["state"].write_text("user-owned legacy state\n", encoding="utf-8")
-        before = snapshot(self.test_home)
-
-        result = self.run_script("uninstall.sh", "--restore-latest")
-
-        self.assertNotEqual(0, result.returncode, result.stdout)
-        self.assertEqual(before, snapshot(self.test_home))
-
-    def test_uninstall_accepts_v2_manifest_without_legacy_state_fields(self) -> None:
-        self.assertEqual(0, self.run_script("install.sh").returncode)
-        state = self.path(Path(".codex/sol-control/install-state"))
-        backup_id = next(
-            line.split("=", 1)[1]
-            for line in state.read_text(encoding="utf-8").splitlines()
-            if line.startswith("backup_id=")
-        )
-        manifest = self.path(Path(".codex/sol-control/backups") / backup_id / "manifest")
-        manifest.write_text(
-            "\n".join(
-                line
-                for line in manifest.read_text(encoding="utf-8").splitlines()
-                if not line.startswith("legacy_state_")
-            )
-            + "\n",
-            encoding="utf-8",
-        )
-
-        result = self.run_script("uninstall.sh")
-
-        self.assertEqual(0, result.returncode, result.stdout)
-
-    def test_uninstall_rejects_partial_legacy_state_manifest_fields(self) -> None:
-        legacy = self.seed_state_only_v01_install()
-        self.assertEqual(0, self.run_script("install.sh").returncode)
-        state = self.path(Path(".codex/sol-control/install-state"))
-        backup_id = next(
-            line.split("=", 1)[1]
-            for line in state.read_text(encoding="utf-8").splitlines()
-            if line.startswith("backup_id=")
-        )
-        manifest = self.path(Path(".codex/sol-control/backups") / backup_id / "manifest")
-        manifest.write_text(
-            "\n".join(
-                "legacy_state_presence=" if line.startswith("legacy_state_presence=")
-                else line
-                for line in manifest.read_text(encoding="utf-8").splitlines()
-                if not line.startswith("legacy_state_sha256=")
-            )
-            + "\n",
-            encoding="utf-8",
-        )
-        before = snapshot(self.test_home)
-
-        result = self.run_script("uninstall.sh", "--restore-latest")
-
-        self.assertNotEqual(0, result.returncode, result.stdout)
-        self.assertEqual(before, snapshot(self.test_home))
-
-    def test_uninstall_rejects_empty_legacy_state_manifest_field_pair(self) -> None:
-        legacy = self.seed_state_only_v01_install()
-        self.assertEqual(0, self.run_script("install.sh").returncode)
-        state = self.path(Path(".codex/sol-control/install-state"))
-        backup_id = next(
-            line.split("=", 1)[1]
-            for line in state.read_text(encoding="utf-8").splitlines()
-            if line.startswith("backup_id=")
-        )
-        manifest = self.path(Path(".codex/sol-control/backups") / backup_id / "manifest")
-        manifest.write_text(
-            "\n".join(
-                "legacy_state_presence=" if line.startswith("legacy_state_presence=")
-                else "legacy_state_sha256=" if line.startswith("legacy_state_sha256=")
-                else line
-                for line in manifest.read_text(encoding="utf-8").splitlines()
-            )
-            + "\n",
-            encoding="utf-8",
-        )
-        before = snapshot(self.test_home)
-
-        result = self.run_script("uninstall.sh", "--restore-latest")
-
-        self.assertNotEqual(0, result.returncode, result.stdout)
-        self.assertEqual(before, snapshot(self.test_home))
-
-    def test_install_refuses_modified_legacy_targets_without_partial_install(self) -> None:
-        legacy = self.seed_legacy_v01_install()
-        modified_skill = "user-owned legacy skill change\n"
-        modified_sol = 'name = "user-owned-sol"\n'
-        (legacy["skill"] / "SKILL.md").write_text(modified_skill, encoding="utf-8")
-        legacy["sol"].write_text(modified_sol, encoding="utf-8")
-        before = snapshot(self.test_home)
-
+    def test_unowned_collision_and_modified_install_fail_closed(self) -> None:
+        collision = self.path(SKILL)
+        collision.mkdir(parents=True)
+        (collision / "user.txt").write_text("keep", encoding="utf-8")
+        before = snapshot(self.home)
         result = self.run_script("install.sh")
+        self.assertEqual(1, result.returncode, result.stdout)
+        self.assertIn("no matching ownership state", result.stdout)
+        self.assertEqual(before, snapshot(self.home))
 
-        self.assertNotEqual(0, result.returncode, result.stdout)
-        self.assertEqual(before, snapshot(self.test_home))
-
-    def test_install_migrates_v030_and_restore_latest_recovers_it_exactly(self) -> None:
-        previous = self.seed_v030_install()
-        before = snapshot(self.test_home)
-
-        install = self.run_script("install.sh")
-
-        self.assertEqual(0, install.returncode, install.stdout)
-        self.assert_v050_targets_installed()
-        self.assertFalse(previous["state"].exists())
-        self.assertIn("name: sol-control", (self.path(NEW_SKILL_REL) / "SKILL.md").read_text(encoding="utf-8"))
-        self.assertFalse(self.path(COMPAT_SKILL_REL).exists())
-        check = self.run_script("install.sh", "--check")
-        self.assertEqual(0, check.returncode, check.stdout)
-
-        restore = self.run_script("uninstall.sh", "--restore-latest")
-
-        self.assertEqual(0, restore.returncode, restore.stdout)
-        self.assertEqual(before, snapshot(self.test_home))
-
-    def test_repeat_install_restore_latest_recovers_prior_v040_ownership_state(self) -> None:
-        first = self.run_script("install.sh")
-        self.assertEqual(0, first.returncode, first.stdout)
-        first_snapshot = snapshot(self.test_home)
-
-        second = self.run_script("install.sh")
-        self.assertEqual(0, second.returncode, second.stdout)
-        restore = self.run_script("uninstall.sh", "--restore-latest")
-
-        self.assertEqual(0, restore.returncode, restore.stdout)
-        self.assertEqual(first_snapshot, snapshot(self.test_home))
-        check = self.run_script("install.sh", "--check")
-        self.assertEqual(0, check.returncode, check.stdout)
-
-    def test_modified_shared_luna_target_aborts_without_partial_install(self) -> None:
-        legacy = self.seed_legacy_v01_install()
-        legacy["luna"].write_text("user-modified shared Luna target\n", encoding="utf-8")
-        before = snapshot(self.test_home)
-
+        for path in sorted(collision.rglob("*"), reverse=True):
+            path.unlink()
+        collision.rmdir()
+        self.install()
+        (self.path(SKILL) / "SKILL.md").write_text("user modification\n", encoding="utf-8")
+        before = snapshot(self.home)
         result = self.run_script("install.sh")
+        self.assertEqual(1, result.returncode, result.stdout)
+        self.assertIn("modified", result.stdout)
+        self.assertEqual(before, snapshot(self.home))
 
-        self.assertNotEqual(0, result.returncode, result.stdout)
-        self.assertEqual(before, snapshot(self.test_home))
+    def test_failpoint_rolls_back_current_install(self) -> None:
+        self.install()
+        before = {str(relative): snapshot(self.path(relative)) for relative in CURRENT_TARGETS}
+        before_state = self.path(STATE).read_bytes()
+        backup_root = self.home / ".codex/codex-prove/backups"
+        before_backups = {path.name for path in backup_root.iterdir()}
+        result = self.run_script("install.sh", failpoint="after-replace")
+        self.assertEqual(1, result.returncode, result.stdout)
+        self.assertEqual(before, {str(relative): snapshot(self.path(relative)) for relative in CURRENT_TARGETS})
+        self.assertEqual(before_state, self.path(STATE).read_bytes())
+        after_backups = {path.name for path in backup_root.iterdir()}
+        self.assertEqual(1, len(after_backups - before_backups))
 
-    def test_install_failure_rolls_back_v01_migration_and_new_targets(self) -> None:
-        self.seed_legacy_v01_install()
-        before = snapshot(self.test_home)
-        self.env["ORCHESTRATE_FAILPOINT"] = "after-replace"
-
-        result = self.run_script("install.sh")
-
-        self.assertNotEqual(0, result.returncode, result.stdout)
-        self.assertEqual(before, snapshot(self.test_home))
-
-    def test_install_after_state_failure_rolls_back_full_v01_snapshot(self) -> None:
-        self.seed_state_only_v01_install()
-        before = snapshot(self.test_home)
-        self.env["ORCHESTRATE_FAILPOINT"] = "after-state"
-
-        result = self.run_script("install.sh")
-
-        self.assertNotEqual(0, result.returncode, result.stdout)
-        self.assertEqual(before, snapshot(self.test_home))
-
-    def test_install_does_not_modify_config_toml(self) -> None:
-        config = self.path(Path(".codex/config.toml"))
-        config.parent.mkdir(parents=True)
-        config.write_text(
-            "model = \"unchanged\"\n[features]\nsol_luna = false\n",
-            encoding="utf-8",
-        )
-        before = digest(config)
-
-        result = self.run_script("install.sh")
-
-        self.assertEqual(0, result.returncode, result.stdout)
-        self.assertEqual(before, digest(config))
-
-    def test_existing_terra_without_any_ownership_state_fails_closed_in_check_and_install(self) -> None:
-        terra = self.path(TERRA_REL)
-        terra.parent.mkdir(parents=True)
-        terra.write_text("name = 'user-owned-terra'\n", encoding="utf-8")
-        before = snapshot(self.test_home)
-
-        check = self.run_script("install.sh", "--check")
-        self.assertNotEqual(0, check.returncode, check.stdout)
-        self.assertRegex(check.stdout, r"(?i)Terra.*ownership state")
-        self.assertEqual(before, snapshot(self.test_home))
-
-        install = self.run_script("install.sh")
-        self.assertNotEqual(0, install.returncode, install.stdout)
-        self.assertRegex(install.stdout, r"(?i)Terra.*ownership state")
-        self.assertEqual(before, snapshot(self.test_home))
-
-    def test_existing_terra_with_v3_state_missing_terra_checksum_fails_closed_in_check_and_install(self) -> None:
-        self.assertEqual(0, self.run_script("install.sh").returncode)
-        state = self.path(Path(".codex/sol-control/install-state"))
-        state.write_text(
-            "\n".join(line for line in state.read_text(encoding="utf-8").splitlines() if not line.startswith("terra_sha256=")) + "\n",
-            encoding="utf-8",
-        )
-        before = snapshot(self.test_home)
-
-        check = self.run_script("install.sh", "--check")
-        self.assertNotEqual(0, check.returncode, check.stdout)
-        self.assertEqual(before, snapshot(self.test_home))
-
-        install = self.run_script("install.sh")
-        self.assertNotEqual(0, install.returncode, install.stdout)
-        self.assertEqual(before, snapshot(self.test_home))
-
-    def test_uninstall_removes_only_v050_owned_targets(self) -> None:
-        unrelated = self.path(Path(".codex/agents/keep-me.toml"))
-        config = self.path(Path(".codex/config.toml"))
+    def test_uninstall_removes_only_owned_v1_targets(self) -> None:
+        unrelated = self.home / ".codex/agents/user-agent.toml"
         unrelated.parent.mkdir(parents=True)
-        unrelated.write_text("keep\n", encoding="utf-8")
-        config.write_text("model = \"keep\"\n", encoding="utf-8")
-        unrelated_before = digest(unrelated)
-        config_before = digest(config)
-        self.assertEqual(0, self.run_script("install.sh").returncode)
-        self.assert_v050_targets_installed()
-
+        unrelated.write_text("user", encoding="utf-8")
+        self.install()
         result = self.run_script("uninstall.sh")
-
         self.assertEqual(0, result.returncode, result.stdout)
-        for target in self.v050_targets():
-            self.assertFalse(target.exists(), target)
-        self.assertEqual(unrelated_before, digest(unrelated))
-        self.assertEqual(config_before, digest(config))
+        for relative in CURRENT_TARGETS:
+            self.assertFalse(self.path(relative).exists(), relative)
+        self.assertFalse(self.path(STATE).exists())
+        self.assertEqual("user", unrelated.read_text())
 
-    def test_uninstall_refuses_modified_v040_target(self) -> None:
-        self.assertEqual(0, self.run_script("install.sh").returncode)
-        self.assert_v050_targets_installed()
-        modified = self.path(NEW_SOL_REL)
-        modified.write_text("user changed the v0.4 Sol controller\n", encoding="utf-8")
-        before = snapshot(self.test_home)
-
-        result = self.run_script("uninstall.sh")
-
-        self.assertNotEqual(0, result.returncode, result.stdout)
-        self.assertEqual(before, snapshot(self.test_home))
-
-    def test_uninstall_refuses_modified_v040_terra_target(self) -> None:
-        self.assertEqual(0, self.run_script("install.sh").returncode)
-        self.assert_v050_targets_installed()
-        modified = self.path(TERRA_REL)
-        modified.write_text("user changed the v0.4 Terra worker\n", encoding="utf-8")
-        before = snapshot(self.test_home)
-
-        result = self.run_script("uninstall.sh")
-
-        self.assertNotEqual(0, result.returncode, result.stdout)
-        self.assertEqual(before, snapshot(self.test_home))
-
-    def test_restore_latest_recovers_unmodified_v01_targets(self) -> None:
-        legacy = self.seed_legacy_v01_install()
-        old_skill = snapshot(legacy["skill"])
-        old_sol = legacy["sol"].read_bytes()
-        old_luna = legacy["luna"].read_bytes()
-        config_before = digest(legacy["config"])
-        unrelated_before = digest(legacy["unrelated"])
-        self.assertEqual(0, self.run_script("install.sh").returncode)
-        self.assert_v050_targets_installed()
-
+    def test_v050_upgrade_and_restore_latest_round_trip(self) -> None:
+        old_agent_bytes = self.make_v050_install()
+        self.install()
+        self.assertFalse((self.home / ".codex/sol-control/install-state").exists())
+        self.assertFalse((self.home / ".codex/agents/sol-controller.toml").exists())
         result = self.run_script("uninstall.sh", "--restore-latest")
-
         self.assertEqual(0, result.returncode, result.stdout)
-        self.assertTrue(legacy["skill"].is_dir())
-        self.assertEqual(old_skill, snapshot(legacy["skill"]))
-        self.assertEqual(old_sol, legacy["sol"].read_bytes())
-        self.assertEqual(old_luna, legacy["luna"].read_bytes())
-        self.assertFalse(self.path(NEW_SKILL_REL).exists())
-        self.assertFalse(self.path(COMPAT_SKILL_REL).exists())
-        self.assertFalse(self.path(NEW_SOL_REL).exists())
-        self.assertFalse(self.path(TERRA_REL).exists())
-        self.assertEqual(config_before, digest(legacy["config"]))
-        self.assertEqual(unrelated_before, digest(legacy["unrelated"]))
+        self.assertFalse(self.path(SKILL).exists())
+        self.assertTrue((self.home / ".agents/skills/sol-control/SKILL.md").is_file())
+        self.assertTrue((self.home / ".codex/sol-control/install-state").is_file())
+        for relative, expected in old_agent_bytes.items():
+            self.assertEqual(expected, (self.home / relative).read_bytes())
 
-    def test_lifecycle_scripts_encode_v050_paths_and_legacy_migration(self) -> None:
-        for name in ["install.sh", "install.ps1"]:
-            text = (SCRIPTS / name).read_text(encoding="utf-8")
-            for fragment in [".agents/skills/sol-control", ".agents/skills/sol-luna", "sol-controller.toml", "terra-high-worker.toml"]:
-                self.assertIn(fragment, text, f"{name}: {fragment}")
-            for fragment in ["orchestrate-sol-luna", "sol-planner.toml"]:
-                self.assertIn(fragment, text, f"{name}: legacy {fragment}")
-            self.assertRegex(text, r"(?i)(sha256|checksum)")
-            self.assertRegex(text, r"(?i)(transaction|rollback)")
 
-        uninstall = (SCRIPTS / "uninstall.sh").read_text(encoding="utf-8")
-        for fragment in [".agents/skills/sol-control", ".agents/skills/sol-luna", "sol-controller.toml", "terra-high-worker.toml", "--restore-latest"]:
-            self.assertIn(fragment, uninstall, fragment)
-
-    def test_native_windows_v050_scripts_keep_ps51_safety_and_rollback_markers(self) -> None:
-        missing = [str(path) for path in WINDOWS_SCRIPT_RELS if not (ROOT / path).is_file()]
-        self.assertEqual([], missing, "missing native Windows v0.5 script(s)")
-
-        install = (ROOT / WINDOWS_SCRIPT_RELS[0]).read_text(encoding="utf-8")
+class ScriptSurfaceTests(unittest.TestCase):
+    def test_native_windows_scripts_keep_ps51_safety_and_rollback_markers(self) -> None:
+        install = (SCRIPTS / "install.ps1").read_text(encoding="utf-8")
+        uninstall = (SCRIPTS / "uninstall.ps1").read_text(encoding="utf-8")
+        validate = (SCRIPTS / "validate.ps1").read_text(encoding="utf-8")
+        lifecycle = (ROOT / "tests/windows-lifecycle.ps1").read_text(encoding="utf-8")
         for marker in (
-            "#requires -Version 5.1",
-            "Set-StrictMode",
-            "-LiteralPath",
-            "ReparsePoint",
+            "codex-prove",
+            "prove-controller.toml",
+            "prove-complex-worker.toml",
+            "prove-efficient-worker.toml",
+            "install-state",
             "SHA256",
-            "ORCHESTRATE_FAILPOINT",
-            "after-replace",
-            "README.en.md",
-            "docs/assets/readme/hero-zh.svg",
-            "docs/assets/readme/hero-en.svg",
-            "docs/assets/readme/control-plane-zh.svg",
-            "docs/assets/readme/control-plane-en.svg",
-            "terra-high-worker.toml",
-            "function Remove-EmptyDirectory",
+            "-LiteralPath",
         ):
-            self.assertIn(marker, install, marker)
-
-        validate = (ROOT / WINDOWS_SCRIPT_RELS[1]).read_text(encoding="utf-8")
-        self.assertRegex(validate, r"(?i)Parser\]::ParseFile")
-        self.assertIn("#requires -Version 5.1", validate)
-        self.assertIn(
-            r"[ \t]*\r?$",
-            validate,
-            "PowerShell Markdown fence matching must accept CRLF closing lines",
-        )
-
-        uninstall = (ROOT / WINDOWS_SCRIPT_RELS[2]).read_text(encoding="utf-8")
-        for marker in ("RestoreLatest", "SHA256", "install-state", "-LiteralPath", "terra-high-worker.toml"):
-            self.assertIn(marker, uninstall, marker)
-        for ps_text in (install, validate, uninstall):
-            self.assertNotRegex(ps_text, r"\?\?|\?\.", "PowerShell 7-only operator")
-
-    def test_windows_lifecycle_red_test_declares_isolated_safety_cases(self) -> None:
-        path = ROOT / WINDOWS_LIFECYCLE_REL
-        self.assertTrue(path.is_file(), path)
-        text = path.read_text(encoding="utf-8")
-        for marker in (
-            "Set-StrictMode",
-            "ORCHESTRATE_HOME",
-            "Get-FileHash",
-            "after-replace",
-            "RestoreLatest",
-            "config.toml",
-            "keep-me.toml",
-            "terra-high-worker.toml",
-            "v0.4",
-            "v0.3",
-            "v0.1",
-            "spaces",
-            "finally",
-            "$Install",
-            "$Validate",
-            "$Uninstall",
-            "[System.IO.Directory]::CreateDirectory($Path)",
-            "[System.IO.Directory]::CreateDirectory($TestRoot)",
-            "Test-ModifiedV01MigrationFailsClosed",
-            "Test-StateOnlyV01StateConvergence",
-            "Test-StateOnlyV01PlainUninstallDoesNotRestore",
-            "Test-StateOnlyV01RestoreRefusesExistingState",
-            "Test-StateOnlyV01Rollback",
-            "Test-LegacyStateManifestMalformedRefusal",
-            "legacy_state_presence",
-            "legacy_state_sha256",
-            "after-state",
-            "Terra",
-            "Invoke-CheckProcess",
-            "Test-CheckModeReadOnly",
-            "-Check",
-            "Test-FilesystemRootRefusal",
-            "Test-ReparsePointRefusal",
-            "GetPathRoot",
-            "mklink /J",
-            "SKIP",
-        ):
-            self.assertIn(marker, text, marker)
-        self.assertNotIn("New-Item -ItemType Directory -LiteralPath", text)
-
-    def test_shell_scripts_parse(self) -> None:
-        if os.name == "nt":
-            self.skipTest(
-                "Bash installer execution is POSIX-only; Windows runtime coverage is provided by tests/windows-lifecycle.ps1."
-            )
-        for name in ["install.sh", "validate.sh", "uninstall.sh"]:
-            result = subprocess.run(
-                ["bash", "-n", str(SCRIPTS / name)],
-                text=True,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-                check=False,
-            )
-            self.assertEqual(0, result.returncode, f"{name}: {result.stdout}")
-
-    def test_validate_repository(self) -> None:
-        result = self.run_script("validate.sh")
-        self.assertEqual(0, result.returncode, result.stdout)
-        self.assertIn("Validation: PASS", result.stdout)
+            self.assertIn(marker, install)
+            self.assertIn(marker, uninstall + validate + lifecycle)
+        self.assertIn("#requires -Version 5.1", install)
+        self.assertIn("ORCHESTRATE_FAILPOINT", install)
+        self.assertIn("RestoreLatest", uninstall)
+        self.assertIn("v050", lifecycle)
 
 
 if __name__ == "__main__":

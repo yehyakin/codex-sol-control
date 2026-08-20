@@ -1,591 +1,244 @@
 #!/usr/bin/env python3
-"""Contract tests for the ``sol-control`` package."""
+"""Public repository and Skill contracts for Codex PROVE v1.0."""
 
 from __future__ import annotations
 
-import json
 import re
+import tomllib
 import unittest
 from pathlib import Path
 
-try:
-    import tomllib
-except ModuleNotFoundError as exc:  # pragma: no cover - old runner guard
-    raise SystemExit("tests require Python 3.11+ for tomllib") from exc
-
 
 ROOT = Path(__file__).resolve().parents[1]
-SKILL_ROOT = ROOT / ".agents" / "skills" / "sol-control"
-SOL_AGENT = ROOT / ".codex" / "agents" / "sol-controller.toml"
-LUNA_AGENT = ROOT / ".codex" / "agents" / "luna-max-worker.toml"
-TERRA_AGENT = ROOT / ".codex" / "agents" / "terra-high-worker.toml"
-RUNTIME_NOTE_CANDIDATES = (
-    SKILL_ROOT / "runtime-notes.md",
-    SKILL_ROOT / "references" / "runtime-notes.md",
-)
-V030_REQUIRED_FILES = (
-    "README.en.md",
-    "docs/assets/readme/hero-zh.svg",
-    "docs/assets/readme/hero-en.svg",
-    "docs/assets/readme/control-plane-zh.svg",
-    "docs/assets/readme/control-plane-en.svg",
-    "scripts/validate.ps1",
-    "scripts/uninstall.ps1",
-    "tests/windows-lifecycle.ps1",
-    ".github/workflows/windows-validation.yml",
-)
-CANONICAL_REPOSITORY_URL = "https://github.com/yehyakin/codex-sol-control"
-OLD_REPOSITORY_URLS = (
-    "https://github.com/yehyakin/codex-sol-luna",
-    "https://github.com/yehyakin/codex-sol-luna-orchestrator",
-)
+SKILL = ROOT / ".agents" / "skills" / "codex-prove"
+COMPAT = ROOT / ".agents" / "skills" / "sol-control"
+CONTROLLER = ROOT / ".codex" / "agents" / "prove-controller.toml"
+COMPLEX = ROOT / ".codex" / "agents" / "prove-complex-worker.toml"
+EFFICIENT = ROOT / ".codex" / "agents" / "prove-efficient-worker.toml"
+REPO_URL = "https://github.com/yehyakin/codex-prove"
 
 
-def read_if_present(path: Path) -> str:
-    """Return empty text for a not-yet-created v0.2 target."""
-
-    return path.read_text(encoding="utf-8") if path.is_file() else ""
+def read(path: Path) -> str:
+    return path.read_text(encoding="utf-8")
 
 
-class RepositoryContractTests(unittest.TestCase):
-    def runtime_note_path(self) -> Path | None:
-        return next((path for path in RUNTIME_NOTE_CANDIDATES if path.is_file()), None)
-
-    def contract_text(self) -> str:
-        runtime_path = self.runtime_note_path()
-        return "\n".join(
-            [
-                read_if_present(SKILL_ROOT / "SKILL.md"),
-                read_if_present(runtime_path) if runtime_path else "",
-            ]
+def contract() -> str:
+    return "\n".join(
+        read(path)
+        for path in (
+            SKILL / "SKILL.md",
+            SKILL / "references" / "orchestration.md",
+            SKILL / "references" / "runtime-notes.md",
         )
+    )
 
-    def test_required_v020_files_exist(self) -> None:
-        required = [
-            SKILL_ROOT / "SKILL.md",
-            SKILL_ROOT / "agents" / "openai.yaml",
-            SOL_AGENT,
-            LUNA_AGENT,
-            TERRA_AGENT,
-        ]
-        self.assertTrue(
-            any(path.is_file() for path in RUNTIME_NOTE_CANDIDATES),
-            "v0.2 must keep runtime mechanics in runtime-notes.md",
-        )
+
+class RepositoryStructureTests(unittest.TestCase):
+    def test_canonical_skill_structure_exists(self) -> None:
+        for path in (
+            SKILL / "SKILL.md",
+            SKILL / "agents" / "openai.yaml",
+            SKILL / "references" / "orchestration.md",
+            SKILL / "references" / "runtime-notes.md",
+        ):
+            self.assertTrue(path.is_file(), path)
+
+    def test_compatibility_entry_is_small_and_has_no_second_protocol(self) -> None:
+        self.assertTrue((COMPAT / "SKILL.md").is_file())
+        self.assertTrue((COMPAT / "agents" / "openai.yaml").is_file())
+        self.assertFalse((COMPAT / "references").exists())
+        self.assertLess(len(read(COMPAT / "SKILL.md").splitlines()), 30)
+
+    def test_only_model_neutral_agent_source_names_exist(self) -> None:
+        names = sorted(path.name for path in (ROOT / ".codex" / "agents").glob("*.toml"))
         self.assertEqual(
-            [],
-            [str(path.relative_to(ROOT)) for path in required if not path.is_file()],
+            ["prove-complex-worker.toml", "prove-controller.toml", "prove-efficient-worker.toml"],
+            names,
         )
 
-    def test_required_v030_files_exist(self) -> None:
-        missing = [relative for relative in V030_REQUIRED_FILES if not (ROOT / relative).is_file()]
-        self.assertEqual([], missing, "missing v0.3 contract artifact(s)")
+    def test_public_docs_use_new_repository_url(self) -> None:
+        for path in (ROOT / "README.md", ROOT / "README.en.md", ROOT / "SECURITY.md"):
+            text = read(path)
+            self.assertIn(REPO_URL, text, path.name)
+            self.assertNotIn("github.com/yehyakin/codex-sol-control", text, path.name)
 
-    def test_repository_rename_uses_the_canonical_v030_url(self) -> None:
-        for relative in ("README.md", "README.en.md"):
-            path = ROOT / relative
-            self.assertTrue(path.is_file(), relative)
-            text = path.read_text(encoding="utf-8")
-            self.assertIn(CANONICAL_REPOSITORY_URL, text, relative)
-            for old_url in OLD_REPOSITORY_URLS:
-                self.assertNotIn(old_url, text, relative)
-
-    def test_windows_sources_declare_the_v030_native_lifecycle_contract(self) -> None:
-        required = {
-            "install": ROOT / "scripts" / "install.ps1",
-            "validate": ROOT / "scripts" / "validate.ps1",
-            "uninstall": ROOT / "scripts" / "uninstall.ps1",
-            "lifecycle_test": ROOT / "tests" / "windows-lifecycle.ps1",
-        }
-        missing = [name for name, path in required.items() if not path.is_file()]
-        self.assertEqual([], missing, "missing Windows v0.3 file(s)")
-
-        install = required["install"].read_text(encoding="utf-8")
-        for marker in (
-            "#requires -Version 5.1",
-            "Set-StrictMode",
-            "-LiteralPath",
-            "ReparsePoint",
-            "SHA256",
-            "ORCHESTRATE_FAILPOINT",
-            "after-replace",
-            "orchestrate-sol-luna",
-            "README.en.md",
-            "docs/assets/readme/hero-zh.svg",
-            "docs/assets/readme/hero-en.svg",
-            "docs/assets/readme/control-plane-zh.svg",
-            "docs/assets/readme/control-plane-en.svg",
-            "scripts/validate.ps1",
-            "scripts/uninstall.ps1",
-            "terra-high-worker.toml",
+    def test_required_release_files_exist(self) -> None:
+        for relative in (
+            "CODEX_PROVE_V1_IMPLEMENTATION_REPORT.md",
+            "CONTRIBUTING.md", "CODE_OF_CONDUCT.md", "SECURITY.md", "SUPPORT.md",
+            "scripts/install.sh", "scripts/uninstall.sh", "scripts/validate.sh",
+            "scripts/install.ps1", "scripts/uninstall.ps1", "scripts/validate.ps1",
         ):
-            self.assertIn(marker, install, marker)
+            self.assertTrue((ROOT / relative).is_file(), relative)
 
-        validate = required["validate"].read_text(encoding="utf-8")
-        for marker in (
-            "#requires -Version 5.1",
-            "Get-Content",
-            "Parser]::ParseFile",
-            "Markdown",
-            "SVG",
-            "PowerShell syntax",
-            "terra-high-worker.toml",
-        ):
-            self.assertIn(marker, validate, marker)
 
-        uninstall = required["uninstall"].read_text(encoding="utf-8")
-        for marker in (
-            "RestoreLatest",
-            "SHA256",
-            "install-state",
-            "-LiteralPath",
-            "config.toml",
-            "terra-high-worker.toml",
-        ):
-            self.assertIn(marker, uninstall, marker)
+class InvocationAndLanguageTests(unittest.TestCase):
+    def test_canonical_frontmatter_is_explicit_only(self) -> None:
+        text = read(SKILL / "SKILL.md")
+        frontmatter = text.split("---", 2)[1]
+        self.assertRegex(frontmatter, r"(?m)^name:\s*codex-prove\s*$")
+        self.assertRegex(frontmatter, r"(?m)^description:\s*Use only when\b")
+        self.assertIn("$codex-prove", frontmatter)
 
-    def test_windows_workflow_covers_both_supported_powershell_editions(self) -> None:
-        path = ROOT / ".github" / "workflows" / "windows-validation.yml"
-        self.assertTrue(path.is_file(), path)
-        text = path.read_text(encoding="utf-8")
-        for marker in (
-            "windows-latest",
-            "windows-2022",
-            "powershell",
-            "pwsh",
-            "tests/windows-lifecycle.ps1",
-            "unittest discover",
-        ):
-            self.assertIn(marker, text, marker)
+    def test_canonical_interface_disables_implicit_invocation(self) -> None:
+        text = read(SKILL / "agents" / "openai.yaml")
+        self.assertIn('display_name: "Codex PROVE"', text)
+        self.assertIn("$codex-prove", text)
+        self.assertRegex(text, r"(?m)^\s*allow_implicit_invocation:\s*false\s*$")
 
-    def test_public_skill_is_named_and_explicitly_invoked(self) -> None:
-        text = read_if_present(SKILL_ROOT / "SKILL.md")
-        self.assertTrue(text.startswith("---\n"), "SKILL.md must have frontmatter")
-        frontmatter = text.split("---", 2)[1] if "---" in text else ""
-        self.assertRegex(frontmatter, r"(?m)^name:\s*sol-control\s*$")
-        self.assertRegex(frontmatter, r"(?m)^description:\s*Use when\b")
+    def test_legacy_alias_redirects_without_implicit_invocation(self) -> None:
+        text = read(COMPAT / "SKILL.md") + read(COMPAT / "agents" / "openai.yaml")
         self.assertIn("$sol-control", text)
-        self.assertRegex(text, r"(?i)ordinary\s+simple\s+(work|tasks?).{0,120}\bdirect\b")
-        self.assertRegex(text, r"(?i)planning[- ]only.{0,120}zero\s+Luna")
+        self.assertIn("$codex-prove", text)
+        self.assertIn("deprecated", text)
+        self.assertRegex(text, r"(?m)^\s*allow_implicit_invocation:\s*false\s*$")
 
-    def test_runtime_defaults_to_chinese_unless_the_user_overrides_it(self) -> None:
-        skill_text = read_if_present(SKILL_ROOT / "SKILL.md")
-        self.assertIn("默认使用中文", skill_text)
-        self.assertIn("用户明确要求", skill_text)
-        self.assertIn("其他语言", skill_text)
-
-        for path in (SOL_AGENT, LUNA_AGENT):
+    def test_runtime_defaults_to_chinese(self) -> None:
+        self.assertIn("默认使用中文", read(SKILL / "SKILL.md"))
+        for path in (CONTROLLER, COMPLEX, EFFICIENT):
             with path.open("rb") as handle:
                 instructions = tomllib.load(handle)["developer_instructions"]
             self.assertIn("默认使用中文", instructions, path.name)
-            self.assertRegex(instructions, r"用户.*明确.*其他语言", path.name)
+            self.assertIn("其他语言", instructions, path.name)
 
-        with TERRA_AGENT.open("rb") as handle:
-            terra_instructions = tomllib.load(handle)["developer_instructions"]
-        self.assertIn("默认使用中文", terra_instructions, TERRA_AGENT.name)
-        self.assertRegex(terra_instructions, r"用户.*明确.*其他语言", TERRA_AGENT.name)
+    def test_readme_default_is_chinese_with_english_peer(self) -> None:
+        self.assertIn("运行时默认使用简体中文", read(ROOT / "README.md"))
+        self.assertIn("Runtime output defaults to Simplified Chinese", read(ROOT / "README.en.md"))
 
-        openai_text = read_if_present(SKILL_ROOT / "agents" / "openai.yaml")
-        self.assertIn('default_prompt: "使用 $sol-control', openai_text)
 
-        chinese_readme = read_if_present(ROOT / "README.md")
-        english_readme = read_if_present(ROOT / "README.en.md")
-        self.assertRegex(chinese_readme, r"运行时默认使用简体中文|默认简体中文")
-        self.assertRegex(
-            english_readme,
-            r"Runtime output defaults to Simplified Chinese|(?:canonical|default).{0,80}Simplified Chinese",
-        )
-
-    def test_sol_plan_has_only_the_v020_canonical_fields(self) -> None:
-        text = self.contract_text()
-        for field in ["goal", "done_when", "tasks", "stages"]:
+class PlanningAndPacketTests(unittest.TestCase):
+    def test_plan_has_requirements_tasks_stages_and_integration_owner(self) -> None:
+        text = contract()
+        for field in ("goal", "done_when", "tasks", "stages", "integration_owner"):
             self.assertRegex(text, rf"(?m)^\s*{field}:\s*", field)
 
-    def test_luna_task_packet_uses_the_simplified_fields(self) -> None:
-        text = self.contract_text()
-        for field in [
-            "Task ID",
-            "Task",
-            "Write scope",
-            "Do not touch",
-            "Expected result",
-            "Verification",
-        ]:
+    def test_task_graph_has_dependency_and_launch_fields(self) -> None:
+        text = contract()
+        for field in ("agent_profile", "dependencies", "read_scope", "write_scope", "can_launch", "held_reason"):
+            self.assertRegex(text, rf"(?m)^\s*{field}:\s*", field)
+
+    def test_task_packet_is_complete_and_context_is_optional(self) -> None:
+        text = contract()
+        for field in (
+            "Task ID", "Task", "Requirement IDs", "Read scope", "Write scope",
+            "Do not touch", "Dependencies", "Expected result", "Verification",
+            "Required evidence", "Stop conditions",
+        ):
             self.assertRegex(text, rf"(?m)^\s*{re.escape(field)}:\s*", field)
         self.assertRegex(text, r"(?i)Context:\s*.*optional")
 
-    def test_luna_result_and_sol_review_contracts_are_falsifiable(self) -> None:
-        text = self.contract_text()
-        for field in ["Task ID", "Status", "Summary", "Changed", "Verification", "Evidence", "Blocker"]:
+    def test_worker_result_is_structured_and_falsifiable(self) -> None:
+        text = contract()
+        for field in (
+            "Status", "Summary", "Inspected", "Changed", "Requirement coverage",
+            "Verification", "Evidence", "Assumptions", "Risks", "Failure class", "Blocker",
+        ):
             self.assertRegex(text, rf"(?m)^\s*{re.escape(field)}:\s*", field)
         self.assertRegex(text, r"(?m)^\s*Status:\s*PASS\s*\|\s*BLOCKED\s*$")
-        self.assertRegex(text, r"(?i)PASS\s*\|\s*FIX\s*\|\s*BLOCKED")
-        self.assertRegex(text, r"(?i)at\s+most\s+one[^\n]*(focused\s+)?fix")
 
-    def test_v040_evidence_binds_final_candidate_and_invalidates_stale_evidence(self) -> None:
-        text = self.contract_text()
-        self.assertIn(
-            "Evidence must bind to the final candidate identity",
-            text,
-        )
-        self.assertRegex(
-            text,
-            r"(?i)commit\+diff identity|exact changed-file snapshot",
-        )
-        self.assertRegex(
-            text,
-            r"(?is)candidate changes? after verification.{0,160}(?:stale|invalid).{0,160}rerun",
-        )
-        self.assertNotRegex(text, r"(?m)^\s*Candidate:\s*")
+    def test_requirement_ids_map_to_evidence(self) -> None:
+        text = contract()
+        self.assertRegex(text, r"(?is)done_when.{0,400}id:\s*REQ-1.{0,200}criterion:.{0,200}evidence:")
+        self.assertRegex(text, r"(?is)tasks:.{0,500}requirements:\s*\[REQ-1\]")
 
-    def test_v040_transport_completion_cannot_substitute_task_pass(self) -> None:
-        text = self.contract_text()
-        self.assertIn(
-            "transport/spawn `completed` only proves delivery lifecycle completion",
-            text,
-        )
-        self.assertRegex(
-            text,
-            r"(?i)cannot substitute for (?:a )?structured Luna `?PASS`?",
-        )
-        self.assertRegex(
-            text,
-            r"(?i)Verification/Evidence/changed-path proof",
-        )
-        self.assertRegex(text, r"(?i)Sol review")
 
-    def test_v040_correction_packets_require_allowed_failure_class_and_delta(self) -> None:
-        text = self.contract_text()
-        allowed = "runtime | timeout | model_identity | permission | dependency | scope | verification | evidence_quality | conflict | none"
-        self.assertIn(allowed, text)
-        self.assertIn("Failure class:", text)
-        self.assertIn("Correction Packet", text)
-        self.assertRegex(text, r"(?is)Correction Packet.{0,220}Delta")
-        self.assertRegex(
-            text,
-            r"(?i)same (?:task )?packet.{0,100}no new evidence.{0,100}BLOCKED",
-        )
+class SchedulingAndOwnershipTests(unittest.TestCase):
+    def test_one_file_has_one_owner(self) -> None:
+        text = contract().lower()
+        self.assertIn("one owner for the entire run", text)
+        self.assertIn("shared interface", text)
+        self.assertIn("preserve unrelated user changes", text)
 
-    def test_v040_resume_packet_is_long_task_only_and_has_minimal_fields(self) -> None:
-        text = self.contract_text()
-        self.assertIn("Resume packet", text)
-        for field in ("goal", "completed", "in_flight", "artifact_location", "next_action"):
-            self.assertRegex(text, rf"(?is)Resume packet.{{0,300}}\b{re.escape(field)}\b")
-        self.assertRegex(text, r"(?i)Resume packet.{0,180}(?:long|compression|interruption)")
-        self.assertIn("Short and Direct tasks never generate a resume packet", text)
+    def test_disjoint_ready_tasks_parallelize_and_dependencies_wait(self) -> None:
+        text = contract().lower()
+        self.assertIn("dependencies are satisfied", text)
+        self.assertIn("write scopes are disjoint", text)
+        self.assertIn("run sequentially", text)
 
-    def test_v041_authorized_execution_plan_is_not_a_stop_point(self) -> None:
-        text = self.contract_text()
-        self.assertRegex(
-            text,
-            r"(?is)authorized execution.{0,220}(?:plan|planning).{0,180}(?:not|never).{0,100}stop",
-        )
-        self.assertRegex(
-            text,
-            r"(?is)(?:stop|pause).{0,180}(?:new permission|irreversible|real blocker)",
-        )
-        self.assertRegex(
-            text,
-            r"(?is)(?:new permission|irreversible choice|real blocker).{0,180}(?:only|unless)",
-        )
+    def test_parallelism_uses_live_capacity_not_a_fixed_maximum(self) -> None:
+        text = contract().lower()
+        self.assertIn("live capacity", text)
+        self.assertIn("one to three workers", text)
+        self.assertIn("not a hard cap", text)
 
-    def test_v041_status_questions_do_not_pause_authorized_work(self) -> None:
-        text = self.contract_text()
-        self.assertRegex(
-            text,
-            r"(?is)(?:ordinary|normal|routine) status (?:question|inquiry).{0,180}(?:continue|resume|does not pause|not pause)",
-        )
-        self.assertRegex(
-            text,
-            r"(?is)(?:status (?:question|inquiry)).{0,180}(?:no new permission|not a blocker)",
-        )
+    def test_zero_write_escalation_preserves_ownership(self) -> None:
+        text = contract().lower()
+        self.assertIn("before any owned write", text)
+        self.assertIn("unchanged task and scope", text)
+        self.assertIn("never transfer", text)
 
-    def test_v041_planning_timebox_must_converge(self) -> None:
-        text = self.contract_text()
-        self.assertRegex(
-            text,
-            r"(?is)planning.{0,120}(?:timebox|time box).{0,220}(?:plan|determination|evidence gap)",
-        )
-        self.assertRegex(
-            text,
-            r"(?is)(?:plan|determination|evidence gap).{0,120}(?:within|inside|before).{0,120}(?:timebox|time box)",
-        )
 
-    def test_v041_later_stage_blocker_still_delivers_earlier_evidence(self) -> None:
-        text = self.contract_text()
-        self.assertRegex(
-            text,
-            r"(?is)(?:later|subsequent|downstream) stage.{0,220}(?:blocked|blocker).{0,220}(?:earlier|prior|completed) stage.{0,180}(?:deliver|return|ship).{0,180}(?:evidence|artifact)",
-        )
-        self.assertRegex(
-            text,
-            r"(?is)(?:partial|front-loaded) delivery.{0,180}(?:evidence-complete|complete evidence)",
-        )
+class EvidenceAndReviewTests(unittest.TestCase):
+    def test_final_candidate_changes_invalidate_evidence(self) -> None:
+        text = contract().lower()
+        self.assertIn("evidence must bind to the final candidate", text)
+        self.assertIn("candidate changes", text)
+        self.assertIn("stale", text)
 
-    def test_v041_completed_without_structured_result_allows_one_result_only_follow_up(self) -> None:
-        text = self.contract_text()
-        self.assertRegex(
-            text,
-            r"(?is)completed.{0,160}(?:without|no).{0,100}structured.{0,100}result.{0,220}(?:one|single).{0,80}(?:same|original) worker.{0,140}(?:result-only|result only) follow[- ]up",
-        )
-        self.assertRegex(
-            text,
-            r"(?is)(?:result-only|result only) follow[- ]up.{0,180}(?:no new write|no re[- ]execut|not authorize).{0,100}(?:write|execution)",
-        )
-        self.assertRegex(
-            text,
-            r"(?is)(?:still|otherwise).{0,120}(?:no|without).{0,100}(?:structured|bound final candidate).{0,150}BLOCKED",
-        )
+    def test_transport_completed_is_not_pass(self) -> None:
+        text = contract().lower()
+        self.assertIn("completed", text)
+        self.assertIn("delivery lifecycle completion only", text)
+        self.assertIn("result-only follow-up", text)
 
-    def test_v041_urgency_cannot_lower_evidence_threshold(self) -> None:
-        text = self.contract_text()
-        self.assertRegex(
-            text,
-            r"(?is)(?:urgent|urgency|hurry|do not stop|don't stop|催促).{0,220}(?:cannot|does not|must not).{0,160}(?:lower|relax|reduce).{0,120}(?:evidence|verification).{0,100}(?:threshold|bar)",
-        )
-        self.assertRegex(
-            text,
-            r"(?is)(?:evidence|verification).{0,100}(?:threshold|bar).{0,160}(?:unchanged|remains|still applies)",
-        )
+    def test_controller_reviews_artifacts_before_summaries(self) -> None:
+        text = contract().lower()
+        start = text.index("review artifact-first")
+        summary = text.index("worker summaries", start)
+        diff = text.index("complete diff", start)
+        self.assertLess(diff, summary)
 
-    def test_v041_explicit_user_steering_stops_old_plan_and_replans(self) -> None:
-        text = self.contract_text()
-        self.assertRegex(
-            text,
-            r"(?is)explicit user (?:cancellation|replacement|redirection).{0,180}(?:stop|stops).{0,100}(?:old|current).{0,100}(?:plan|task)",
-        )
-        self.assertRegex(
-            text,
-            r"(?is)(?:substantive|material) user steering.{0,160}(?:not|never).{0,100}ordinary status (?:question|inquiry)",
-        )
-        self.assertRegex(
-            text,
-            r"(?is)(?:requires|must).{0,100}re-?plan.{0,180}(?:new|updated).{0,100}(?:request|goal)",
-        )
+    def test_controller_verifies_the_verifier(self) -> None:
+        text = contract().lower()
+        self.assertIn("verifies the verifier", text)
+        self.assertIn("wrong-module", text)
+        self.assertIn("existence-only", text)
+        self.assertIn("evidence_quality", text)
 
-    def test_v041_runtime_surface_matrix_is_release_time_only(self) -> None:
-        path = ROOT / "docs" / "release" / "runtime-surface-matrix.md"
-        self.assertTrue(path.is_file(), path)
-        text = path.read_text(encoding="utf-8")
-        for surface in ("Desktop", "CLI", "codex exec"):
-            self.assertIn(surface, text, surface)
-        for signal in (
-            "Agent selection",
-            "exact model",
-            "reasoning",
-            "nested dispatch",
-            "result retrieval",
-            "candidate binding",
-        ):
-            self.assertIn(signal, text, signal)
-        for status in ("VERIFIED", "FAILED", "UNVERIFIED"):
-            self.assertIn(status, text, status)
-        self.assertRegex(text, r"(?i)release[- ]time|release documentation|per-task")
-        self.assertIn("| Desktop | Agent selection | VERIFIED |", text)
-        self.assertIn("| Desktop | exact model | VERIFIED |", text)
-        self.assertIn("| Desktop | reasoning | VERIFIED |", text)
-        self.assertIn("| Desktop | nested dispatch | VERIFIED |", text)
-        self.assertRegex(
-            text,
-            r"(?is)Desktop\s*\|\s*nested dispatch\s*\|\s*VERIFIED.{0,320}"
-            r"`sol-controller`.{0,180}`terra-high-worker`.{0,180}`luna-max-worker`",
-        )
-        self.assertRegex(
-            text,
-            r"(?is)does not ask the child to self-report.{0,180}Host/tool role mapping.{0,180}launch record",
-        )
+    def test_final_verdict_is_closed(self) -> None:
+        text = contract()
+        self.assertIn("verdict: PASS | FIX | BLOCKED", text)
+        self.assertIn("residual_suggestions", text)
+        self.assertIn("evidence_quality", text)
 
-    def test_runtime_notes_preserve_host_safety_checkpoints_and_environment_hygiene(self) -> None:
-        text = self.contract_text()
-        for marker in (
-            "First-artifact checkpoint",
-            "smallest observable first artifact",
-            "Host's stated execution timebox",
-            "Before dispatching a Sol `FIX`",
-            "permissions, and side effects",
-            "Verification environment hygiene",
-            "committed lockfile",
-            "different package manager",
-            "unexpectedly changes the worktree or dependency layout",
-            "stop, attribute the new paths and timestamps",
-        ):
-            self.assertIn(marker, text, marker)
+    def test_selective_challenge_is_bounded_and_read_only(self) -> None:
+        text = contract().lower()
+        self.assertIn("zero challenge calls", text)
+        self.assertIn("at most one bounded read-only challenge", text)
+        self.assertIn("write_scope: []", text)
+        self.assertIn("cannot become a second reviewer", text)
 
-    def test_runtime_matrix_verified_rows_have_checkable_evidence(self) -> None:
-        path = ROOT / "docs" / "release" / "runtime-surface-matrix.md"
-        text = path.read_text(encoding="utf-8")
-        verified_rows = [line for line in text.splitlines() if "| VERIFIED |" in line]
-        for row in verified_rows:
-            self.assertRegex(row, r"`[^`]+`")
+    def test_correction_is_single_owner_and_same_scope(self) -> None:
+        text = contract().lower()
+        self.assertIn("at most one focused correction packet", text)
+        self.assertRegex(text, r"same[- ]scope")
+        self.assertIn("never relaunch an identical packet", text)
 
-    def test_failure_class_none_means_no_failure(self) -> None:
-        contract_paths = (
-            SKILL_ROOT / "SKILL.md",
-            SKILL_ROOT / "references" / "orchestration.md",
-            SKILL_ROOT / "references" / "runtime-notes.md",
-            SOL_AGENT,
-            LUNA_AGENT,
-            TERRA_AGENT,
-        )
-        for path in contract_paths:
-            text = read_if_present(path)
-            with self.subTest(path=path.relative_to(ROOT) if path.is_relative_to(ROOT) else path):
-                self.assertRegex(
-                    text,
-                    r"(?is)`?none`?.{0,120}(?:no failure|failure is absent|without a failure)",
-                )
 
-    def test_routing_safety_keeps_runtime_mechanics_internal(self) -> None:
-        skill_text = read_if_present(SKILL_ROOT / "SKILL.md")
-        runtime_path = self.runtime_note_path()
-        runtime_text = read_if_present(runtime_path) if runtime_path else ""
-        self.assertTrue(runtime_text, "runtime-notes.md must contain the internal runtime rules")
+class ContinuityAndSafetyTests(unittest.TestCase):
+    def test_authorized_plan_is_not_a_stop_point(self) -> None:
+        text = contract().lower()
+        self.assertIn("a plan is not a stop point", text)
+        self.assertRegex(text, r"status (?:inquiry|question)\s+does not pause")
+        self.assertIn("urgency does not lower", text)
 
-        combined = f"{skill_text}\n{runtime_text}"
-        for phrase in [
-            "one file",
-            "one owner",
-            "shared integration",
-            "live capacity",
-            "batch",
-            "exact model",
-            "reasoning effort",
-            "Fail Closed",
-        ]:
-            self.assertRegex(combined, rf"(?i){re.escape(phrase)}", phrase)
+    def test_resume_packet_prevents_duplicate_dispatch(self) -> None:
+        text = contract().lower()
+        for field in ("run_id", "completed", "in_flight", "ownership", "candidate_identity", "attempts", "next_action"):
+            self.assertIn(field, text)
+        self.assertIn("do not redispatch completed tasks", text)
+        self.assertIn("do not reset attempts", text)
 
-    def test_agent_models_effort_permissions_and_no_subagents(self) -> None:
-        expected = {
-            SOL_AGENT: ("sol-controller", "gpt-5.6-sol", "high", "read-only"),
-            LUNA_AGENT: ("luna-max-worker", "gpt-5.6-luna", "max", "workspace-write"),
-            TERRA_AGENT: ("terra-high-worker", "gpt-5.6-terra", "high", "workspace-write"),
-        }
-        for path, values in expected.items():
-            self.assertTrue(path.is_file(), path)
-            with path.open("rb") as handle:
-                data = tomllib.load(handle)
-            name, model, effort, sandbox = values
-            self.assertEqual(name, data["name"])
-            self.assertEqual(model, data["model"])
-            self.assertEqual(effort, data["model_reasoning_effort"])
-            self.assertEqual(sandbox, data["sandbox_mode"])
-            self.assertIn("developer_instructions", data)
+    def test_capability_does_not_widen_authorization(self) -> None:
+        text = contract().lower()
+        self.assertIn("capability separate from authorization", text)
+        self.assertRegex(text, r"broader technical access\s+does not\s+widen")
+        self.assertRegex(text, r"host-owned\s+before/after changed-path")
 
-        luna_text = read_if_present(LUNA_AGENT)
-        self.assertRegex(luna_text, r"(?i)do not (spawn|create).*subagent")
-        self.assertRegex(
-            luna_text,
-            r"(?i)(?:parent permission boundary|capability is not authorization)",
-        )
-        terra_text = read_if_present(TERRA_AGENT)
-        self.assertRegex(terra_text, r"(?i)do not (spawn|create).*subagent")
-        self.assertRegex(
-            terra_text,
-            r"(?i)(?:parent permission boundary|capability is not authorization)",
-        )
-        self.assertRegex(self.contract_text(), r"(?i)Fail Closed")
-
-    def test_forward_fixture_covers_v020_routes_and_v040_reliability_cases(self) -> None:
-        path = ROOT / "tests" / "fixtures" / "forward-cases.json"
-        cases = json.loads(path.read_text(encoding="utf-8"))
-        expected_ids = {
-            "ordinary-simple-direct",
-            "explicit-sol-control",
-            "planning-only-sol",
-            "single-file-execution",
-            "live-capacity-batching",
-            "shared-integration-owner",
-            "incomplete-luna-packet",
-            "exact-selection-unavailable",
-            "focused-sol-fix",
-            "dirty-worktree-preserved",
-            "stale-evidence-after-candidate-change",
-            "transport-completed-not-pass",
-            "identical-retry-no-delta",
-            "long-task-resume",
-            "authorized-plan-not-stop",
-            "status-inquiry-keeps-running",
-            "planning-timebox-converges",
-            "partial-stage-delivery-on-blocker",
-            "completed-no-result-one-recovery",
-            "completed-no-result-recovery-blocked",
-            "urgency-does-not-lower-evidence",
-            "explicit-user-steering-replans",
-            "luna-low-ambiguity-small-context",
-            "terra-cross-module-long-context",
-            "model-identity-unavailable-fail-closed",
-            "broader-runtime-capability-keeps-narrow-authorization",
-            "irreversible-work-requires-enforced-boundary",
-            "luna-classification-error-escalates-terra",
-            "luna-first-failure-before-write-escalates-terra",
-            "luna-first-failure-after-write-keeps-luna-owner",
-            "single-file-unique-owner",
-            "v050-requirement-evidence-gap",
-            "v050-worker-pass-is-untrusted",
-            "v050-wrong-scope-verifier",
-            "v050-high-risk-selective-challenge",
-            "v050-standard-task-no-challenge",
-            "v050-resume-no-duplicate-dispatch",
-            "v050-timeout-after-write-keeps-owner",
-            "v050-residual-suggestions-do-not-change-pass",
-        }
-        self.assertEqual(expected_ids, {case["id"] for case in cases})
-        self.assertEqual(len(expected_ids), len(cases))
-
-        allowed_routes = {"direct", "sol", "sol_then_luna", "sol_then_terra", "blocked"}
-        allowed_presence = {"none", "optional", "required", "blocked"}
-        allowed_reviews = {"not_applicable", "PASS", "FIX", "BLOCKED"}
-        allowed_capacity = {"not_applicable", "live"}
-        allowed_resume = {"not_applicable", "forbidden", "required"}
-        allowed_challenge = {"none", "required", "blocked"}
-
-        for case in cases:
-            self.assertTrue(case["prompt"])
-            expected = case["expected"]
-            self.assertIn(expected["route"], allowed_routes)
-            self.assertIn(expected["sol"], allowed_presence)
-            self.assertIn(expected["luna"], allowed_presence)
-            if "terra" in expected:
-                self.assertIn(expected["terra"], allowed_presence)
-            self.assertIn(expected["review"], allowed_reviews)
-            self.assertIn(expected["capacity"], allowed_capacity)
-            if "resume" in expected:
-                self.assertIn(expected["resume"], allowed_resume)
-            if "challenge" in expected:
-                self.assertIn(expected["challenge"], allowed_challenge)
-            self.assertGreaterEqual(len(case["required_assertions"]), 3)
-
-        by_id = {case["id"]: case for case in cases}
-        self.assertEqual("forbidden", by_id["ordinary-simple-direct"]["expected"].get("resume"))
-        self.assertEqual("required", by_id["long-task-resume"]["expected"].get("resume"))
-
-        ownership_ids = {
-            "luna-first-failure-before-write-escalates-terra",
-            "luna-first-failure-after-write-keeps-luna-owner",
-        }
-        missing = ownership_ids - set(by_id)
-        if missing:
-            self.fail(f"fixture is missing ownership-transfer scenarios: {sorted(missing)}")
-        allow = by_id["luna-first-failure-before-write-escalates-terra"]
-        forbid = by_id["luna-first-failure-after-write-keeps-luna-owner"]
-        self.assertEqual(0, allow["luna_state"]["owned_files_written_before_failure"])
-        self.assertTrue(allow["luna_state"]["failed_before_owned_write"])
-        self.assertEqual("same_task_same_scope_once", allow["expected"]["upgrade"])
-        self.assertEqual(1, forbid["luna_state"]["owned_files_written_before_failure"])
-        self.assertFalse(forbid["luna_state"]["failed_before_owned_write"])
-        self.assertEqual("blocked", forbid["expected"]["terra"])
-        self.assertEqual("luna_retains_scope", forbid["expected"]["ownership"])
-        self.assertEqual("focused_fix_or_blocked", forbid["expected"]["correction"])
-
-    def test_public_skill_has_no_unrelated_brand_or_model_contamination(self) -> None:
-        combined = "\n".join(
-            path.read_text(encoding="utf-8")
-            for path in SKILL_ROOT.rglob("*")
-            if path.is_file()
-        ) if SKILL_ROOT.is_dir() else ""
-        forbidden = ["IPZOR", "Buzz", "DeepSeek", "OpenPencil"]
-        hits = [term for term in forbidden if re.search(re.escape(term), combined, re.IGNORECASE)]
-        self.assertEqual([], hits)
+    def test_skill_contains_no_business_project_terms(self) -> None:
+        text = contract() + read(COMPAT / "SKILL.md")
+        for forbidden in ("IPZOR", "Buzz", "DeepSeek", "OpenPencil"):
+            self.assertNotRegex(text, re.compile(forbidden, re.I))
 
 
 if __name__ == "__main__":
