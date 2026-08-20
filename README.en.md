@@ -14,7 +14,7 @@
 
 Simple tasks stay with the current Codex session. Explicitly invoke `$sol-control` for work that is complex, cross-module, parallelizable, or high-consequence.
 
-> **v0.4.x compatibility:** the old `$sol-luna` command remains available for explicit invocation, but only redirects to `$sol-control`; it does not start a second orchestration flow. Use `$sol-control` for new configuration. The alias is scheduled for removal in v0.5.0.
+> **v0.5.0 migration:** the old `$sol-luna` command has been removed; use `$sol-control`. When upgrading from v0.4.x, the installer verifies and backs up the old compatibility entry before removing it transactionally. `--restore-latest` can restore the pre-upgrade state.
 
 Runtime output defaults to Simplified Chinese unless the user explicitly requests another language.
 
@@ -356,24 +356,24 @@ pwsh -NoProfile -File scripts/uninstall.ps1 -RestoreLatest
 
 The lifecycle scripts manage only project-owned Skill and agent files. They preserve unrelated agents and the user's `~/.codex/config.toml`. Set `ORCHESTRATE_HOME` to a temporary home for isolated lifecycle tests.
 
-When upgrading from v0.3, the installer verifies the old `$sol-luna` Skill, all three agents, and the ownership state before migrating to `~/.codex/sol-control`. `--restore-latest` restores the complete manageable pre-upgrade state. The installer stops instead of overwriting user-modified, unowned, or checksum-invalid targets.
+When upgrading from v0.3 or v0.4.x, the installer verifies the old `$sol-luna` Skill, all three agents, and the ownership state before migrating to `~/.codex/sol-control` and removing the old compatibility entry. `--restore-latest` restores the complete manageable pre-upgrade state. The installer stops instead of overwriting user-modified, unowned, or checksum-invalid targets.
 
 See [`docs/release/runtime-surface-matrix.md`](docs/release/runtime-surface-matrix.md) for platform and evidence coverage.
 
 ## Current status
 
-The current release baseline is **[v0.4.1](https://github.com/yehyakin/codex-sol-control/releases/tag/v0.4.1)**.
+The current version is **[v0.5.0](https://github.com/yehyakin/codex-sol-control/releases/tag/v0.5.0)**.
 
 | Verification surface | Recorded evidence |
 | --- | --- |
-| Local repository | Skill Creator **PASS**; the v0.4.1 candidate records **113/113 tests PASS** |
-| v0.5 development candidate | **135/135 tests PASS**; the candidate passed one live matched smoke pair while the v0.4.1 baseline did not, but the full 48-cell × 3-repetition run is incomplete, so no overall quality, cost, or latency improvement is claimed |
-| Hosted CI | [POSIX PASS](https://github.com/yehyakin/codex-sol-control/actions/runs/31254093412): Ubuntu/macOS × Python 3.11/3.13; [Windows PASS](https://github.com/yehyakin/codex-sol-control/actions/runs/31254093408): Windows Server 2022 / `windows-latest` × Windows PowerShell 5.1 / PowerShell 7 |
+| Local repository | Skill Creator **PASS**; the v0.5.0 candidate records **136/136 tests PASS** |
+| Matched smoke | The v0.5.0 candidate passed one live matched smoke pair while the v0.4.1 baseline did not, but the full 48-cell × 3-repetition run is incomplete, so no overall quality, cost, or latency improvement is claimed |
+| Hosted CI | [POSIX workflow](https://github.com/yehyakin/codex-sol-control/actions/workflows/posix-validation.yml): Ubuntu/macOS × Python 3.11/3.13; [Windows workflow](https://github.com/yehyakin/codex-sol-control/actions/workflows/windows-validation.yml): Windows Server 2022 / `windows-latest` × Windows PowerShell 5.1 / PowerShell 7 |
 | Physical Windows install | User-reported installation success; the Windows version, install log, and runtime identity payload were not captured, so this does not establish Native Nested |
 | Desktop Sol handshake | v0.4.1 verifies the authoritative Host/tool role mapping + `fork_turns="none"` launch record + child permission/no-side-effect receipt; the same Sol completed final review with `PASS`; Desktop nested worker dispatch remains unproven |
 | Runtime surface | Native Nested verified on Codex CLI `0.146.0-alpha.9.2`: `gpt-5.6-sol/high/read-only` → `gpt-5.6-luna/max/read-only` → Sol `PASS`; Compatibility remains the fallback; physical Windows 11 remains unproven |
 
-v0.4.1 fixes the Desktop handshake deadlock that occurred when a child agent could not observe its model or reasoning effort: exact identity now comes from the authoritative Host/tool role mapping and parent launch record, while the child reports only permissions, operational constraints, and zero side effects. The fix is [`05793db`](https://github.com/yehyakin/codex-sol-control/commit/05793dbbcace73230eeef51ff13eb3e4ca82b74e); see the [full implementation report](SOL_CONTROL_IMPLEMENTATION_REPORT.md) for the v0.4.0 architecture and migration background.
+v0.5.0 adds Requirement IDs, artifact-first review, verify-the-verifier checks, a bounded read-only challenge, and a resume packet, and formally removes the `$sol-luna` compatibility entry. See the [v0.5.0 implementation report](SOL_CONTROL_V050_IMPLEMENTATION_REPORT.md) for the complete design and evidence. The [historical implementation report](SOL_CONTROL_IMPLEMENTATION_REPORT.md) retains the v0.4.1 Desktop handshake fix and earlier migration background.
 
 These statements describe the recorded evidence boundary; they do not infer support for unverified runtime surfaces.
 
@@ -381,12 +381,11 @@ These statements describe the recorded evidence boundary; they do not infer supp
 
 ```text
 .agents/skills/
-├─ sol-control/                the only full Skill
+└─ sol-control/                the only Skill and invocation entry
 │  ├─ SKILL.md
 │  └─ references/
 │     ├─ orchestration.md      orchestration contract
 │     └─ runtime-notes.md      runtime and dispatch notes
-└─ sol-luna/                   thin v0.4.x compatibility alias
 
 .codex/agents/
 ├─ sol-controller.toml

@@ -10,7 +10,7 @@ $Install = Join-Path $RepoRoot "scripts/install.ps1"
 $Validate = Join-Path $RepoRoot "scripts/validate.ps1"
 $Uninstall = Join-Path $RepoRoot "scripts/uninstall.ps1"
 $TestRoot = Join-Path ([System.IO.Path]::GetTempPath()) (
-    "codex-sol-control v040 windows lifecycle " + [Guid]::NewGuid().ToString("N")
+    "codex-sol-control v050 windows lifecycle " + [Guid]::NewGuid().ToString("N")
 )
 
 $OwnedRelativePaths = @(
@@ -181,10 +181,39 @@ function Copy-SourceInstall {
     $terra = Join-Path $TestHome ".codex/agents/terra-high-worker.toml"
     Ensure-Directory (Split-Path -Parent $skill)
     Ensure-Directory (Split-Path -Parent $sol)
-    Copy-Item -LiteralPath (Join-Path $RepoRoot ".agents/skills/sol-luna") -Destination $skill -Recurse -Force
+    Ensure-Directory (Join-Path $skill "agents")
+    Write-TestText (Join-Path $skill "SKILL.md") "---`nname: sol-luna`ndescription: v0.3 full skill`n---`nlegacy full skill`n"
+    Write-TestText (Join-Path $skill "agents/openai.yaml") "interface:`n  default_prompt: use `$sol-luna`n"
     Copy-Item -LiteralPath (Join-Path $RepoRoot ".codex/agents/sol-controller.toml") -Destination $sol -Force
     Copy-Item -LiteralPath (Join-Path $RepoRoot ".codex/agents/luna-max-worker.toml") -Destination $luna -Force
     Copy-Item -LiteralPath (Join-Path $RepoRoot ".codex/agents/terra-high-worker.toml") -Destination $terra -Force
+}
+
+function Seed-V040Install {
+    param([Parameter(Mandatory = $true)][string]$TestHome)
+    $skill = Join-Path $TestHome ".agents/skills/sol-control"
+    $compatSkill = Join-Path $TestHome ".agents/skills/sol-luna"
+    $sol = Join-Path $TestHome ".codex/agents/sol-controller.toml"
+    $luna = Join-Path $TestHome ".codex/agents/luna-max-worker.toml"
+    $terra = Join-Path $TestHome ".codex/agents/terra-high-worker.toml"
+    Ensure-Directory (Split-Path -Parent $skill)
+    Ensure-Directory (Join-Path $compatSkill "agents")
+    Ensure-Directory (Split-Path -Parent $sol)
+    Copy-Item -LiteralPath (Join-Path $RepoRoot ".agents/skills/sol-control") -Destination $skill -Recurse -Force
+    Write-TestText (Join-Path $compatSkill "SKILL.md") "---`nname: sol-luna`ndescription: v0.4 compatibility alias`n---`nredirect to `$sol-control`n"
+    Write-TestText (Join-Path $compatSkill "agents/openai.yaml") "interface:`n  default_prompt: use `$sol-control`n"
+    Copy-Item -LiteralPath (Join-Path $RepoRoot ".codex/agents/sol-controller.toml") -Destination $sol -Force
+    Copy-Item -LiteralPath (Join-Path $RepoRoot ".codex/agents/luna-max-worker.toml") -Destination $luna -Force
+    Copy-Item -LiteralPath (Join-Path $RepoRoot ".codex/agents/terra-high-worker.toml") -Destination $terra -Force
+    Write-TestText (Join-Path $TestHome ".codex/sol-control/install-state") ((@(
+        "version=3",
+        "backup_id=v040-seed",
+        "skill_sha256=$(Get-TreeDigest $skill)",
+        "compat_skill_sha256=$(Get-TreeDigest $compatSkill)",
+        "sol_sha256=$(Get-FileDigest $sol)",
+        "luna_sha256=$(Get-FileDigest $luna)",
+        "terra_sha256=$(Get-FileDigest $terra)"
+    ) -join "`n") + "`n")
 }
 
 function Seed-V030Install {
@@ -371,15 +400,15 @@ function Invoke-Uninstall {
 function Assert-Installed {
     param([Parameter(Mandatory = $true)][string]$TestHome)
     Assert-PathExists (Join-Path $TestHome ".agents/skills/sol-control")
-    Assert-PathExists (Join-Path $TestHome ".agents/skills/sol-luna")
+    Assert-PathAbsent (Join-Path $TestHome ".agents/skills/sol-luna")
     Assert-PathExists (Join-Path $TestHome ".codex/agents/sol-controller.toml")
     Assert-PathExists (Join-Path $TestHome ".codex/agents/luna-max-worker.toml")
     Assert-PathExists (Join-Path $TestHome ".codex/agents/terra-high-worker.toml")
     $state = Join-Path $TestHome ".codex/sol-control/install-state"
     Assert-PathExists $state
     $stateText = Get-Content -LiteralPath $state -Raw
-    Assert-True ($stateText -match "(?m)^version=3\s*$") "install state is not version 3"
-    Assert-True ($stateText -match "(?m)^compat_skill_sha256=[0-9a-f]{64}\s*$") "install state has no compatibility skill checksum"
+    Assert-True ($stateText -match "(?m)^version=4\s*$") "install state is not version 4"
+    Assert-True ($stateText -notmatch "(?m)^compat_skill_sha256=") "v0.5 install state still owns the removed compatibility skill"
     Assert-True ($stateText -match "(?m)^terra_sha256=[0-9a-f]{64}\s*$") "install state has no Terra checksum"
 }
 
@@ -503,8 +532,8 @@ function Test-FreshRepeatInstallAndSpaces {
     Assert-UserMarkersPreserved $TestHome $markers
 }
 
-function Test-RepeatInstallRestoreLatestKeepsV040Ownership {
-    $TestHome = Join-Path $TestRoot "repeat v0.4 restore home"
+function Test-RepeatInstallRestoreLatestKeepsV050Ownership {
+    $TestHome = Join-Path $TestRoot "repeat v0.5 restore home"
     $markers = Seed-UserFiles $TestHome
     Invoke-Install $TestHome
     $beforeSecondInstall = Get-PathFingerprint $TestHome
@@ -512,8 +541,36 @@ function Test-RepeatInstallRestoreLatestKeepsV040Ownership {
     Invoke-Install $TestHome
     Invoke-Uninstall $TestHome -RestoreLatest
 
-    Assert-Equal $beforeSecondInstall (Get-PathFingerprint $TestHome) "RestoreLatest did not restore the prior v0.4 ownership state"
-    Assert-Equal 0 (Invoke-CheckProcess -Path $Install -TestHome $TestHome) "restored v0.4 ownership state is not manageable"
+    Assert-Equal $beforeSecondInstall (Get-PathFingerprint $TestHome) "RestoreLatest did not restore the prior v0.5 ownership state"
+    Assert-Equal 0 (Invoke-CheckProcess -Path $Install -TestHome $TestHome) "restored v0.5 ownership state is not manageable"
+    Assert-UserMarkersPreserved $TestHome $markers
+}
+
+function Test-V040UpgradeRemovesAliasAndRestoresExactly {
+    $TestHome = Join-Path $TestRoot "v0.4 alias migration home"
+    $markers = Seed-UserFiles $TestHome
+    Seed-V040Install $TestHome
+    $compatSkill = Join-Path $TestHome ".agents/skills/sol-luna"
+    $state = Join-Path $TestHome ".codex/sol-control/install-state"
+    $oldCompat = Get-PathFingerprint $compatSkill
+    $oldState = Get-FileDigest $state
+    $before = Get-ContractSnapshot $TestHome
+
+    Assert-Equal 2 (Invoke-CheckProcess -Path $Install -TestHome $TestHome) "v0.4 check did not require the v0.5 migration"
+    Assert-SnapshotEqual $before (Get-ContractSnapshot $TestHome) "v0.4 check changed the installation"
+
+    Invoke-Install $TestHome
+    Assert-Installed $TestHome
+    Assert-UserMarkersPreserved $TestHome $markers
+
+    Invoke-Uninstall $TestHome -RestoreLatest
+    Assert-PathExists $compatSkill
+    Assert-Equal $oldCompat (Get-PathFingerprint $compatSkill) "RestoreLatest did not restore the v0.4 compatibility skill"
+    Assert-Equal $oldState (Get-FileDigest $state) "RestoreLatest did not restore the v0.4 ownership state"
+    $restored = Get-Content -LiteralPath $state -Raw
+    Assert-True ($restored -match "(?m)^version=3\s*$") "restored ownership state is not v0.4"
+    Assert-True ($restored -match "(?m)^compat_skill_sha256=[0-9a-f]{64}\s*$") "restored v0.4 ownership state lost the compatibility checksum"
+    Assert-Equal 2 (Invoke-CheckProcess -Path $Install -TestHome $TestHome) "restored v0.4 state should require migration again"
     Assert-UserMarkersPreserved $TestHome $markers
 }
 
@@ -712,7 +769,7 @@ function Test-TerraBackupRestoreLatest {
 
     Invoke-Install $TestHome
     Assert-Installed $TestHome
-    Assert-True ($oldTerra -ne (Get-FileDigest $terra)) "owned Terra target was not replaced by v0.4 install"
+    Assert-True ($oldTerra -ne (Get-FileDigest $terra)) "owned Terra target was not replaced by v0.5 install"
 
     $state = Join-Path $TestHome ".codex/sol-control/install-state"
     $stateText = Get-Content -LiteralPath $state -Raw
@@ -864,7 +921,8 @@ try {
     }
 
     Test-FreshRepeatInstallAndSpaces
-    Test-RepeatInstallRestoreLatestKeepsV040Ownership
+    Test-RepeatInstallRestoreLatestKeepsV050Ownership
+    Test-V040UpgradeRemovesAliasAndRestoresExactly
     Test-V030Upgrade
     Test-V01MigrationAndRestoreLatest
     Test-StateOnlyV01StateConvergence

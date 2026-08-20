@@ -253,8 +253,6 @@ function Assert-Source {
     $required = @(
         ".agents/skills/sol-control/SKILL.md",
         ".agents/skills/sol-control/agents/openai.yaml",
-        ".agents/skills/sol-luna/SKILL.md",
-        ".agents/skills/sol-luna/agents/openai.yaml",
         ".codex/agents/sol-controller.toml",
         ".codex/agents/terra-high-worker.toml",
         ".codex/agents/luna-max-worker.toml",
@@ -316,21 +314,8 @@ function Assert-Source {
         throw "source validation failed"
     }
 
-    $compatSkillRoot = Join-Path $Root ".agents/skills/sol-luna"
-    Assert-PlainTree $compatSkillRoot
-    $compatSkill = Get-Content -LiteralPath (Join-Path $compatSkillRoot "SKILL.md") -Raw
-    if ($compatSkill -notmatch "(?m)^name:\s*sol-luna\s*$" -or
-        $compatSkill -notmatch '\$sol-luna' -or
-        $compatSkill -notmatch '\$sol-control' -or
-        $compatSkill -notmatch 'v0\.5\.0' -or
-        @($compatSkill -split "`r?`n").Count -gt 45) {
-        throw "source validation failed"
-    }
-    $compatOpenai = Get-Content -LiteralPath (Join-Path $compatSkillRoot "agents/openai.yaml") -Raw
-    if ($compatOpenai -notmatch '\$sol-luna' -or
-        $compatOpenai -notmatch '\$sol-control' -or
-        $compatOpenai -notmatch '(?m)^\s*allow_implicit_invocation:\s*false\s*$') {
-        throw "source validation failed"
+    if (Test-PathExists (Join-Path $Root ".agents/skills/sol-luna")) {
+        throw "source validation failed: removed compatibility skill is still present"
     }
 
     $sol = Get-Content -LiteralPath (Join-Path $Root ".codex/agents/sol-controller.toml") -Raw
@@ -389,7 +374,6 @@ if ($Check -and (Test-PathExists $baseDir)) {
 }
 
 $skillSource = Join-Path $repoRoot ".agents/skills/sol-control"
-$compatSkillSource = Join-Path $repoRoot ".agents/skills/sol-luna"
 $solSource = Join-Path $repoRoot ".codex/agents/sol-controller.toml"
 $lunaSource = Join-Path $repoRoot ".codex/agents/luna-max-worker.toml"
 $terraSource = Join-Path $repoRoot ".codex/agents/terra-high-worker.toml"
@@ -442,51 +426,67 @@ if (Test-PathExists $stateFile) { Assert-Target $stateFile "File" }
 if (Test-PathExists $previousStateFile) { Assert-Target $previousStateFile "File" }
 if (Test-PathExists $legacyStateFile) { Assert-Target $legacyStateFile "File" }
 
-$v3StatePresent = $false
+$currentStatePresent = $false
+$currentStateVersion = ""
+$currentSkillDigest = ""
+$currentCompatSkillDigest = ""
+$currentSolDigest = ""
+$currentLunaDigest = ""
+$currentTerraDigest = ""
 if (Test-PathExists $stateFile) {
-    $v3State = Get-StateMap $stateFile
-    if ((Get-StateValue $v3State "version") -ne "3") {
-        throw "existing v0.4 state has an unsupported version"
+    $currentState = Get-StateMap $stateFile
+    $currentStateVersion = Get-StateValue $currentState "version"
+    if ($currentStateVersion -ne "3" -and $currentStateVersion -ne "4") {
+        throw "existing Sol Control state has an unsupported version"
     }
-    $v3BackupId = Get-StateValue $v3State "backup_id"
-    Assert-BackupId $v3BackupId
-    $v3SkillDigest = Get-StateValue $v3State "skill_sha256"
-    $v3CompatSkillDigest = Get-StateValue $v3State "compat_skill_sha256"
-    $v3SolDigest = Get-StateValue $v3State "sol_sha256"
-    $v3LunaDigest = Get-StateValue $v3State "luna_sha256"
-    $v3TerraDigest = if ($v3State.ContainsKey("terra_sha256")) { [string]$v3State["terra_sha256"] } else { "" }
-    Assert-Hash $v3SkillDigest
-    Assert-Hash $v3CompatSkillDigest
-    Assert-Hash $v3SolDigest
-    Assert-Hash $v3LunaDigest
-    if ($v3TerraDigest) { Assert-Hash $v3TerraDigest }
+    $currentBackupId = Get-StateValue $currentState "backup_id"
+    Assert-BackupId $currentBackupId
+    $currentSkillDigest = Get-StateValue $currentState "skill_sha256"
+    $currentSolDigest = Get-StateValue $currentState "sol_sha256"
+    $currentLunaDigest = Get-StateValue $currentState "luna_sha256"
+    $currentTerraDigest = if ($currentState.ContainsKey("terra_sha256")) { [string]$currentState["terra_sha256"] } else { "" }
+    Assert-Hash $currentSkillDigest
+    Assert-Hash $currentSolDigest
+    Assert-Hash $currentLunaDigest
+    if ($currentTerraDigest) { Assert-Hash $currentTerraDigest }
+    if ($currentStateVersion -eq "3") {
+        $currentCompatSkillDigest = Get-StateValue $currentState "compat_skill_sha256"
+        Assert-Hash $currentCompatSkillDigest
+        if (-not (Test-Path -LiteralPath $compatSkillTarget -PathType Container) -or
+            (Get-TreeDigest $compatSkillTarget) -ne $currentCompatSkillDigest) {
+            throw "existing v0.4 compatibility skill does not match install state"
+        }
+    }
+    else {
+        if ($currentState.ContainsKey("compat_skill_sha256") -or (Test-PathExists $compatSkillTarget)) {
+            throw "removed compatibility skill exists beside a v0.5 state"
+        }
+    }
     if (-not (Test-Path -LiteralPath $newSkillTarget -PathType Container) -or
-        -not (Test-Path -LiteralPath $compatSkillTarget -PathType Container) -or
         -not (Test-Path -LiteralPath $newSolTarget -PathType Leaf) -or
         -not (Test-Path -LiteralPath $lunaTarget -PathType Leaf)) {
-        throw "existing v0.4 targets are missing"
+        throw "existing Sol Control targets are missing"
     }
-    if ((Get-TreeDigest $newSkillTarget) -ne $v3SkillDigest -or
-        (Get-TreeDigest $compatSkillTarget) -ne $v3CompatSkillDigest -or
-        (Get-FileDigest $newSolTarget) -ne $v3SolDigest -or
-        (Get-FileDigest $lunaTarget) -ne $v3LunaDigest) {
-        throw "existing v0.4 targets do not match install state"
+    if ((Get-TreeDigest $newSkillTarget) -ne $currentSkillDigest -or
+        (Get-FileDigest $newSolTarget) -ne $currentSolDigest -or
+        (Get-FileDigest $lunaTarget) -ne $currentLunaDigest) {
+        throw "existing Sol Control targets do not match install state"
     }
     if (Test-PathExists $terraTarget) {
-        if (-not $v3TerraDigest) {
-            throw "existing v0.4 Terra agent has no ownership checksum"
+        if (-not $currentTerraDigest) {
+            throw "existing Terra agent has no ownership checksum"
         }
-        if ((-not (Test-Path -LiteralPath $terraTarget -PathType Leaf)) -or (Get-FileDigest $terraTarget) -ne $v3TerraDigest) {
-            throw "existing v0.4 Terra agent does not match install state"
+        if ((-not (Test-Path -LiteralPath $terraTarget -PathType Leaf)) -or (Get-FileDigest $terraTarget) -ne $currentTerraDigest) {
+            throw "existing Terra agent does not match install state"
         }
     }
-    elseif ($v3TerraDigest) {
-        throw "existing v0.4 Terra agent does not match install state"
+    elseif ($currentTerraDigest) {
+        throw "existing Terra agent does not match install state"
     }
-    $v3StatePresent = $true
+    $currentStatePresent = $true
 }
 elseif (Test-PathExists $newSkillTarget) {
-    throw "existing v0.4 target has no ownership state"
+    throw "existing Sol Control target has no ownership state"
 }
 
 $previousStatePresent = $false
@@ -562,7 +562,7 @@ if ($legacyStatePresent) {
         $legacySolRemove = $true
     }
 }
-if (-not $v3StatePresent -and (Test-PathExists $lunaTarget)) {
+if (-not $currentStatePresent -and (Test-PathExists $lunaTarget)) {
     if ($previousStatePresent) {
         # The v0.3 state above already proved ownership.
     }
@@ -575,26 +575,26 @@ if (-not $v3StatePresent -and (Test-PathExists $lunaTarget)) {
         throw "existing shared Luna has no ownership state"
     }
 }
-if (-not $v3StatePresent -and -not $previousStatePresent -and (Test-PathExists $terraTarget)) {
+if (-not $currentStatePresent -and -not $previousStatePresent -and (Test-PathExists $terraTarget)) {
     throw "existing Terra target has no supported ownership state"
 }
-if (-not $v3StatePresent -and -not $previousStatePresent -and
+if (-not $currentStatePresent -and -not $previousStatePresent -and
     ((Test-PathExists $compatSkillTarget) -or (Test-PathExists $newSolTarget))) {
     throw "existing Sol Control target has no supported ownership state"
 }
 
 if ($Check) {
     $sourceSkillDigest = Get-TreeDigest $skillSource
-    $sourceCompatSkillDigest = Get-TreeDigest $compatSkillSource
     $sourceSolDigest = Get-FileDigest $solSource
     $sourceLunaDigest = Get-FileDigest $lunaSource
     $sourceTerraDigest = Get-FileDigest $terraSource
-    if ($v3StatePresent -and
-        $v3SkillDigest -eq $sourceSkillDigest -and
-        $v3CompatSkillDigest -eq $sourceCompatSkillDigest -and
-        $v3SolDigest -eq $sourceSolDigest -and
-        $v3LunaDigest -eq $sourceLunaDigest -and
-        $v3TerraDigest -and $v3TerraDigest -eq $sourceTerraDigest -and
+    if ($currentStatePresent -and
+        $currentStateVersion -eq "4" -and
+        $currentSkillDigest -eq $sourceSkillDigest -and
+        $currentSolDigest -eq $sourceSolDigest -and
+        $currentLunaDigest -eq $sourceLunaDigest -and
+        $currentTerraDigest -and $currentTerraDigest -eq $sourceTerraDigest -and
+        -not (Test-PathExists $compatSkillTarget) -and
         -not (Test-PathExists $previousStateFile) -and
         -not (Test-PathExists $legacySkillTarget) -and
         -not (Test-PathExists $legacySolTarget) -and
@@ -616,7 +616,6 @@ $stateNew = $false
 $skillOld = $false
 $skillNew = $false
 $compatSkillOld = $false
-$compatSkillNew = $false
 $solOld = $false
 $solNew = $false
 $lunaOld = $false
@@ -737,7 +736,7 @@ try {
     }
 
     $manifest = New-Object System.Collections.Generic.List[string]
-    $manifest.Add("version=3")
+    $manifest.Add("version=4")
     $manifest.Add("legacy_skill_presence=$legacySkillPresence")
     $manifest.Add("legacy_skill_sha256=$legacySkillBackupDigest")
     $manifest.Add("legacy_sol_presence=$legacySolPresence")
@@ -771,7 +770,6 @@ try {
     Ensure-Directory $transactionDir
     Ensure-Directory (Join-Path $transactionDir "stage")
     Copy-Exact $skillSource (Join-Path $transactionDir "stage/v040-skill")
-    Copy-Exact $compatSkillSource (Join-Path $transactionDir "stage/compat-skill")
     Copy-Exact $solSource (Join-Path $transactionDir "stage/v040-sol-controller.toml")
     Copy-Exact $lunaSource (Join-Path $transactionDir "stage/v040-luna-max-worker.toml")
     Copy-Exact $terraSource (Join-Path $transactionDir "stage/v040-terra-high-worker.toml")
@@ -796,8 +794,6 @@ try {
         Move-Item -LiteralPath $compatSkillTarget -Destination (Join-Path $transactionDir "old-compat-skill")
         $compatSkillOld = $true
     }
-    Move-Item -LiteralPath (Join-Path $transactionDir "stage/compat-skill") -Destination $compatSkillTarget
-    $compatSkillNew = $true
 
     if ($legacySkillRemove) {
         Move-Item -LiteralPath $legacySkillTarget -Destination (Join-Path $transactionDir "old-legacy-skill")
@@ -839,22 +835,22 @@ try {
     }
 
     $newSkillDigest = Get-TreeDigest $newSkillTarget
-    $newCompatSkillDigest = Get-TreeDigest $compatSkillTarget
+    if (Test-PathExists $compatSkillTarget) {
+        throw "removed compatibility skill still exists after replacement"
+    }
     $newSolDigest = Get-FileDigest $newSolTarget
     $newLunaDigest = Get-FileDigest $lunaTarget
     $newTerraDigest = Get-FileDigest $terraTarget
     Assert-Hash $newSkillDigest
-    Assert-Hash $newCompatSkillDigest
     Assert-Hash $newSolDigest
     Assert-Hash $newLunaDigest
     Assert-Hash $newTerraDigest
 
     $stateTemp = Join-Path $stateRoot (".install-state-" + [Guid]::NewGuid().ToString("N"))
     $stateText = @(
-        "version=3",
+        "version=4",
         "backup_id=$backupId",
         "skill_sha256=$newSkillDigest",
-        "compat_skill_sha256=$newCompatSkillDigest",
         "sol_sha256=$newSolDigest",
         "luna_sha256=$newLunaDigest",
         "terra_sha256=$newTerraDigest"
@@ -894,7 +890,6 @@ catch {
     if ($skillOld -and (Test-PathExists (Join-Path $transactionDir "old-v040-skill"))) {
         Move-Item -LiteralPath (Join-Path $transactionDir "old-v040-skill") -Destination $newSkillTarget
     }
-    if ($compatSkillNew) { Remove-Exact $compatSkillTarget }
     if ($compatSkillOld -and (Test-PathExists (Join-Path $transactionDir "old-compat-skill"))) {
         Move-Item -LiteralPath (Join-Path $transactionDir "old-compat-skill") -Destination $compatSkillTarget
     }
@@ -920,7 +915,7 @@ Remove-EmptyDirectory $legacyStateRoot
 Remove-EmptyDirectory $previousStateRoot
 
 Write-Output "Install path: $newSkillTarget"
-Write-Output "Compatibility path: $compatSkillTarget"
+if ($compatSkillPresence -eq "present") { Write-Output "Removed compatibility path: $compatSkillTarget" }
 Write-Output "Install path: $newSolTarget"
 Write-Output "Install path: $lunaTarget"
 Write-Output "Install path: $terraTarget"

@@ -14,7 +14,7 @@
 
 简单任务仍由当前 Codex 直接完成。复杂、跨模块、可并行或高风险任务，再显式调用 `$sol-control`。
 
-> **v0.4.x 兼容说明：**旧命令 `$sol-luna` 仍可显式调用，但它只会转交给 `$sol-control`，不会启动第二套编排流程。新配置请使用 `$sol-control`；兼容入口计划在 v0.5.0 移除。
+> **v0.5.0 迁移说明：**旧命令 `$sol-luna` 已移除，请统一使用 `$sol-control`。从 v0.4.x 升级时，安装器会先校验并备份旧兼容入口，再以事务方式移除；`--restore-latest` 可恢复升级前状态。
 
 运行时默认使用简体中文；如果用户明确指定其他语言，则遵循用户选择。
 
@@ -355,24 +355,24 @@ pwsh -NoProfile -File scripts/uninstall.ps1 -RestoreLatest
 
 安装器只管理本项目拥有的 Skill 与 agent 文件，并保留无关 agent 和用户自己的 `~/.codex/config.toml`。隔离生命周期测试时可使用 `ORCHESTRATE_HOME` 指定临时 home。
 
-从 v0.3 升级时，安装器会先校验旧 `$sol-luna` Skill、三个 agent 与 ownership state，再迁移到 `~/.codex/sol-control`。`--restore-latest` 可恢复升级前的完整可管理状态；检测到用户修改、无 ownership 的目标或校验失败时会停止，不会覆盖。
+从 v0.3 或 v0.4.x 升级时，安装器会先校验旧 `$sol-luna` Skill、三个 agent 与 ownership state，再迁移到 `~/.codex/sol-control` 并移除旧兼容入口。`--restore-latest` 可恢复升级前的完整可管理状态；检测到用户修改、无 ownership 的目标或校验失败时会停止，不会覆盖。
 
 平台与证据覆盖详见 [`docs/release/runtime-surface-matrix.md`](docs/release/runtime-surface-matrix.md)。
 
 ## 当前状态
 
-当前发布基线为 **[v0.4.1](https://github.com/yehyakin/codex-sol-control/releases/tag/v0.4.1)**。
+当前版本为 **[v0.5.0](https://github.com/yehyakin/codex-sol-control/releases/tag/v0.5.0)**。
 
 | 验证面 | 已记录证据 |
 | --- | --- |
-| 本地仓库 | Skill Creator **PASS**；v0.4.1 候选版本 **113/113 tests PASS** |
-| v0.5 开发候选 | **135/135 tests PASS**；一组真实匹配 smoke 中候选通过、v0.4.1 baseline 未通过，但完整 48-cell × 3 重复尚未完成，因此不声明总体质量、成本或速度提升 |
-| 托管 CI | [POSIX PASS](https://github.com/yehyakin/codex-sol-control/actions/runs/31254093412)：Ubuntu/macOS × Python 3.11/3.13；[Windows PASS](https://github.com/yehyakin/codex-sol-control/actions/runs/31254093408)：Windows Server 2022 / `windows-latest` × Windows PowerShell 5.1 / PowerShell 7 |
+| 本地仓库 | Skill Creator **PASS**；v0.5.0 候选版本 **136/136 tests PASS** |
+| 匹配 smoke | 一组真实匹配 smoke 中 v0.5.0 候选通过、v0.4.1 baseline 未通过，但完整 48-cell × 3 重复尚未完成，因此不声明总体质量、成本或速度提升 |
+| 托管 CI | [POSIX 工作流](https://github.com/yehyakin/codex-sol-control/actions/workflows/posix-validation.yml)：Ubuntu/macOS × Python 3.11/3.13；[Windows 工作流](https://github.com/yehyakin/codex-sol-control/actions/workflows/windows-validation.yml)：Windows Server 2022 / `windows-latest` × Windows PowerShell 5.1 / PowerShell 7 |
 | Windows 实机安装 | 用户报告安装成功；未收集 Windows 版本、安装日志或运行时身份载荷，因此不扩展为 Native Nested 证明 |
 | Desktop Sol 握手 | v0.4.1 已验证 Host/tool 权威角色映射 + `fork_turns="none"` 启动记录 + child 权限/零副作用回执；同一个 Sol 完成最终审核并返回 `PASS`；Desktop 嵌套 worker 调度仍未证明 |
 | 运行表面 | Native Nested 已在 Codex CLI `0.146.0-alpha.9.2` 验证：`gpt-5.6-sol/high/read-only` → `gpt-5.6-luna/max/read-only` → Sol `PASS`；Compatibility 保留为回退；物理 Windows 11 尚未证明 |
 
-v0.4.1 修复了 Desktop 子 Agent 无法观察模型和 reasoning effort 时的握手死锁：精确身份由 Host/tool 权威角色映射与父线程启动记录证明，child 只回报权限边界、运行约束和零副作用。修复提交为 [`05793db`](https://github.com/yehyakin/codex-sol-control/commit/05793dbbcace73230eeef51ff13eb3e4ca82b74e)；v0.4.0 的架构与迁移背景见[完整实施报告](SOL_CONTROL_IMPLEMENTATION_REPORT.md)。
+v0.5.0 增加 Requirement ID、产物优先审核、验证者校验、有限只读挑战与恢复包，并正式移除 `$sol-luna` 兼容入口；完整设计与证据见 [v0.5.0 实施报告](SOL_CONTROL_V050_IMPLEMENTATION_REPORT.md)。v0.4.1 的 Desktop 握手修复与早期迁移背景保留在[历史实施报告](SOL_CONTROL_IMPLEMENTATION_REPORT.md)。
 
 这些状态描述的是已记录证据范围，不推断未验证运行表面。
 
@@ -380,12 +380,11 @@ v0.4.1 修复了 Desktop 子 Agent 无法观察模型和 reasoning effort 时的
 
 ```text
 .agents/skills/
-├─ sol-control/                唯一完整 Skill
+└─ sol-control/                唯一 Skill 与调用入口
 │  ├─ SKILL.md
 │  └─ references/
 │     ├─ orchestration.md      编排契约
 │     └─ runtime-notes.md      运行时与调度说明
-└─ sol-luna/                   v0.4.x 薄兼容入口
 
 .codex/agents/
 ├─ sol-controller.toml

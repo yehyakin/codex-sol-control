@@ -179,18 +179,15 @@ if ! command -v shasum >/dev/null 2>&1 && ! command -v sha256sum >/dev/null 2>&1
 fi
 
 skill_source="$REPO_ROOT/.agents/skills/sol-control"
-compat_skill_source="$REPO_ROOT/.agents/skills/sol-luna"
 sol_source="$REPO_ROOT/.codex/agents/sol-controller.toml"
 luna_source="$REPO_ROOT/.codex/agents/luna-max-worker.toml"
 terra_source="$REPO_ROOT/.codex/agents/terra-high-worker.toml"
 
 [[ -d "$skill_source" && ! -L "$skill_source" ]] || die 'source skill directory is missing'
-[[ -d "$compat_skill_source" && ! -L "$compat_skill_source" ]] || die 'source compatibility skill directory is missing'
 [[ -f "$sol_source" && ! -L "$sol_source" ]] || die 'source Sol controller is missing'
 [[ -f "$luna_source" && ! -L "$luna_source" ]] || die 'source Luna agent is missing'
 [[ -f "$terra_source" && ! -L "$terra_source" ]] || die 'source Terra agent is missing'
 assert_plain_tree "$skill_source"
-assert_plain_tree "$compat_skill_source"
 assert_plain_tree "$sol_source"
 assert_plain_tree "$luna_source"
 assert_plain_tree "$terra_source"
@@ -293,45 +290,52 @@ if path_exists "$legacy_state_file"; then
   assert_target "$legacy_state_file" file
 fi
 
-v3_state_present=0
-v3_skill_sha256=
-v3_compat_skill_sha256=
-v3_sol_sha256=
-v3_luna_sha256=
-v3_terra_sha256=
+current_state_present=0
+current_state_version=
+current_skill_sha256=
+current_compat_skill_sha256=
+current_sol_sha256=
+current_luna_sha256=
+current_terra_sha256=
 if path_exists "$state_file"; then
-  [[ "$(state_value_file "$state_file" version)" == 3 ]] || die 'existing v0.4 state has an unsupported version'
-  v3_backup_id=$(state_value_file "$state_file" backup_id) || die 'existing v0.4 state is incomplete'
-  [[ "$v3_backup_id" =~ ^[A-Za-z0-9._-]+$ ]] || die 'existing v0.4 state has an unsafe backup identifier'
-  v3_skill_sha256=$(state_value_file "$state_file" skill_sha256) || die 'existing v0.4 state is incomplete'
-  v3_compat_skill_sha256=$(state_value_file "$state_file" compat_skill_sha256) || die 'existing v0.4 state is incomplete'
-  v3_sol_sha256=$(state_value_file "$state_file" sol_sha256) || die 'existing v0.4 state is incomplete'
-  v3_luna_sha256=$(state_value_file "$state_file" luna_sha256) || die 'existing v0.4 state is incomplete'
-  v3_terra_sha256=$(state_optional_value_file "$state_file" terra_sha256)
-  valid_hash "$v3_skill_sha256" || die 'existing v0.4 state has an invalid skill checksum'
-  valid_hash "$v3_compat_skill_sha256" || die 'existing v0.4 state has an invalid compatibility skill checksum'
-  valid_hash "$v3_sol_sha256" || die 'existing v0.4 state has an invalid Sol checksum'
-  valid_hash "$v3_luna_sha256" || die 'existing v0.4 state has an invalid Luna checksum'
-  if [[ -n "$v3_terra_sha256" ]]; then valid_hash "$v3_terra_sha256" || die 'existing v0.4 state has an invalid Terra checksum'; fi
-  [[ -d "$new_skill_target" && ! -L "$new_skill_target" ]] || die 'existing v0.4 skill is missing or unsafe'
-  [[ -d "$compat_skill_target" && ! -L "$compat_skill_target" ]] || die 'existing compatibility skill is missing or unsafe'
-  [[ -f "$new_sol_target" && ! -L "$new_sol_target" ]] || die 'existing v0.4 Sol controller is missing or unsafe'
-  [[ -f "$luna_target" && ! -L "$luna_target" ]] || die 'existing v0.4 Luna agent is missing or unsafe'
-  [[ "$(sha256_tree "$new_skill_target")" == "$v3_skill_sha256" ]] || die 'existing v0.4 skill was modified'
-  [[ "$(sha256_tree "$compat_skill_target")" == "$v3_compat_skill_sha256" ]] || die 'existing compatibility skill was modified'
-  [[ "$(sha256_file "$new_sol_target")" == "$v3_sol_sha256" ]] || die 'existing v0.4 Sol controller was modified'
-  [[ "$(sha256_file "$luna_target")" == "$v3_luna_sha256" ]] || die 'existing v0.4 Luna agent was modified'
-  if path_exists "$terra_target"; then
-    [[ -n "$v3_terra_sha256" ]] || die 'existing v0.4 Terra agent has no ownership checksum'
-    [[ -f "$terra_target" && ! -L "$terra_target" ]] || die 'existing v0.4 Terra agent is missing or unsafe'
-    [[ "$(sha256_file "$terra_target")" == "$v3_terra_sha256" ]] || die 'existing v0.4 Terra agent was modified'
-  elif [[ -n "$v3_terra_sha256" ]]; then
-    die 'existing v0.4 Terra agent is missing or unsafe'
+  current_state_version=$(state_value_file "$state_file" version) || die 'existing Sol Control state is incomplete'
+  [[ "$current_state_version" == 3 || "$current_state_version" == 4 ]] || die 'existing Sol Control state has an unsupported version'
+  current_backup_id=$(state_value_file "$state_file" backup_id) || die 'existing Sol Control state is incomplete'
+  [[ "$current_backup_id" =~ ^[A-Za-z0-9._-]+$ ]] || die 'existing Sol Control state has an unsafe backup identifier'
+  current_skill_sha256=$(state_value_file "$state_file" skill_sha256) || die 'existing Sol Control state is incomplete'
+  current_sol_sha256=$(state_value_file "$state_file" sol_sha256) || die 'existing Sol Control state is incomplete'
+  current_luna_sha256=$(state_value_file "$state_file" luna_sha256) || die 'existing Sol Control state is incomplete'
+  current_terra_sha256=$(state_optional_value_file "$state_file" terra_sha256)
+  valid_hash "$current_skill_sha256" || die 'existing Sol Control state has an invalid skill checksum'
+  valid_hash "$current_sol_sha256" || die 'existing Sol Control state has an invalid Sol checksum'
+  valid_hash "$current_luna_sha256" || die 'existing Sol Control state has an invalid Luna checksum'
+  if [[ -n "$current_terra_sha256" ]]; then valid_hash "$current_terra_sha256" || die 'existing Sol Control state has an invalid Terra checksum'; fi
+  if [[ "$current_state_version" == 3 ]]; then
+    current_compat_skill_sha256=$(state_value_file "$state_file" compat_skill_sha256) || die 'existing v0.4 state is incomplete'
+    valid_hash "$current_compat_skill_sha256" || die 'existing v0.4 state has an invalid compatibility skill checksum'
+    [[ -d "$compat_skill_target" && ! -L "$compat_skill_target" ]] || die 'existing v0.4 compatibility skill is missing or unsafe'
+    [[ "$(sha256_tree "$compat_skill_target")" == "$current_compat_skill_sha256" ]] || die 'existing v0.4 compatibility skill was modified'
+  else
+    [[ -z "$(state_optional_value_file "$state_file" compat_skill_sha256)" ]] || die 'existing v0.5 state unexpectedly owns the removed compatibility skill'
+    ! path_exists "$compat_skill_target" || die 'removed compatibility skill exists beside a v0.5 state'
   fi
-  v3_state_present=1
+  [[ -d "$new_skill_target" && ! -L "$new_skill_target" ]] || die 'existing Sol Control skill is missing or unsafe'
+  [[ -f "$new_sol_target" && ! -L "$new_sol_target" ]] || die 'existing Sol Control controller is missing or unsafe'
+  [[ -f "$luna_target" && ! -L "$luna_target" ]] || die 'existing Luna agent is missing or unsafe'
+  [[ "$(sha256_tree "$new_skill_target")" == "$current_skill_sha256" ]] || die 'existing Sol Control skill was modified'
+  [[ "$(sha256_file "$new_sol_target")" == "$current_sol_sha256" ]] || die 'existing Sol Control controller was modified'
+  [[ "$(sha256_file "$luna_target")" == "$current_luna_sha256" ]] || die 'existing Luna agent was modified'
+  if path_exists "$terra_target"; then
+    [[ -n "$current_terra_sha256" ]] || die 'existing Terra agent has no ownership checksum'
+    [[ -f "$terra_target" && ! -L "$terra_target" ]] || die 'existing Terra agent is missing or unsafe'
+    [[ "$(sha256_file "$terra_target")" == "$current_terra_sha256" ]] || die 'existing Terra agent was modified'
+  elif [[ -n "$current_terra_sha256" ]]; then
+    die 'existing Terra agent is missing or unsafe'
+  fi
+  current_state_present=1
 else
   if path_exists "$new_skill_target"; then
-    die 'existing v0.4 skill has no ownership state'
+    die 'existing Sol Control skill has no ownership state'
   fi
 fi
 
@@ -393,7 +397,7 @@ if (( legacy_state_present )); then
   fi
 fi
 
-if (( ! v3_state_present )) && path_exists "$luna_target"; then
+if (( ! current_state_present )) && path_exists "$luna_target"; then
   if (( previous_state_present )); then
     :
   elif (( legacy_state_present )); then
@@ -403,7 +407,7 @@ if (( ! v3_state_present )) && path_exists "$luna_target"; then
   fi
 fi
 
-if (( ! v3_state_present && ! previous_state_present )); then
+if (( ! current_state_present && ! previous_state_present )); then
   if path_exists "$terra_target"; then
     die 'existing Terra target has no supported ownership state'
   fi
@@ -414,16 +418,16 @@ fi
 
 if (( check_mode )); then
   source_skill_sha256=$(sha256_tree "$skill_source") || die 'cannot hash the source skill'
-  source_compat_skill_sha256=$(sha256_tree "$compat_skill_source") || die 'cannot hash the source compatibility skill'
   source_sol_sha256=$(sha256_file "$sol_source") || die 'cannot hash the source Sol controller'
   source_luna_sha256=$(sha256_file "$luna_source") || die 'cannot hash the source Luna agent'
   source_terra_sha256=$(sha256_file "$terra_source") || die 'cannot hash the source Terra agent'
-  if (( v3_state_present )) &&
-    [[ "$v3_skill_sha256" == "$source_skill_sha256" ]] &&
-    [[ "$v3_compat_skill_sha256" == "$source_compat_skill_sha256" ]] &&
-    [[ "$v3_sol_sha256" == "$source_sol_sha256" ]] &&
-    [[ "$v3_luna_sha256" == "$source_luna_sha256" ]] &&
-    [[ -n "$v3_terra_sha256" && "$v3_terra_sha256" == "$source_terra_sha256" ]] &&
+  if (( current_state_present )) &&
+    [[ "$current_state_version" == 4 ]] &&
+    [[ "$current_skill_sha256" == "$source_skill_sha256" ]] &&
+    [[ "$current_sol_sha256" == "$source_sol_sha256" ]] &&
+    [[ "$current_luna_sha256" == "$source_luna_sha256" ]] &&
+    [[ -n "$current_terra_sha256" && "$current_terra_sha256" == "$source_terra_sha256" ]] &&
+    ! path_exists "$compat_skill_target" &&
     ! path_exists "$previous_state_file" &&
     ! path_exists "$legacy_skill_target" &&
     ! path_exists "$legacy_sol_target" &&
@@ -453,7 +457,6 @@ state_tmp=
 skill_old=0
 skill_new=0
 compat_skill_old=0
-compat_skill_new=0
 sol_old=0
 sol_new=0
 luna_old=0
@@ -488,7 +491,6 @@ rollback_install() {
   if (( sol_old )) && path_exists "$transaction_dir/old-v040-sol"; then mv "$transaction_dir/old-v040-sol" "$new_sol_target"; fi
   if (( skill_new )); then rm -rf "$new_skill_target"; fi
   if (( skill_old )) && path_exists "$transaction_dir/old-v040-skill"; then mv "$transaction_dir/old-v040-skill" "$new_skill_target"; fi
-  if (( compat_skill_new )); then rm -rf "$compat_skill_target"; fi
   if (( compat_skill_old )) && path_exists "$transaction_dir/old-compat-skill"; then mv "$transaction_dir/old-compat-skill" "$compat_skill_target"; fi
 
   if (( legacy_sol_old )) && path_exists "$transaction_dir/old-legacy-sol"; then mv "$transaction_dir/old-legacy-sol" "$legacy_sol_target"; fi
@@ -600,7 +602,7 @@ fi
 
 manifest_tmp="$backup_dir/.manifest.tmp"
 {
-  printf 'version=3\n'
+  printf 'version=4\n'
   printf 'legacy_skill_presence=%s\n' "$backup_skill_presence"
   printf 'legacy_skill_sha256=%s\n' "$backup_skill_sha256"
   printf 'legacy_sol_presence=%s\n' "$backup_sol_presence"
@@ -631,7 +633,6 @@ mv "$manifest_tmp" "$backup_dir/manifest"
 transaction_dir=$(mktemp -d "$state_root/.transaction.XXXXXX") || die 'cannot create the staged transaction directory'
 mkdir "$transaction_dir/stage"
 copy_exact "$skill_source" "$transaction_dir/stage/v040-skill"
-copy_exact "$compat_skill_source" "$transaction_dir/stage/compat-skill"
 copy_exact "$sol_source" "$transaction_dir/stage/v040-sol-controller.toml"
 copy_exact "$luna_source" "$transaction_dir/stage/v040-luna-max-worker.toml"
 copy_exact "$terra_source" "$transaction_dir/stage/v040-terra-high-worker.toml"
@@ -657,8 +658,6 @@ if path_exists "$compat_skill_target"; then
   mv "$compat_skill_target" "$transaction_dir/old-compat-skill"
   compat_skill_old=1
 fi
-mv "$transaction_dir/stage/compat-skill" "$compat_skill_target"
-compat_skill_new=1
 
 if (( legacy_skill_remove )); then
   mv "$legacy_skill_target" "$transaction_dir/old-legacy-skill"
@@ -700,23 +699,21 @@ if [[ -n "${ORCHESTRATE_HOME:-}" && "${ORCHESTRATE_FAILPOINT:-}" == after-replac
   die 'injected failure after replacement'
 fi
 
-new_skill_sha256=$(sha256_tree "$new_skill_target") || die 'cannot hash the installed v0.4 skill'
-new_compat_skill_sha256=$(sha256_tree "$compat_skill_target") || die 'cannot hash the installed compatibility skill'
-new_sol_sha256=$(sha256_file "$new_sol_target") || die 'cannot hash the installed v0.4 Sol controller'
-new_luna_sha256=$(sha256_file "$luna_target") || die 'cannot hash the installed v0.4 Luna checksum'
-new_terra_sha256=$(sha256_file "$terra_target") || die 'cannot hash the installed v0.4 Terra checksum'
-valid_hash "$new_skill_sha256" || die 'invalid installed v0.4 skill checksum'
-valid_hash "$new_compat_skill_sha256" || die 'invalid installed compatibility skill checksum'
-valid_hash "$new_sol_sha256" || die 'invalid installed v0.4 Sol checksum'
-valid_hash "$new_luna_sha256" || die 'invalid installed v0.4 Luna checksum'
-valid_hash "$new_terra_sha256" || die 'invalid installed v0.4 Terra checksum'
+! path_exists "$compat_skill_target" || die 'removed compatibility skill still exists after replacement'
+new_skill_sha256=$(sha256_tree "$new_skill_target") || die 'cannot hash the installed v0.5 skill'
+new_sol_sha256=$(sha256_file "$new_sol_target") || die 'cannot hash the installed v0.5 Sol controller'
+new_luna_sha256=$(sha256_file "$luna_target") || die 'cannot hash the installed v0.5 Luna checksum'
+new_terra_sha256=$(sha256_file "$terra_target") || die 'cannot hash the installed v0.5 Terra checksum'
+valid_hash "$new_skill_sha256" || die 'invalid installed v0.5 skill checksum'
+valid_hash "$new_sol_sha256" || die 'invalid installed v0.5 Sol checksum'
+valid_hash "$new_luna_sha256" || die 'invalid installed v0.5 Luna checksum'
+valid_hash "$new_terra_sha256" || die 'invalid installed v0.5 Terra checksum'
 
-state_tmp=$(mktemp "$state_root/.install-state.XXXXXX") || die 'cannot create v0.4 install state'
+state_tmp=$(mktemp "$state_root/.install-state.XXXXXX") || die 'cannot create v0.5 install state'
 {
-  printf 'version=3\n'
+  printf 'version=4\n'
   printf 'backup_id=%s\n' "$backup_id"
   printf 'skill_sha256=%s\n' "$new_skill_sha256"
-  printf 'compat_skill_sha256=%s\n' "$new_compat_skill_sha256"
   printf 'sol_sha256=%s\n' "$new_sol_sha256"
   printf 'luna_sha256=%s\n' "$new_luna_sha256"
   printf 'terra_sha256=%s\n' "$new_terra_sha256"
@@ -736,7 +733,7 @@ rmdir "$legacy_state_root" 2>/dev/null || true
 rmdir "$previous_state_root" 2>/dev/null || true
 
 printf 'Install path: %s\n' "$new_skill_target"
-printf 'Compatibility path: %s\n' "$compat_skill_target"
+if [[ "$backup_compat_skill_presence" == present ]]; then printf 'Removed compatibility path: %s\n' "$compat_skill_target"; fi
 printf 'Install path: %s\n' "$new_sol_target"
 printf 'Install path: %s\n' "$luna_target"
 printf 'Install path: %s\n' "$terra_target"

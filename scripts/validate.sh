@@ -7,9 +7,7 @@ ROOT_DIR=$(CDPATH= cd -- "$SCRIPT_DIR/.." && pwd -P)
 SKILL_ROOT="$ROOT_DIR/.agents/skills/sol-control"
 SKILL_FILE="$SKILL_ROOT/SKILL.md"
 OPENAI_FILE="$SKILL_ROOT/agents/openai.yaml"
-COMPAT_SKILL_ROOT="$ROOT_DIR/.agents/skills/sol-luna"
-COMPAT_SKILL_FILE="$COMPAT_SKILL_ROOT/SKILL.md"
-COMPAT_OPENAI_FILE="$COMPAT_SKILL_ROOT/agents/openai.yaml"
+REMOVED_COMPAT_SKILL_ROOT="$ROOT_DIR/.agents/skills/sol-luna"
 SOL_FILE="$ROOT_DIR/.codex/agents/sol-controller.toml"
 LUNA_FILE="$ROOT_DIR/.codex/agents/luna-max-worker.toml"
 TERRA_FILE="$ROOT_DIR/.codex/agents/terra-high-worker.toml"
@@ -36,8 +34,6 @@ required_files=(
   ".agents/skills/sol-control/SKILL.md"
   ".agents/skills/sol-control/agents/openai.yaml"
   ".agents/skills/sol-control/references/orchestration.md"
-  ".agents/skills/sol-luna/SKILL.md"
-  ".agents/skills/sol-luna/agents/openai.yaml"
   ".codex/agents/sol-controller.toml"
   ".codex/agents/luna-max-worker.toml"
   ".codex/agents/terra-high-worker.toml"
@@ -90,8 +86,8 @@ grep -Fq 'SUPPORT.md' "$ROOT_DIR/README.en.md" || fail 'README.en.md is missing 
 grep -Fq 'blank_issues_enabled: false' "$ISSUE_CONFIG_FILE" || fail 'issue template config permits blank issues'
 grep -Fq 'Security vulnerability' "$ISSUE_CONFIG_FILE" || fail 'issue template config is missing private security routing'
 grep -Fq 'Validation and evidence' "$ROOT_DIR/.github/pull_request_template.md" || fail 'pull request template is missing evidence guidance'
-[[ -d "$SKILL_ROOT" ]] || fail 'missing canonical v0.4 skill directory'
-[[ -d "$COMPAT_SKILL_ROOT" ]] || fail 'missing v0.4 compatibility skill directory'
+[[ -d "$SKILL_ROOT" ]] || fail 'missing canonical v0.5 skill directory'
+[[ ! -e "$REMOVED_COMPAT_SKILL_ROOT" && ! -L "$REMOVED_COMPAT_SKILL_ROOT" ]] || fail 'removed compatibility skill source is still present'
 
 RUNTIME_FILE=
 if [[ -f "$SKILL_ROOT/runtime-notes.md" ]]; then
@@ -99,7 +95,7 @@ if [[ -f "$SKILL_ROOT/runtime-notes.md" ]]; then
 elif [[ -f "$SKILL_ROOT/references/runtime-notes.md" ]]; then
   RUNTIME_FILE="$SKILL_ROOT/references/runtime-notes.md"
 else
-  fail 'missing runtime-notes.md in the canonical v0.4 skill'
+  fail 'missing runtime-notes.md in the canonical v0.5 skill'
 fi
 
 for command_name in bash git find; do
@@ -118,15 +114,6 @@ if [[ -f "$SKILL_FILE" ]]; then
   fi
 fi
 
-if [[ -f "$COMPAT_SKILL_FILE" ]]; then
-  if ! grep -Eq '^name:[[:space:]]*sol-luna[[:space:]]*$' "$COMPAT_SKILL_FILE"; then
-    fail 'compatibility SKILL.md has the wrong name'
-  fi
-  [[ "$(wc -l < "$COMPAT_SKILL_FILE" | tr -d ' ')" -le 45 ]] || fail 'compatibility SKILL.md is not thin'
-  grep -Fq '$sol-control' "$COMPAT_SKILL_FILE" || fail 'compatibility SKILL.md does not redirect to $sol-control'
-  grep -Fq 'v0.5.0' "$COMPAT_SKILL_FILE" || fail 'compatibility SKILL.md has no removal milestone'
-fi
-
 if [[ -f "$OPENAI_FILE" ]]; then
   for marker in \
     '^interface:[[:space:]]*$' \
@@ -141,12 +128,6 @@ if [[ -f "$OPENAI_FILE" ]]; then
   grep -Fq '$sol-control' "$OPENAI_FILE" || fail 'canonical openai.yaml has the wrong invocation'
   grep -Eq 'allow_implicit_invocation:[[:space:]]*false' "$OPENAI_FILE" || fail 'canonical openai.yaml permits implicit invocation'
 fi
-if [[ -f "$COMPAT_OPENAI_FILE" ]]; then
-  grep -Fq '$sol-luna' "$COMPAT_OPENAI_FILE" || fail 'compatibility openai.yaml has the wrong invocation'
-  grep -Fq '$sol-control' "$COMPAT_OPENAI_FILE" || fail 'compatibility openai.yaml does not redirect to $sol-control'
-  grep -Eq 'allow_implicit_invocation:[[:space:]]*false' "$COMPAT_OPENAI_FILE" || fail 'compatibility openai.yaml permits implicit invocation'
-fi
-
 PYTHON_BIN=
 for candidate in \
   "/opt/homebrew/opt/python@3.14/bin/python3.14" \
@@ -181,7 +162,7 @@ fi
 if ! "$PYTHON_BIN" "$AB_BENCHMARK_FILE" validate "$AB_MANIFEST_FILE" >/dev/null 2>&1; then
   fail 'v0.5 A/B benchmark manifest validation failed'
 fi
-if ! "$PYTHON_BIN" - "$ROOT_DIR" "$SKILL_FILE" "$OPENAI_FILE" "$RUNTIME_FILE" "$SOL_FILE" "$LUNA_FILE" "$TERRA_FILE" "$PS_FILE" "$PS_VALIDATE_FILE" "$PS_UNINSTALL_FILE" "$WINDOWS_LIFECYCLE_FILE" "$WINDOWS_WORKFLOW_FILE" "$TEST_ENTRYPOINT_FILE" "$POSIX_WORKFLOW_FILE" "$COMPAT_SKILL_FILE" "$COMPAT_OPENAI_FILE" <<'PY' >/dev/null 2>&1
+if ! "$PYTHON_BIN" - "$ROOT_DIR" "$SKILL_FILE" "$OPENAI_FILE" "$RUNTIME_FILE" "$SOL_FILE" "$LUNA_FILE" "$TERRA_FILE" "$PS_FILE" "$PS_VALIDATE_FILE" "$PS_UNINSTALL_FILE" "$WINDOWS_LIFECYCLE_FILE" "$WINDOWS_WORKFLOW_FILE" "$TEST_ENTRYPOINT_FILE" "$POSIX_WORKFLOW_FILE" <<'PY' >/dev/null 2>&1
 from __future__ import annotations
 
 import re
@@ -204,8 +185,6 @@ windows_lifecycle_file = Path(sys.argv[11])
 windows_workflow_file = Path(sys.argv[12])
 test_entrypoint_file = Path(sys.argv[13])
 posix_workflow_file = Path(sys.argv[14])
-compat_skill_file = Path(sys.argv[15])
-compat_openai_file = Path(sys.argv[16])
 
 
 def fail() -> "NoReturn":
@@ -342,18 +321,8 @@ for marker in (
 if "$sol-control" not in openai_text or not re.search(r"(?m)^\s*allow_implicit_invocation:\s*false\s*$", openai_text):
     fail()
 
-compat_skill_text = read_text(compat_skill_file)
-if len(compat_skill_text.splitlines()) > 45:
+if (root / ".agents" / "skills" / "sol-luna").exists():
     fail()
-if not re.search(r"(?m)^name:\s*sol-luna\s*$", compat_skill_text):
-    fail()
-for marker in ("$sol-luna", "$sol-control", "v0.5.0"):
-    if marker not in compat_skill_text:
-        fail()
-compat_openai_text = read_text(compat_openai_file)
-for marker in ("$sol-luna", "$sol-control", "allow_implicit_invocation: false"):
-    if marker not in compat_openai_text:
-        fail()
 
 for markdown in root.rglob("*.md"):
     if ".git" in markdown.parts or markdown.is_symlink():
@@ -525,14 +494,12 @@ PY
 fi
 
 if command -v ruby >/dev/null 2>&1; then
-  if ! ruby -r yaml - "$SKILL_FILE" "$OPENAI_FILE" "$COMPAT_SKILL_FILE" "$COMPAT_OPENAI_FILE" "$BUG_TEMPLATE_FILE" "$FEATURE_TEMPLATE_FILE" "$ISSUE_CONFIG_FILE" <<'RUBY' >/dev/null 2>&1
+  if ! ruby -r yaml - "$SKILL_FILE" "$OPENAI_FILE" "$BUG_TEMPLATE_FILE" "$FEATURE_TEMPLATE_FILE" "$ISSUE_CONFIG_FILE" <<'RUBY' >/dev/null 2>&1
 skill_path = ARGV[0]
 openai_path = ARGV[1]
-compat_skill_path = ARGV[2]
-compat_openai_path = ARGV[3]
-bug_template_path = ARGV[4]
-feature_template_path = ARGV[5]
-issue_config_path = ARGV[6]
+bug_template_path = ARGV[2]
+feature_template_path = ARGV[3]
+issue_config_path = ARGV[4]
 
 def load_yaml(text)
   YAML.safe_load(text, permitted_classes: [], permitted_symbols: [], aliases: false)
@@ -555,21 +522,6 @@ raise unless interface.is_a?(Hash)
 end
 raise unless interface["default_prompt"].include?("$sol-control")
 raise unless openai.dig("policy", "allow_implicit_invocation") == false
-
-compat_lines = File.readlines(compat_skill_path, encoding: "UTF-8")
-raise unless compat_lines.length <= 45
-raise unless compat_lines.first&.chomp == "---"
-compat_closing = compat_lines[1..].index { |line| line.chomp == "---" }
-raise if compat_closing.nil?
-compat_skill = load_yaml(compat_lines[1, compat_closing].join)
-raise unless compat_skill.is_a?(Hash) && compat_skill["name"] == "sol-luna"
-compat_text = compat_lines.join
-%w[$sol-luna $sol-control v0.5.0].each { |marker| raise unless compat_text.include?(marker) }
-
-compat_openai = load_yaml(File.read(compat_openai_path, encoding: "UTF-8"))
-raise unless compat_openai.dig("policy", "allow_implicit_invocation") == false
-compat_prompt = compat_openai.dig("interface", "default_prompt")
-raise unless compat_prompt.is_a?(String) && compat_prompt.include?("$sol-luna") && compat_prompt.include?("$sol-control")
 
 [bug_template_path, feature_template_path].each do |path|
   form = load_yaml(File.read(path, encoding: "UTF-8"))

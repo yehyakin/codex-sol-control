@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""v0.4.0 Sol Control rename and compatibility contracts."""
+"""v0.5.0 Sol Control rename and legacy-removal contracts."""
 
 from __future__ import annotations
 
@@ -43,29 +43,21 @@ class RenameMigrationContractTests(unittest.TestCase):
             self.assertRegex(text, r"(?is)identity(?:-only)?\s+handshake")
             self.assertRegex(text, r"(?is)(?:no|without).{0,100}(?:task execution|planning).{0,100}(?:write|writing)")
 
-    def test_sol_luna_is_a_thin_one_release_compatibility_alias(self) -> None:
-        alias = read(COMPAT_SKILL / "SKILL.md")
-        metadata = read(COMPAT_SKILL / "agents" / "openai.yaml")
-
-        self.assertLessEqual(len(alias.splitlines()), 45)
-        self.assertRegex(alias, r"(?m)^name:\s*sol-luna\s*$")
-        self.assertIn("$sol-luna", alias)
-        self.assertIn("$sol-control", alias)
-        self.assertRegex(alias, r"(?i)compatib|兼容")
-        self.assertIn("v0.5.0", alias)
-        self.assertRegex(metadata, r"(?m)^\s*allow_implicit_invocation:\s*false\s*$")
+    def test_sol_luna_compatibility_alias_is_removed_in_v050(self) -> None:
+        self.assertFalse(COMPAT_SKILL.exists())
+        for relative in ("scripts/install.sh", "scripts/install.ps1"):
+            text = read(ROOT / relative)
+            self.assertIn(".agents/skills/sol-luna", text, relative)
+            self.assertRegex(text, r"(?i)removed compatibility|compatibility.*removed|compat.*backup", relative)
 
     def test_public_readmes_publish_the_new_identity_and_version(self) -> None:
         for relative in ("README.md", "README.en.md"):
             text = read(ROOT / relative)
             self.assertIn(CANONICAL_REPOSITORY, text, relative)
-            self.assertRegex(
-                text,
-                r"(?i)current release baseline.*v0\.4\.1|当前发布基线.*v0\.4\.1",
-                relative,
-            )
-            self.assertIn("05793db", text, relative)
+            self.assertRegex(text, r"(?i)current version.*v0\.5\.0|当前版本.*v0\.5\.0", relative)
+            self.assertIn("SOL_CONTROL_V050_IMPLEMENTATION_REPORT.md", text, relative)
             self.assertIn("$sol-control", text, relative)
+            self.assertRegex(text, r"(?is)\$sol-luna.{0,100}(?:removed|移除)", relative)
             self.assertNotIn("https://github.com/yehyakin/codex-sol-luna", text, relative)
 
     def test_installers_use_sol_control_state_and_migrate_both_old_states(self) -> None:

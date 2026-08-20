@@ -288,8 +288,6 @@ $requiredFiles = @(
     ".agents/skills/sol-control/agents/openai.yaml",
     ".agents/skills/sol-control/references/orchestration.md",
     ".agents/skills/sol-control/references/runtime-notes.md",
-    ".agents/skills/sol-luna/SKILL.md",
-    ".agents/skills/sol-luna/agents/openai.yaml",
     ".codex/agents/sol-controller.toml",
     ".codex/agents/luna-max-worker.toml",
     ".codex/agents/terra-high-worker.toml",
@@ -404,18 +402,8 @@ foreach ($marker in @("interface:", "display_name:", "short_description:", "defa
 Assert-Regex $openaiText '\$sol-control' 'openai.yaml does not expose $sol-control'
 Assert-Regex $openaiText '(?m)^\s*allow_implicit_invocation:\s*false\s*$' "openai.yaml permits implicit invocation"
 
-$compatSkillRoot = Join-Path $repoRoot ".agents/skills/sol-luna"
-Assert-PlainTree $compatSkillRoot
-$compatSkillText = Read-Utf8Text (Join-Path $compatSkillRoot "SKILL.md")
-if (@($compatSkillText -split "`r?`n").Count -gt 45) {
-    throw "Validation: compatibility SKILL.md is not thin"
-}
-foreach ($pattern in @('(?m)^name:\s*sol-luna\s*$', '\$sol-luna', '\$sol-control', 'v0\.5\.0')) {
-    Assert-Regex $compatSkillText $pattern "compatibility SKILL.md is incomplete"
-}
-$compatOpenaiText = Read-Utf8Text (Join-Path $compatSkillRoot "agents/openai.yaml")
-foreach ($pattern in @('\$sol-luna', '\$sol-control', '(?m)^\s*allow_implicit_invocation:\s*false\s*$')) {
-    Assert-Regex $compatOpenaiText $pattern "compatibility openai.yaml is incomplete"
+if (Test-PathExists (Join-Path $repoRoot ".agents/skills/sol-luna")) {
+    throw "Validation: removed compatibility skill source is still present"
 }
 
 $solPath = Join-Path $repoRoot ".codex/agents/sol-controller.toml"
@@ -483,14 +471,5 @@ foreach ($path in @(Get-ChildItem -LiteralPath $skillRoot -File -Force -Recurse)
         }
     }
 }
-foreach ($path in @(Get-ChildItem -LiteralPath $compatSkillRoot -File -Force -Recurse)) {
-    $text = Read-Utf8Text $path.FullName
-    foreach ($term in $forbiddenSkillTerms) {
-        if ($text.IndexOf($term, [System.StringComparison]::OrdinalIgnoreCase) -ge 0) {
-            throw "Validation: forbidden residue in compatibility skill source: $term"
-        }
-    }
-}
-
 Assert-RepositoryTextSafety $repoRoot
 Write-Output "Validation: PASS"

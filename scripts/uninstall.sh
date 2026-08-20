@@ -168,8 +168,8 @@ for directory in \
   fi
 done
 
-[[ -d "$state_root" && ! -L "$state_root" ]] || die 'no v0.4 installation state was found'
-[[ -f "$state_file" && ! -L "$state_file" ]] || die 'no v0.4 installation state was found'
+[[ -d "$state_root" && ! -L "$state_root" ]] || die 'no v0.5 installation state was found'
+[[ -f "$state_file" && ! -L "$state_file" ]] || die 'no v0.5 installation state was found'
 if path_exists "$config_target"; then
   assert_target "$config_target" file
 fi
@@ -184,7 +184,7 @@ assert_target "$legacy_sol_target" file
 if path_exists "$legacy_state_file"; then assert_target "$legacy_state_file" file; fi
 if path_exists "$previous_state_file"; then assert_target "$previous_state_file" file; fi
 
-[[ "$(state_value_file "$state_file" version)" == 3 ]] || die 'install state is not v0.4'
+[[ "$(state_value_file "$state_file" version)" == 4 ]] || die 'install state is not v0.5'
 backup_id=$(state_value_file "$state_file" backup_id) || die 'install state is incomplete'
 [[ "$backup_id" =~ ^[A-Za-z0-9._-]+$ && "$backup_id" != . && "$backup_id" != .. ]] || die 'install state contains an unsafe backup identifier'
 backup_dir="$backup_root/$backup_id"
@@ -192,33 +192,30 @@ backup_dir="$backup_root/$backup_id"
 [[ -f "$backup_dir/manifest" && ! -L "$backup_dir/manifest" ]] || die 'recorded backup manifest is unavailable'
 
 recorded_skill=$(state_value_file "$state_file" skill_sha256) || die 'install state is incomplete'
-recorded_compat_skill=$(state_value_file "$state_file" compat_skill_sha256) || die 'install state is incomplete'
 recorded_sol=$(state_value_file "$state_file" sol_sha256) || die 'install state is incomplete'
 recorded_luna=$(state_value_file "$state_file" luna_sha256) || die 'install state is incomplete'
 recorded_terra=$(state_optional_value_file "$state_file" terra_sha256)
 valid_hash "$recorded_skill" || die 'install state has an invalid skill checksum'
-valid_hash "$recorded_compat_skill" || die 'install state has an invalid compatibility skill checksum'
 valid_hash "$recorded_sol" || die 'install state has an invalid Sol checksum'
 valid_hash "$recorded_luna" || die 'install state has an invalid Luna checksum'
 if [[ -n "$recorded_terra" ]]; then valid_hash "$recorded_terra" || die 'install state has an invalid Terra checksum'; fi
-[[ -d "$new_skill_target" && ! -L "$new_skill_target" ]] || die 'installed v0.4 skill is missing or unsafe'
-[[ -d "$compat_skill_target" && ! -L "$compat_skill_target" ]] || die 'installed compatibility skill is missing or unsafe'
-[[ -f "$new_sol_target" && ! -L "$new_sol_target" ]] || die 'installed v0.4 Sol controller is missing or unsafe'
-[[ -f "$luna_target" && ! -L "$luna_target" ]] || die 'installed v0.4 Luna agent is missing or unsafe'
-[[ "$(sha256_tree "$new_skill_target")" == "$recorded_skill" ]] || die 'installed v0.4 skill was modified; refusing to remove it'
-[[ "$(sha256_tree "$compat_skill_target")" == "$recorded_compat_skill" ]] || die 'installed compatibility skill was modified; refusing to remove it'
-[[ "$(sha256_file "$new_sol_target")" == "$recorded_sol" ]] || die 'installed v0.4 Sol controller was modified; refusing to remove it'
-[[ "$(sha256_file "$luna_target")" == "$recorded_luna" ]] || die 'installed v0.4 Luna agent was modified; refusing to remove it'
+[[ -d "$new_skill_target" && ! -L "$new_skill_target" ]] || die 'installed v0.5 skill is missing or unsafe'
+! path_exists "$compat_skill_target" || die 'removed compatibility skill unexpectedly exists; refusing to remove it without ownership'
+[[ -f "$new_sol_target" && ! -L "$new_sol_target" ]] || die 'installed v0.5 Sol controller is missing or unsafe'
+[[ -f "$luna_target" && ! -L "$luna_target" ]] || die 'installed v0.5 Luna agent is missing or unsafe'
+[[ "$(sha256_tree "$new_skill_target")" == "$recorded_skill" ]] || die 'installed v0.5 skill was modified; refusing to remove it'
+[[ "$(sha256_file "$new_sol_target")" == "$recorded_sol" ]] || die 'installed v0.5 Sol controller was modified; refusing to remove it'
+[[ "$(sha256_file "$luna_target")" == "$recorded_luna" ]] || die 'installed v0.5 Luna agent was modified; refusing to remove it'
 if [[ -n "$recorded_terra" ]]; then
-  [[ -f "$terra_target" && ! -L "$terra_target" ]] || die 'installed v0.4 Terra agent is missing or unsafe'
-  [[ "$(sha256_file "$terra_target")" == "$recorded_terra" ]] || die 'installed v0.4 Terra agent was modified; refusing to remove it'
+  [[ -f "$terra_target" && ! -L "$terra_target" ]] || die 'installed v0.5 Terra agent is missing or unsafe'
+  [[ "$(sha256_file "$terra_target")" == "$recorded_terra" ]] || die 'installed v0.5 Terra agent was modified; refusing to remove it'
 fi
 
 manifest_value() {
   state_value_file "$backup_dir/manifest" "$1"
 }
 
-[[ "$(manifest_value version)" == 3 ]] || die 'backup manifest is not v0.4'
+[[ "$(manifest_value version)" == 4 ]] || die 'backup manifest is not v0.5'
 
 verify_backup_entry() {
   local label="$1"
@@ -362,7 +359,6 @@ if (( restore_terra )); then copy_exact "$backup_dir/v040/terra-high-worker.toml
 state_old=0
 state_new=0
 skill_old=0
-compat_skill_old=0
 sol_old=0
 luna_old=0
 terra_old=0
@@ -392,7 +388,6 @@ rollback_uninstall() {
   if (( v040_skill_new )); then rm -rf "$new_skill_target"; fi
   if (( skill_old )) && path_exists "$transaction_dir/old-v040-skill"; then mv "$transaction_dir/old-v040-skill" "$new_skill_target"; fi
   if (( compat_skill_new )); then rm -rf "$compat_skill_target"; fi
-  if (( compat_skill_old )) && path_exists "$transaction_dir/old-compat-skill"; then mv "$transaction_dir/old-compat-skill" "$compat_skill_target"; fi
   if (( legacy_sol_new )); then rm -f "$legacy_sol_target"; fi
   if (( legacy_skill_new )); then rm -rf "$legacy_skill_target"; fi
   if (( legacy_state_new )); then rm -f "$legacy_state_file"; fi
@@ -421,8 +416,6 @@ if (( restore_v040_skill )); then
   v040_skill_new=1
 fi
 
-mv "$compat_skill_target" "$transaction_dir/old-compat-skill"
-compat_skill_old=1
 if (( restore_compat_skill )); then
   mv "$transaction_dir/stage/compat-skill" "$compat_skill_target"
   compat_skill_new=1
@@ -485,7 +478,6 @@ rmdir "$backup_root" 2>/dev/null || true
 rmdir "$state_root" 2>/dev/null || true
 
 printf 'Uninstall path: %s\n' "$new_skill_target"
-printf 'Uninstall path: %s\n' "$compat_skill_target"
 printf 'Uninstall path: %s\n' "$new_sol_target"
 printf 'Uninstall path: %s\n' "$luna_target"
 if [[ -n "$recorded_terra" ]]; then printf 'Uninstall path: %s\n' "$terra_target"; fi

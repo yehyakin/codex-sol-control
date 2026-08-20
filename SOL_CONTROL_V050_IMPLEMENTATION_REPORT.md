@@ -103,19 +103,21 @@ Installer-created recovery backups include:
 - `/Users/kin3/.codex/sol-control/backups/20260816T200705Z-71514`
 - `/Users/kin3/.codex/sol-control/backups/20260816T201357Z-82995`
 
-The installer updated only the owned Skill, compatibility alias, and three
-owned agent TOMLs. It did not overwrite the complete `config.toml` or unrelated
-agents. `install.sh --check` reported a consistent installation.
+The installer updated only the owned Skill and three owned agent TOMLs. During
+the v0.4.x to v0.5.0 migration it validated and backed up the owned compatibility
+alias before removing it transactionally. It did not overwrite the complete
+`config.toml` or unrelated agents. `install.sh --check` reported a consistent
+installation.
 
 ## 9. Forward and static tests
 
-The final local suite contains 135 tests. It covers Requirement/evidence gaps,
+The final local suite contains 136 tests. It covers Requirement/evidence gaps,
 artifact-first review, wrong-scope verification, selective challenge, zero
 challenge on ordinary work, resume idempotence, timeout ownership, capability
 versus authorization, irreversible-work fail-closed behavior, installers, and
 cross-platform lifecycle structure.
 
-Final local result: `135/135 PASS`.
+Final local result: `136/136 PASS`.
 
 Skill Creator `quick_validate.py`, `scripts/validate.sh`, TOML/JSON parsing,
 shell syntax, isolated POSIX install/check/uninstall, and `git diff --check`
@@ -162,10 +164,12 @@ the full benchmark and not a general winner claim.
 
 ## 14. Release state
 
-Development branch: `codex/v050-evidence-first-control`.
+Release version: `v0.5.0`.
 
-The report is part of the release candidate. The final commit, push, and tag are
-recorded by Git after the complete pre-push verification gate.
+The source now exposes only `$sol-control`; the v0.4.x `$sol-luna` compatibility
+alias is absent from the repository and is removed safely during an owned
+upgrade. The final commit, hosted CI runs, tag, and GitHub release bind this
+report to the published candidate after the complete verification gate.
 
 ## 15. Known limitations
 

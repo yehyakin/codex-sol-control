@@ -289,7 +289,7 @@ foreach ($directory in @(
 
 if (-not (Test-Path -LiteralPath $stateRoot -PathType Container) -or
     -not (Test-Path -LiteralPath $stateFile -PathType Leaf)) {
-    throw "no v0.4 installation state was found"
+    throw "no v0.5 installation state was found"
 }
 Assert-Target $stateRoot "Directory"
 Assert-Target $stateFile "File"
@@ -311,8 +311,8 @@ if (Test-PathExists $legacyStateFile) { Assert-Target $legacyStateFile "File" }
 if (Test-PathExists $previousStateFile) { Assert-Target $previousStateFile "File" }
 
 $state = Get-StateMap $stateFile
-if ((Get-StateValue $state "version") -ne "3") {
-    throw "install state is not v0.4"
+if ((Get-StateValue $state "version") -ne "4") {
+    throw "install state is not v0.5"
 }
 $backupId = Get-StateValue $state "backup_id"
 Assert-BackupId $backupId
@@ -322,34 +322,32 @@ $manifestPath = Join-Path $backupDir "manifest"
 Assert-Target $manifestPath "File"
 
 $recordedSkill = Get-StateValue $state "skill_sha256"
-$recordedCompatSkill = Get-StateValue $state "compat_skill_sha256"
 $recordedSol = Get-StateValue $state "sol_sha256"
 $recordedLuna = Get-StateValue $state "luna_sha256"
 $recordedTerra = if ($state.ContainsKey("terra_sha256")) { [string]$state["terra_sha256"] } else { "" }
 Assert-Hash $recordedSkill
-Assert-Hash $recordedCompatSkill
 Assert-Hash $recordedSol
 Assert-Hash $recordedLuna
 if ($recordedTerra) { Assert-Hash $recordedTerra }
 if ((Get-TreeDigest $newSkillTarget) -ne $recordedSkill) {
-    throw "installed v0.4 skill was modified; refusing to remove it"
+    throw "installed v0.5 skill was modified; refusing to remove it"
 }
-if ((Get-TreeDigest $compatSkillTarget) -ne $recordedCompatSkill) {
-    throw "installed compatibility skill was modified; refusing to remove it"
+if (Test-PathExists $compatSkillTarget) {
+    throw "removed compatibility skill unexpectedly exists; refusing to remove it without ownership"
 }
 if ((Get-FileDigest $newSolTarget) -ne $recordedSol) {
-    throw "installed v0.4 Sol controller was modified; refusing to remove it"
+    throw "installed v0.5 Sol controller was modified; refusing to remove it"
 }
 if ((Get-FileDigest $lunaTarget) -ne $recordedLuna) {
-    throw "installed v0.4 Luna agent was modified; refusing to remove it"
+    throw "installed v0.5 Luna agent was modified; refusing to remove it"
 }
 if ($recordedTerra -and ((-not (Test-Path -LiteralPath $terraTarget -PathType Leaf)) -or (Get-FileDigest $terraTarget) -ne $recordedTerra)) {
-    throw "installed v0.4 Terra agent was modified; refusing to remove it"
+    throw "installed v0.5 Terra agent was modified; refusing to remove it"
 }
 
 $manifest = Get-StateMap $manifestPath
-if ((Get-StateValue $manifest "version") -ne "3") {
-    throw "backup manifest is not v0.4"
+if ((Get-StateValue $manifest "version") -ne "4") {
+    throw "backup manifest is not v0.5"
 }
 Assert-BackupEntry $manifest "legacy skill" "legacy_skill_presence" "legacy_skill_sha256" (Join-Path $backupDir "legacy/skill") "Directory"
 Assert-BackupEntry $manifest "legacy Sol" "legacy_sol_presence" "legacy_sol_sha256" (Join-Path $backupDir "legacy/sol-planner.toml") "File"
@@ -455,7 +453,6 @@ $transactionDir = Join-Path $stateRoot (".uninstall-" + [Guid]::NewGuid().ToStri
 $stateOld = $false
 $v040StateNew = $false
 $skillOld = $false
-$compatSkillOld = $false
 $solOld = $false
 $lunaOld = $false
 $terraOld = $false
@@ -498,8 +495,6 @@ try {
         Copy-Exact (Join-Path $backupDir "v040/skill") (Join-Path $transactionDir "stage/v040-skill")
     }
 
-    Move-Item -LiteralPath $compatSkillTarget -Destination (Join-Path $transactionDir "old-compat-skill")
-    $compatSkillOld = $true
     if ($restoreCompatSkill) {
         Move-Item -LiteralPath (Join-Path $transactionDir "stage/compat-skill") -Destination $compatSkillTarget
         $compatSkillNew = $true
@@ -600,9 +595,6 @@ catch {
         Move-Item -LiteralPath (Join-Path $transactionDir "old-v040-skill") -Destination $newSkillTarget
     }
     if ($compatSkillNew -and (Test-PathExists $compatSkillTarget)) { Remove-Exact $compatSkillTarget }
-    if ($compatSkillOld -and (Test-PathExists (Join-Path $transactionDir "old-compat-skill"))) {
-        Move-Item -LiteralPath (Join-Path $transactionDir "old-compat-skill") -Destination $compatSkillTarget
-    }
     if ($legacySolNew -and (Test-PathExists $legacySolTarget)) { Remove-Exact $legacySolTarget }
     if ($legacySkillNew -and (Test-PathExists $legacySkillTarget)) { Remove-Exact $legacySkillTarget }
     if ($legacyStateNew -and (Test-PathExists $legacyStateFile)) { Remove-Exact $legacyStateFile }
@@ -632,7 +624,6 @@ Remove-EmptyDirectory $backupRoot
 Remove-EmptyDirectory $stateRoot
 
 Write-Output "Uninstall path: $newSkillTarget"
-Write-Output "Uninstall path: $compatSkillTarget"
 Write-Output "Uninstall path: $newSolTarget"
 Write-Output "Uninstall path: $lunaTarget"
 if ($recordedTerra) { Write-Output "Uninstall path: $terraTarget" }
