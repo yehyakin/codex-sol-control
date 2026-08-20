@@ -73,7 +73,7 @@ function Invoke-LifecycleScript {
     & $engine -NoLogo -NoProfile -NonInteractive -File $Script @Arguments *> $null
     $actual = $LASTEXITCODE
     if ($actual -ne $ExpectedExitCode) {
-        throw "unexpected exit code for $Script: expected $ExpectedExitCode, got $actual"
+        throw "unexpected exit code for ${Script}: expected $ExpectedExitCode, got $actual"
     }
 }
 
