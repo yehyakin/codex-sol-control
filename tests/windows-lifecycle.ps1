@@ -70,8 +70,15 @@ function Invoke-LifecycleScript {
         [string[]]$Arguments = @(),
         [int]$ExpectedExitCode = 0
     )
-    & $engine -NoLogo -NoProfile -NonInteractive -File $Script @Arguments *> $null
-    $actual = $LASTEXITCODE
+    $oldPreference = $ErrorActionPreference
+    try {
+        $ErrorActionPreference = "Continue"
+        & $engine -NoLogo -NoProfile -NonInteractive -File $Script @Arguments *> $null
+        $actual = $LASTEXITCODE
+    }
+    finally {
+        $ErrorActionPreference = $oldPreference
+    }
     if ($actual -ne $ExpectedExitCode) {
         throw "unexpected exit code for ${Script}: expected $ExpectedExitCode, got $actual"
     }
